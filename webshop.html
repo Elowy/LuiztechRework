@@ -28,6 +28,7 @@
         <a href="index.html">Főoldal</a>
         <a href="#products">Termékek</a>
         <a href="admin.html" class="nav-admin" title="Belépés a testreszabáshoz">⚙︎ Admin</a>
+        <button class="account-btn" id="account-btn" aria-label="Fiók">👤 <span id="account-label">Belépés</span></button>
         <button class="cart-btn" id="cart-btn" aria-label="Kosár megnyitása">
           🛒 <span class="cart-count" id="cart-count">0</span>
         </button>
@@ -77,6 +78,72 @@
       </div>
       <button class="btn btn-primary btn-block" id="cart-checkout">Megrendelés</button>
       <p class="cart-note" id="cart-note" role="status"></p>
+    </div>
+  </aside>
+
+  <!-- ===================== AUTH MODAL ===================== -->
+  <div class="modal-overlay" id="auth-modal" hidden>
+    <div class="modal auth-card" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="auth-title">fiók</span>
+        <button class="modal-x" id="auth-close" aria-label="Bezárás">✕</button>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth-tab="login">Bejelentkezés</button>
+        <button class="auth-tab" data-auth-tab="register">Regisztráció</button>
+      </div>
+      <div class="modal-body">
+        <!-- LOGIN -->
+        <form class="auth-form active" data-auth-form="login" novalidate>
+          <div class="field">
+            <label for="login-email">E-mail cím</label>
+            <input type="email" id="login-email" autocomplete="email" placeholder="te@example.hu" required />
+          </div>
+          <div class="field">
+            <label for="login-password">Jelszó</label>
+            <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Bejelentkezés</button>
+          <p class="auth-err" id="login-err" role="alert"></p>
+        </form>
+        <!-- REGISTER -->
+        <form class="auth-form" data-auth-form="register" novalidate>
+          <div class="field">
+            <label for="reg-name">Név</label>
+            <input type="text" id="reg-name" autocomplete="name" placeholder="Teljes neved" required />
+          </div>
+          <div class="field">
+            <label for="reg-email">E-mail cím</label>
+            <input type="email" id="reg-email" autocomplete="email" placeholder="te@example.hu" required />
+          </div>
+          <div class="field">
+            <label for="reg-password">Jelszó</label>
+            <input type="password" id="reg-password" autocomplete="new-password" placeholder="Legalább 6 karakter" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Fiók létrehozása</button>
+          <p class="auth-err" id="reg-err" role="alert"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ACCOUNT DRAWER ===================== -->
+  <div class="cart-overlay" id="account-overlay" hidden></div>
+  <aside class="cart-drawer" id="account-drawer" aria-label="Fiók" aria-hidden="true">
+    <div class="cart-head">
+      <h2>Fiókom</h2>
+      <button class="cart-close" id="account-close" aria-label="Bezárás">✕</button>
+    </div>
+    <div class="account-body">
+      <div class="account-greeting" id="account-greeting"></div>
+      <h3 class="account-subhead">Rendeléseim</h3>
+      <div class="account-orders" id="account-orders"></div>
+    </div>
+    <div class="cart-foot">
+      <button class="btn btn-ghost btn-block" id="account-logout">Kilépés</button>
     </div>
   </aside>
 

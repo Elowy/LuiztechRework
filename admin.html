@@ -224,6 +224,20 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="m-id" />
+        <input type="hidden" id="m-image" />
+        <div class="field">
+          <label>Termékkép</label>
+          <div class="image-upload" id="image-upload">
+            <div class="image-preview" id="image-preview" aria-hidden="true">🛒</div>
+            <div class="image-upload-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="image-pick">Kép feltöltése</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="image-clear" hidden>Eltávolítás</button>
+              <input type="file" id="image-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+              <p class="image-hint">PNG, JPG, WEBP vagy GIF · max. 4 MB. Ha nincs kép, az ikon jelenik meg.</p>
+              <p class="modal-err" id="image-err"></p>
+            </div>
+          </div>
+        </div>
         <div class="field-row">
           <div class="field" style="flex:0 0 90px">
             <label for="m-emoji">Ikon</label>

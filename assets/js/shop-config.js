@@ -145,6 +145,43 @@
       .catch(function (e) { if (e.status) throw e; return { ok: true, id: 'DEMO-' + Date.now().toString(36).toUpperCase(), local: true }; });
   }
 
+  /* ---------- Customer accounts (require backend) ---------- */
+  function registerCustomer(name, email, pass) {
+    return api('/api/account/register', { method: 'POST', body: { name: name, email: email, pass: pass } })
+      .then(function (d) { return { user: d.user }; })
+      .catch(function (e) {
+        if (e.status) return { error: e.message };
+        return { error: 'A regisztrációhoz fut a háttérkiszolgáló szükséges (indítsd: npm start).' };
+      });
+  }
+  function loginCustomer(email, pass) {
+    return api('/api/account/login', { method: 'POST', body: { email: email, pass: pass } })
+      .then(function (d) { return { user: d.user }; })
+      .catch(function (e) {
+        if (e.status) return { error: e.message };
+        return { error: 'A bejelentkezéshez fut a háttérkiszolgáló szükséges (indítsd: npm start).' };
+      });
+  }
+  function logoutCustomer() {
+    return api('/api/account/logout', { method: 'POST' }).catch(function () { return { ok: true }; });
+  }
+  function customerMe() {
+    return api('/api/account/me').then(function (d) { return d.authenticated ? d.user : null; }).catch(function () { return null; });
+  }
+  function myOrders() {
+    return api('/api/account/orders').catch(function () { return []; });
+  }
+
+  /* ---------- Image upload (admin) ---------- */
+  function uploadImage(dataUrl) {
+    return api('/api/admin/upload', { method: 'POST', body: { data: dataUrl } })
+      .then(function (d) { return { url: d.url }; })
+      .catch(function (e) {
+        if (e.status) return { error: e.message };
+        return { url: dataUrl, local: true }; // no backend → embed inline (static demo)
+      });
+  }
+
   /* ============================================================
      Helpers
      ============================================================ */
@@ -174,6 +211,12 @@
     setCredentials: setCredentials,
     getOrders: getOrders,
     createOrder: createOrder,
+    registerCustomer: registerCustomer,
+    loginCustomer: loginCustomer,
+    logoutCustomer: logoutCustomer,
+    customerMe: customerMe,
+    myOrders: myOrders,
+    uploadImage: uploadImage,
     // sync helpers
     getCart: getCart,
     saveCart: saveCart,

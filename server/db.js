@@ -45,6 +45,7 @@ function defaults() {
       salt: admin.salt,
       hash: admin.hash
     },
+    users: [],
     orders: []
   };
 }
@@ -57,6 +58,7 @@ function load() {
       // backfill any new default fields
       db.config = Object.assign({}, DEFAULT_CONFIG, db.config || {});
       db.products = db.products || [];
+      db.users = db.users || [];
       db.orders = db.orders || [];
     } else {
       db = defaults();
@@ -93,13 +95,17 @@ function getConfig() {
 const ALLOWED_CONFIG = ['name', 'tagline', 'accent', 'accent2', 'theme', 'currency', 'heroTitle', 'heroText', 'freeShippingOver'];
 
 function sanitizeProduct(p, fallbackId) {
+  let image = String(p.image || '').slice(0, 300);
+  // only allow our own uploaded paths or http(s) urls
+  if (image && !/^(\/uploads\/|https?:\/\/)/.test(image)) image = '';
   return {
     id: String(p.id || fallbackId || ('p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))),
     name: String(p.name || '').slice(0, 120),
     desc: String(p.desc || '').slice(0, 600),
     price: Math.max(0, Math.round(Number(p.price) || 0)),
     category: String(p.category || '').slice(0, 60),
-    emoji: String(p.emoji || '📦').slice(0, 8)
+    emoji: String(p.emoji || '📦').slice(0, 8),
+    image: image
   };
 }
 
@@ -152,8 +158,51 @@ function setCredentials(user, pass) {
   return { user: db.admin.user };
 }
 
+/* ---------- Customer accounts ---------- */
+function publicUser(u) { return u ? { id: u.id, name: u.name, email: u.email } : null; }
+
+function findUserByEmail(email) {
+  ensure();
+  const e = String(email || '').trim().toLowerCase();
+  return db.users.filter((u) => u.email.toLowerCase() === e)[0] || null;
+}
+
+function getUserById(id) {
+  ensure();
+  return db.users.filter((u) => u.id === id)[0] || null;
+}
+
+function registerUser(name, email, pass) {
+  ensure();
+  email = String(email || '').trim();
+  name = String(name || '').trim();
+  if (!name) return { error: 'A név megadása kötelező.' };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Érvénytelen e-mail cím.' };
+  if (String(pass || '').length < 6) return { error: 'A jelszó legalább 6 karakter legyen.' };
+  if (findUserByEmail(email)) return { error: 'Ezzel az e-mail címmel már van fiók.' };
+  const h = auth.hashPassword(pass);
+  const user = {
+    id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: name.slice(0, 120),
+    email: email.slice(0, 160),
+    salt: h.salt,
+    hash: h.hash,
+    createdAt: new Date().toISOString()
+  };
+  db.users.push(user);
+  persist();
+  return { user: publicUser(user) };
+}
+
+function loginUser(email, pass) {
+  const u = findUserByEmail(email);
+  if (!u) return null;
+  if (!auth.verifyPassword(pass, u.salt, u.hash)) return null;
+  return publicUser(u);
+}
+
 /* ---------- Orders ---------- */
-function createOrder(payload) {
+function createOrder(payload, user) {
   ensure();
   const byId = {};
   db.products.forEach((p) => { byId[p.id] = p; });
@@ -171,19 +220,21 @@ function createOrder(payload) {
     id: 'ORD-' + Date.now().toString(36).toUpperCase(),
     items: items,
     total: total,
+    userId: user ? user.id : null,
     customer: {
-      name: String((payload.customer && payload.customer.name) || '').slice(0, 120),
-      email: String((payload.customer && payload.customer.email) || '').slice(0, 160)
+      name: String((user && user.name) || (payload.customer && payload.customer.name) || '').slice(0, 120),
+      email: String((user && user.email) || (payload.customer && payload.customer.email) || '').slice(0, 160)
     },
     createdAt: new Date().toISOString()
   };
   db.orders.unshift(order);
-  if (db.orders.length > 500) db.orders.length = 500;
+  if (db.orders.length > 1000) db.orders.length = 1000;
   persist();
   return order;
 }
 
 function getOrders() { ensure(); return db.orders; }
+function getOrdersByUser(userId) { ensure(); return db.orders.filter((o) => o.userId === userId); }
 
 module.exports = {
   load,
@@ -194,8 +245,12 @@ module.exports = {
   getAdminUser,
   checkLogin,
   setCredentials,
+  registerUser,
+  loginUser,
+  getUserById,
   createOrder,
   getOrders,
+  getOrdersByUser,
   DEFAULT_CONFIG,
   DEFAULT_PRODUCTS
 };

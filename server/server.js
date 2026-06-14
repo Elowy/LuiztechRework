@@ -9,10 +9,12 @@ const crypto = require('crypto');
 const express = require('express');
 const db = require('./db');
 const auth = require('./auth');
+const uploads = require('./uploads');
 
 const PORT = process.env.PORT || 3000;
 const ROOT = path.join(__dirname, '..');
-const COOKIE = 'lt_session';
+const COOKIE = 'lt_session';        // admin session
+const COOKIE_CUST = 'lt_customer';  // customer session
 const SECRET = process.env.SESSION_SECRET ||
   (process.env.NODE_ENV === 'production'
     ? crypto.randomBytes(32).toString('hex') // ephemeral if not set (sessions reset on restart)
@@ -44,21 +46,24 @@ function isSecure(req) {
   return req.secure || (req.headers['x-forwarded-proto'] || '').split(',')[0] === 'https';
 }
 
-function setSession(req, res, token) {
+function appendCookie(res, value) {
+  const prev = res.getHeader('Set-Cookie');
+  if (!prev) res.setHeader('Set-Cookie', value);
+  else res.setHeader('Set-Cookie', [].concat(prev, value));
+}
+function setCookie(req, res, name, token) {
   const parts = [
-    COOKIE + '=' + token,
-    'HttpOnly',
-    'Path=/',
-    'SameSite=Lax',
+    name + '=' + token,
+    'HttpOnly', 'Path=/', 'SameSite=Lax',
     'Max-Age=' + Math.floor(auth.TOKEN_TTL_MS / 1000)
   ];
   if (isSecure(req)) parts.push('Secure');
-  res.setHeader('Set-Cookie', parts.join('; '));
+  appendCookie(res, parts.join('; '));
 }
-function clearSession(req, res) {
-  const parts = [COOKIE + '=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0'];
+function clearCookie(req, res, name) {
+  const parts = [name + '=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0'];
   if (isSecure(req)) parts.push('Secure');
-  res.setHeader('Set-Cookie', parts.join('; '));
+  appendCookie(res, parts.join('; '));
 }
 
 /* ---------- auth middleware ---------- */
@@ -70,6 +75,20 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// resolves the logged-in customer (if any) without blocking the request
+function currentCustomer(req) {
+  const token = parseCookies(req)[COOKIE_CUST];
+  const payload = auth.verifyToken(token, SECRET);
+  if (!payload || !payload.uid) return null;
+  return db.getUserById(payload.uid);
+}
+function requireCustomer(req, res, next) {
+  const u = currentCustomer(req);
+  if (!u) return res.status(401).json({ error: 'Bejelentkezés szükséges.' });
+  req.customer = u;
+  next();
+}
+
 /* ============================================================
    PUBLIC API
    ============================================================ */
@@ -78,7 +97,8 @@ app.get('/api/shop', (req, res) => {
 });
 
 app.post('/api/orders', (req, res) => {
-  const order = db.createOrder(req.body || {});
+  const customer = currentCustomer(req); // attach account if logged in
+  const order = db.createOrder(req.body || {}, customer);
   if (!order) return res.status(400).json({ error: 'A kosár üres vagy érvénytelen.' });
   res.status(201).json({ ok: true, id: order.id, total: order.total });
 });
@@ -92,12 +112,12 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Hibás felhasználónév vagy jelszó.' });
   }
   const token = auth.signToken({ user: db.getAdminUser() }, SECRET);
-  setSession(req, res, token);
+  setCookie(req, res, COOKIE, token);
   res.json({ ok: true, user: db.getAdminUser() });
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  clearSession(req, res);
+  clearCookie(req, res, COOKIE);
   res.json({ ok: true });
 });
 
@@ -129,7 +149,7 @@ app.post('/api/admin/account', requireAuth, (req, res) => {
   const result = db.setCredentials(user, pass);
   // re-issue token in case the username changed
   const token = auth.signToken({ user: result.user }, SECRET);
-  setSession(req, res, token);
+  setCookie(req, res, COOKIE, token);
   res.json({ ok: true, user: result.user });
 });
 
@@ -137,9 +157,56 @@ app.get('/api/admin/orders', requireAuth, (req, res) => {
   res.json(db.getOrders());
 });
 
+// product image upload (own JSON parser with a larger limit)
+app.post('/api/admin/upload', requireAuth, express.json({ limit: '6mb' }), (req, res) => {
+  const result = uploads.saveDataUrl((req.body || {}).data);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json({ ok: true, url: result.url });
+});
+
 /* ============================================================
-   STATIC SITE
+   CUSTOMER ACCOUNTS
    ============================================================ */
+app.post('/api/account/register', (req, res) => {
+  const { name, email, pass } = req.body || {};
+  const result = db.registerUser(name, email, pass);
+  if (result.error) return res.status(400).json({ error: result.error });
+  const token = auth.signToken({ uid: result.user.id, role: 'customer' }, SECRET);
+  setCookie(req, res, COOKIE_CUST, token);
+  res.status(201).json({ ok: true, user: result.user });
+});
+
+app.post('/api/account/login', (req, res) => {
+  const { email, pass } = req.body || {};
+  const user = db.loginUser(String(email || ''), String(pass || ''));
+  if (!user) return res.status(401).json({ error: 'Hibás e-mail cím vagy jelszó.' });
+  const token = auth.signToken({ uid: user.id, role: 'customer' }, SECRET);
+  setCookie(req, res, COOKIE_CUST, token);
+  res.json({ ok: true, user: user });
+});
+
+app.post('/api/account/logout', (req, res) => {
+  clearCookie(req, res, COOKIE_CUST);
+  res.json({ ok: true });
+});
+
+app.get('/api/account/me', (req, res) => {
+  const u = currentCustomer(req);
+  if (!u) return res.status(401).json({ authenticated: false });
+  res.json({ authenticated: true, user: { id: u.id, name: u.name, email: u.email } });
+});
+
+app.get('/api/account/orders', requireCustomer, (req, res) => {
+  res.json(db.getOrdersByUser(req.customer.id));
+});
+
+/* ============================================================
+   UPLOADED IMAGES + STATIC SITE
+   ============================================================ */
+app.use('/uploads', express.static(uploads.UPLOAD_DIR, {
+  setHeaders: function (res) { res.setHeader('X-Content-Type-Options', 'nosniff'); }
+}));
+
 app.use(express.static(ROOT, { extensions: ['html'] }));
 
 app.get('/', (req, res) => res.sendFile(path.join(ROOT, 'index.html')));

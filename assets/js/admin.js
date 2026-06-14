@@ -169,7 +169,7 @@
       var row = document.createElement('div');
       row.className = 'product-admin-row';
       row.innerHTML =
-        '<span class="pa-emoji">' + (p.emoji || '📦') + '</span>' +
+        '<span class="pa-emoji">' + (p.image ? '<img src="' + escAttr(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
         '<div class="pa-info"><span class="pa-name">' + escAttr(p.name) + '</span>' +
         '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' + S.formatPrice(p.price, cfg) + '</span></div>' +
         '<div class="pa-actions">' +
@@ -205,12 +205,52 @@
     $('#m-desc').value = p ? (p.desc || '') : '';
     $('#m-price').value = p ? p.price : '';
     $('#m-category').value = p ? (p.category || '') : '';
+    $('#m-image').value = p ? (p.image || '') : '';
     $('#modal-err').textContent = '';
+    $('#image-err').textContent = '';
+    updateImagePreview();
     refreshCatList();
     $('#product-modal').hidden = false;
     setTimeout(function () { $('#m-name').focus(); }, 30);
   }
   function closeModal() { $('#product-modal').hidden = true; editingId = null; }
+
+  /* ---------- Image upload ---------- */
+  function updateImagePreview() {
+    var url = $('#m-image').value;
+    var prev = $('#image-preview');
+    if (url) {
+      prev.innerHTML = '<img src="' + escAttr(url) + '" alt="">';
+      $('#image-clear').hidden = false;
+    } else {
+      prev.textContent = $('#m-emoji').value || '📦';
+      $('#image-clear').hidden = true;
+    }
+  }
+  $('#m-emoji').addEventListener('input', function () { if (!$('#m-image').value) updateImagePreview(); });
+  $('#image-pick').addEventListener('click', function () { $('#image-file').click(); });
+  $('#image-clear').addEventListener('click', function () { $('#m-image').value = ''; updateImagePreview(); });
+  $('#image-file').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    if (!file) return;
+    $('#image-err').textContent = '';
+    if (file.size > 4 * 1024 * 1024) { $('#image-err').textContent = 'A kép túl nagy (max. 4 MB).'; this.value = ''; return; }
+    var reader = new FileReader();
+    var pickBtn = $('#image-pick');
+    pickBtn.disabled = true; pickBtn.textContent = 'Feltöltés...';
+    reader.onload = function () {
+      S.uploadImage(reader.result).then(function (res) {
+        pickBtn.disabled = false; pickBtn.textContent = 'Kép cseréje';
+        if (res.error) { $('#image-err').textContent = res.error; return; }
+        $('#m-image').value = res.url;
+        updateImagePreview();
+        markDirty();
+      });
+    };
+    reader.onerror = function () { pickBtn.disabled = false; pickBtn.textContent = 'Kép feltöltése'; $('#image-err').textContent = 'A fájl beolvasása sikertelen.'; };
+    reader.readAsDataURL(file);
+    this.value = '';
+  });
 
   $('#add-product').addEventListener('click', function () { openModal(null); });
   $('#modal-cancel').addEventListener('click', closeModal);
@@ -222,7 +262,7 @@
     var price = parseInt($('#m-price').value, 10);
     if (!name) { $('#modal-err').textContent = 'A megnevezés kötelező.'; return; }
     if (isNaN(price) || price < 0) { $('#modal-err').textContent = 'Adj meg érvényes árat.'; return; }
-    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), emoji: $('#m-emoji').value.trim() || '📦' };
+    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
     if (editingId) {
       cfg.products = cfg.products.map(function (p) { return p.id === editingId ? Object.assign(p, data) : p; });
     } else {

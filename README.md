@@ -23,15 +23,21 @@ Az oldalhoz tartozik egy működő **webshop demó** és egy **admin felület**,
 ahol a bolt valós időben testreszabható. A beállítások a böngésző
 `localStorage`-ában tárolódnak (build és backend nélküli prototípus).
 
-- **`webshop.html`** — kirakat: termékek, kategória-szűrő, keresés, kosár
-  (mennyiség, összesítés, rendelés-demó). A bolt nevét, szövegeit, színeit és
-  kínálatát az admin beállításaiból olvassa.
+- **`webshop.html`** — kirakat: termékek (képpel vagy ikonnal), kategória-szűrő,
+  keresés, kosár (mennyiség, összesítés, rendelés). **Vásárlói fiók:**
+  regisztráció, bejelentkezés és „Rendeléseim" nézet. A bolt nevét, szövegeit,
+  színeit és kínálatát az admin beállításaiból olvassa.
 - **`admin.html`** — belépés után testreszabható:
   - **Általános:** bolt neve, szlogen, kezdőoldal szövegei, pénznem, ingyenes szállítás határa
   - **Megjelenés:** elsődleges/másodlagos szín, kész színsémák, sötét/világos téma, élő előnézet
-  - **Termékek:** felvétel / szerkesztés / törlés (ikon, név, leírás, ár, kategória)
+  - **Termékek:** felvétel / szerkesztés / törlés (**termékkép-feltöltés**, ikon, név, leírás, ár, kategória)
+  - **Rendelések:** a beérkezett rendelések listája
   - **Fiók:** admin belépési adatok módosítása
   - **Visszaállítás:** alapértelmezett beállítások visszatöltése
+
+A **vásárlói fiókok** és az **admin** külön munkamenetet (cookie-t) használnak.
+A feltöltött termékképek a `data/uploads/` mappába kerülnek, és a `/uploads/...`
+útvonalon szolgáljuk ki őket (SVG biztonsági okból nem engedélyezett).
 
 > **Demó belépés:** felhasználó `admin`, jelszó `luiztech`
 > (éles deploynál az `ADMIN_USER` / `ADMIN_PASS` env változókkal módosítható,
@@ -88,15 +94,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | metódus + útvonal            | védett | leírás                          |
 |------------------------------|:------:|---------------------------------|
 | `GET /api/shop`              |   –    | publikus bolt-adat + termékek   |
-| `POST /api/orders`           |   –    | rendelés leadása                |
-| `POST /api/auth/login`       |   –    | bejelentkezés (cookie)          |
-| `POST /api/auth/logout`      |   –    | kijelentkezés                   |
-| `GET /api/auth/me`           |   –    | session ellenőrzés              |
-| `GET /api/admin/config`      |   ✓    | teljes konfiguráció             |
-| `PUT /api/admin/config`      |   ✓    | konfiguráció + termékek mentése |
-| `POST /api/admin/account`    |   ✓    | belépési adatok módosítása      |
-| `POST /api/admin/reset`      |   ✓    | alapértelmezettre állítás       |
-| `GET /api/admin/orders`      |   ✓    | beérkezett rendelések           |
+| `POST /api/orders`           |   –    | rendelés leadása (fiókhoz köti, ha be van jelentkezve) |
+| `POST /api/account/register` |   –    | vásárlói regisztráció           |
+| `POST /api/account/login`    |   –    | vásárlói bejelentkezés          |
+| `POST /api/account/logout`   |   –    | vásárlói kijelentkezés          |
+| `GET /api/account/me`        |   –    | vásárlói session ellenőrzés     |
+| `GET /api/account/orders`    |  ✓ (vásárló) | saját rendelések          |
+| `POST /api/auth/login`       |   –    | admin bejelentkezés (cookie)    |
+| `POST /api/auth/logout`      |   –    | admin kijelentkezés             |
+| `GET /api/auth/me`           |   –    | admin session ellenőrzés        |
+| `GET /api/admin/config`      |  ✓ (admin) | teljes konfiguráció         |
+| `PUT /api/admin/config`      |  ✓ (admin) | konfiguráció + termékek mentése |
+| `POST /api/admin/upload`     |  ✓ (admin) | termékkép feltöltése (PNG/JPG/WEBP/GIF, max 4 MB) |
+| `POST /api/admin/account`    |  ✓ (admin) | admin belépési adatok módosítása |
+| `POST /api/admin/reset`      |  ✓ (admin) | alapértelmezettre állítás   |
+| `GET /api/admin/orders`      |  ✓ (admin) | beérkezett rendelések       |
 
 > A fizetési integráció szándékosan nincs bekötve (a rendelés rögzítése demó).
 > Élesben ide egy fizetési szolgáltató (pl. Stripe/Barion/SimplePay) köthető be.
@@ -109,8 +121,9 @@ webshop.html            # webshop kirakat
 admin.html              # belépés + testreszabó felület
 server/
   server.js             # Express app: statikus kiszolgálás + REST API
-  db.js                 # fájl-alapú JSON adattár + alapértelmezések
+  db.js                 # fájl-alapú JSON adattár (config, termékek, vásárlók, rendelések)
   auth.js               # jelszó-hash (scrypt) + token aláírás (HMAC)
+  uploads.js            # termékkép-feltöltés (base64 → fájl, validálással)
 assets/
   css/style.css         # alap stílusok, animációk
   css/webshop.css       # webshop kirakat + témák
@@ -123,6 +136,7 @@ assets/
 package.json            # függőség (express) + start scriptek
 Dockerfile · Procfile · .env.example   # deploy
 data/db.json            # futásidőben jön létre (git-ignorált)
+data/uploads/           # feltöltött termékképek (git-ignorált)
 ```
 
 ## Helyi futtatás

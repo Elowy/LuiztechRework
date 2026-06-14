@@ -269,7 +269,32 @@
   border-radius: 10px;
   background: var(--grad-soft);
   font-size: 1.4rem;
+  overflow: hidden;
 }
+.pa-emoji img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Image upload (modal) ---------- */
+.image-upload { display: flex; gap: 16px; align-items: flex-start; }
+.image-preview {
+  width: 84px; height: 84px;
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--grad-soft);
+  border: 1px solid var(--border);
+  font-size: 2rem;
+  overflow: hidden;
+}
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-upload-actions { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+.image-hint { font-size: .78rem; color: var(--text-dim); margin: 0; }
+.modal-x {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: 0; color: var(--text-muted);
+  font-size: 1rem; cursor: pointer;
+}
+.modal-x:hover { color: var(--text); }
 .pa-info { flex-grow: 1; display: flex; flex-direction: column; }
 .pa-name { font-weight: 600; }
 .pa-meta { font-family: var(--mono); font-size: .8rem; color: var(--text-dim); }
