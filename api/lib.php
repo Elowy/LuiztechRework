@@ -78,7 +78,25 @@ function db() {
   } catch (Throwable $e) {
     json_error('Adatbázis-kapcsolat sikertelen.', 500);
   }
+  migrate($pdo);
   return $pdo;
+}
+
+/* Könnyű "migráció": ha új tábla hiányzik egy korábbi telepítésből,
+   létrehozzuk (és a referenciáknál egyszer felvisszük az alapokat). */
+function migrate(PDO $pdo) {
+  try {
+    $pdo->query("SELECT 1 FROM refs LIMIT 1");
+  } catch (Throwable $e) {
+    try {
+      create_schema($pdo);
+      $cnt = (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'];
+      if ($cnt === 0) {
+        $i = 0;
+        foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
+      }
+    } catch (Throwable $e2) { /* csendben tovább */ }
+  }
 }
 
 /* PDO felépítése megadott adatokból (setup-hoz, kivétellel) */
