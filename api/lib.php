@@ -462,6 +462,12 @@ function save_data_url($dataUrl) {
   $data = base64_decode($m[2], true);
   if ($data === false || strlen($data) === 0) return ['error' => 'A kép feldolgozása sikertelen.'];
   if (strlen($data) > 4 * 1024 * 1024) return ['error' => 'A kép túl nagy (max. 4 MB).'];
+  // a TÉNYLEGES tartalom is legyen valódi, engedélyezett kép (nem csak a deklarált mime)
+  $allowedTypes = [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_WEBP, IMAGETYPE_GIF];
+  $info = @getimagesizefromstring($data);
+  if ($info === false || !in_array($info[2], $allowedTypes, true)) {
+    return ['error' => 'A fájl nem érvényes kép.'];
+  }
   $dir = uploads_dir();
   if (!is_dir($dir)) @mkdir($dir, 0755, true);
   $name = bin2hex(random_bytes(10)) . '.' . $mimes[$mime];

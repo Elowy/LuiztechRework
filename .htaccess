@@ -14,10 +14,11 @@ DirectoryIndex index.html index.php
   Require all denied
 </FilesMatch>
 
-# Feltöltött képeknél ne fusson semmilyen szkript (biztonság)
+# Biztonsági fejlécek (minden válaszra)
 <IfModule mod_headers.c>
-  <FilesMatch "\.(png|jpe?g|webp|gif)$">
-    Header set X-Content-Type-Options "nosniff"
-  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 # (A PHP futtatás tiltása az uploads mappában az uploads/.htaccess-ben van.)

@@ -51,6 +51,7 @@ if ($method === 'POST' && $route === '/auth/login') {
   if (!$row || ($b['user'] ?? '') !== $row['username'] || !password_verify((string)($b['pass'] ?? ''), $row['hash'])) {
     json_error('Hibás felhasználónév vagy jelszó.', 401);
   }
+  session_regenerate_id(true); // session fixation védelem
   $_SESSION['is_admin'] = true;
   $_SESSION['admin_user'] = $row['username'];
   json_out(['ok' => true, 'user' => $row['username']]);
@@ -206,6 +207,7 @@ if ($method === 'POST' && $route === '/account/register') {
   $id = 'u' . uniqid();
   $stmt = $pdo->prepare("INSERT INTO users (id,name,email,hash,created_at) VALUES (?,?,?,?,?)");
   $stmt->execute([$id, mb_substr($name, 0, 120), mb_strtolower(mb_substr($email, 0, 190)), password_hash($pass, PASSWORD_DEFAULT), date('Y-m-d H:i:s')]);
+  session_regenerate_id(true); // session fixation védelem
   $_SESSION['uid'] = $id;
   json_out(['ok' => true, 'user' => ['id' => $id, 'name' => $name, 'email' => mb_strtolower($email)]], 201);
 }
@@ -215,6 +217,7 @@ if ($method === 'POST' && $route === '/account/login') {
   $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?"); $stmt->execute([$email]);
   $u = $stmt->fetch();
   if (!$u || !password_verify((string)($b['pass'] ?? ''), $u['hash'])) json_error('Hibás e-mail cím vagy jelszó.', 401);
+  session_regenerate_id(true); // session fixation védelem
   $_SESSION['uid'] = $u['id'];
   json_out(['ok' => true, 'user' => ['id' => $u['id'], 'name' => $u['name'], 'email' => $u['email']]]);
 }
