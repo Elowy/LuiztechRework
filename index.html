@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luiz-Tech — Web- és asztali fejlesztés, IT üzemeltetés</title>
+  <meta name="description" content="Luiz-Tech — professzionális informatikai szolgáltatások: webfejlesztés, webshop, asztali alkalmazások, kiberbiztonság, hálózati támogatás és üzemeltetés. Ingyenes árajánlat 12 órán belül." />
+  <meta name="theme-color" content="#0a0e17" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Luiz-Tech — Web- és asztali fejlesztés, IT üzemeltetés" />
+  <meta property="og:description" content="Professzionális IT szolgáltatások: webfejlesztés, webshop, kiberbiztonság, hálózati támogatás. Ingyenes árajánlat 12 órán belül." />
+  <meta property="og:locale" content="hu_HU" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <!-- Animated background canvas (particle network) -->
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- Scroll progress bar -->
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header" id="site-header">
+    <div class="container nav-wrap">
+      <a href="#hero" class="brand" aria-label="Luiz-Tech főoldal">
+        <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
+      </a>
+
+      <nav class="main-nav" id="main-nav" aria-label="Fő navigáció">
+        <a href="#services">Szolgáltatások</a>
+        <a href="#products">Megoldások</a>
+        <a href="#work">Referenciák</a>
+        <a href="#about">Rólunk</a>
+        <a href="#contact" class="nav-cta">Árajánlat</a>
+      </nav>
+
+      <button class="nav-toggle" id="nav-toggle" aria-label="Menü megnyitása" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow reveal" data-reveal>
+            <span class="pulse-dot"></span> Elérhető új projektekre
+          </span>
+          <h1 class="hero-title reveal" data-reveal>
+            Kódoljuk a<br /><span class="gradient-text">vállalkozásod</span> jövőjét.
+          </h1>
+          <p class="hero-lead reveal" data-reveal>
+            Web- és asztali alkalmazások fejlesztése, webshopok, kiberbiztonság és
+            teljes körű IT-üzemeltetés. Egy csapat, amelyre építhetsz —
+            <strong>ingyenes árajánlat 12 órán belül.</strong>
+          </p>
+          <div class="hero-actions reveal" data-reveal>
+            <a href="#contact" class="btn btn-primary">Kérek árajánlatot</a>
+            <a href="#work" class="btn btn-ghost">Referenciák megtekintése</a>
+          </div>
+
+          <div class="hero-stats reveal" data-reveal>
+            <div class="stat">
+              <span class="stat-num" data-count="100" data-suffix="+">0</span>
+              <span class="stat-label">Elégedett ügyfél</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num" data-count="12" data-suffix="h">0</span>
+              <span class="stat-label">Árajánlat ideje</span>
+            </div>
+            <div class="stat">
+              <span class="stat-num" data-count="8" data-suffix="h">0</span>
+              <span class="stat-label">Leggyorsabb átfutás</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Animated terminal -->
+        <div class="hero-terminal reveal" data-reveal>
+          <div class="terminal" aria-hidden="true">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title">luiz-tech ~ deploy.sh</span>
+            </div>
+            <pre class="terminal-body"><code id="terminal-code"></code><span class="caret" id="terminal-caret">▋</span></pre>
+          </div>
+          <div class="floating-badge badge-react">{ } React</div>
+          <div class="floating-badge badge-node">⬢ Node.js</div>
+          <div class="floating-badge badge-secure">🔒 Secure</div>
+        </div>
+      </div>
+
+      <div class="scroll-hint" aria-hidden="true">
+        <span></span> görgess
+      </div>
+    </section>
+
+    <!-- ===================== MARQUEE ===================== -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>JavaScript</span><span>•</span><span>React</span><span>•</span><span>Node.js</span><span>•</span>
+        <span>PHP</span><span>•</span><span>WordPress</span><span>•</span><span>Python</span><span>•</span>
+        <span>Webshop</span><span>•</span><span>Kiberbiztonság</span><span>•</span><span>Hálózat</span><span>•</span>
+        <span>SEO</span><span>•</span><span>UI/UX</span><span>•</span><span>Adatmentés</span><span>•</span>
+        <span>JavaScript</span><span>•</span><span>React</span><span>•</span><span>Node.js</span><span>•</span>
+        <span>PHP</span><span>•</span><span>WordPress</span><span>•</span><span>Python</span><span>•</span>
+        <span>Webshop</span><span>•</span><span>Kiberbiztonság</span><span>•</span><span>Hálózat</span><span>•</span>
+        <span>SEO</span><span>•</span><span>UI/UX</span><span>•</span><span>Adatmentés</span><span>•</span>
+      </div>
+    </div>
+
+    <!-- ===================== SERVICES ===================== -->
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// szolgáltatások</span>
+          <h2 class="section-title">Öt terület, egy partner</h2>
+          <p class="section-sub">
+            Kínálatunkat öt részre osztottuk, hogy bármilyen igényt és költségvetést
+            teljes körűen lefedjünk — a koncepciótól az üzemeltetésig.
+          </p>
+        </div>
+
+        <div class="services-grid">
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">&lt;/&gt;</div>
+            <h3>Webfejlesztés</h3>
+            <p>Modern, gyors és felhasználóbarát weboldalak, landing oldalak és egyedi webalkalmazások — reszponzív kivitelben.</p>
+            <ul class="service-list">
+              <li>Egyedi weboldalak &amp; WordPress</li>
+              <li>SEO-barát felépítés</li>
+              <li>Reszponzív, mobilbarát design</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">🛒</div>
+            <h3>Webshop &amp; e-commerce</h3>
+            <p>Egyedi webáruházak fejlesztése a koncepciótól az élesítésig, fizetési integrációkkal és könnyű kezelhetőséggel.</p>
+            <ul class="service-list">
+              <li>Egyedi webshop megoldások</li>
+              <li>Fizetési &amp; szállítási integráció</li>
+              <li>Termékkatalógus &amp; készlet</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">🖥️</div>
+            <h3>Asztali alkalmazások</h3>
+            <p>Asztali szoftverek fejlesztése, telepítése és karbantartása, valamint adaptálása mobil és webes környezetre.</p>
+            <ul class="service-list">
+              <li>Egyedi asztali szoftverek</li>
+              <li>Telepítés &amp; karbantartás</li>
+              <li>Mobil &amp; web adaptáció</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">🛡️</div>
+            <h3>Kiberbiztonság</h3>
+            <p>Vírus- és malware védelem, biztonsági auditok és felhasználói képzés, hogy adataid mindig biztonságban legyenek.</p>
+            <ul class="service-list">
+              <li>Vírus- &amp; malware eltávolítás</li>
+              <li>Rendszeres biztonsági szkennelés</li>
+              <li>Biztonsági felhasználói képzés</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">🌐</div>
+            <h3>Hálózat &amp; üzemeltetés</h3>
+            <p>Hálózatépítés és -támogatás, szerverek és munkaállomások zökkenőmentes, hatékony és biztonságos működtetése.</p>
+            <ul class="service-list">
+              <li>Hálózatépítés &amp; optimalizálás</li>
+              <li>Wi-Fi &amp; csatlakozási támogatás</li>
+              <li>Folyamatos üzemeltetés</li>
+            </ul>
+          </article>
+
+          <article class="service-card reveal" data-reveal>
+            <div class="service-icon">💡</div>
+            <h3>Tanácsadás &amp; SEO</h3>
+            <p>Technológiai tanácsadás, biztonsági kérdések, keresőoptimalizálás és egyedi fejlesztések — szakértő háttérrel.</p>
+            <ul class="service-list">
+              <li>Technológiai tanácsadás</li>
+              <li>Keresőoptimalizálás (SEO)</li>
+              <li>Egyedi fejlesztések</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRODUCTS / IT SUPPORT ===================== -->
+    <section class="section section-alt" id="products">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// IT megoldások</span>
+          <h2 class="section-title">IT szolgáltatások, amelyben megbízhat</h2>
+          <p class="section-sub">
+            Tapasztalt csapatunk magas színvonalú támogatást nyújt a
+            rendszerkarbantartástól a biztonsági megoldásokig — a vállalkozásod
+            zavartalan működéséért.
+          </p>
+        </div>
+
+        <div class="products-grid">
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">01</span>
+            <h3>Vírus- és malware védelem</h3>
+            <p>Kártevők és kémprogramok eltávolítása, rendszeres biztonsági ellenőrzés szkenneléssel.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">02</span>
+            <h3>Hardver karbantartás és javítás</h3>
+            <p>Hogy a számítógépek és perifériák megbízhatóan, hosszú távon működjenek.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">03</span>
+            <h3>Hálózati támogatás</h3>
+            <p>Munkaállomások, szerverek és eszközök zökkenőmentes, biztonságos működése a hálózaton.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">04</span>
+            <h3>Adatmentés és helyreállítás</h3>
+            <p>Rendszeres, megbízható biztonsági mentés — adatvesztés esetén gyors visszaállítás.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">05</span>
+            <h3>Felhasználói képzés</h3>
+            <p>Útmutatók, oktatóanyagok és folyamatos támogatás a biztonságos, hatékony eszközhasználatért.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">06</span>
+            <h3>Mobil eszközök támogatása</h3>
+            <p>Telefonok és tabletek beállítása, kezelése és integrálása a céges rendszerbe.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">07</span>
+            <h3>Asztali szoftverek</h3>
+            <p>Asztali programok telepítése, frissítése és karbantartása a folyamatos működésért.</p>
+          </div>
+          <div class="product-item reveal" data-reveal>
+            <span class="product-index">08</span>
+            <h3>Szoftver- &amp; hardverhiba javítás</h3>
+            <p>100+ ügyfél tapasztalatával gyors és megbízható hibaelhárítás bármilyen problémára.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PROCESS ===================== -->
+    <section class="section" id="process">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// folyamat</span>
+          <h2 class="section-title">Hogyan dolgozunk</h2>
+          <p class="section-sub">Átlátható, gyors és kiszámítható — minden lépésnél tudod, hol tartunk.</p>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-step reveal" data-reveal>
+            <div class="timeline-marker">01</div>
+            <h3>Egyeztetés</h3>
+            <p>Megismerjük az igényeidet, a céljaidat és a meglévő rendszereidet.</p>
+          </div>
+          <div class="timeline-step reveal" data-reveal>
+            <div class="timeline-marker">02</div>
+            <h3>Árajánlat 12 órán belül</h3>
+            <p>Részletes, átlátható ajánlatot küldünk — kötelezettség nélkül.</p>
+          </div>
+          <div class="timeline-step reveal" data-reveal>
+            <div class="timeline-marker">03</div>
+            <h3>Fejlesztés &amp; megvalósítás</h3>
+            <p>Folyamatos visszajelzés mellett építjük fel a megoldásodat.</p>
+          </div>
+          <div class="timeline-step reveal" data-reveal>
+            <div class="timeline-marker">04</div>
+            <h3>Átadás &amp; üzemeltetés</h3>
+            <p>Élesítés, betanítás és hosszú távú támogatás, ha kell.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== WORK / REFERENCES ===================== -->
+    <section class="section section-alt" id="work">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// referenciák</span>
+          <h2 class="section-title">Projektek, amikre büszkék vagyunk</h2>
+          <p class="section-sub">Néhány válogatott munka az elmúlt időszakból — gyors átfutással, elégedett ügyfelekkel.</p>
+        </div>
+
+        <div class="work-grid">
+          <article class="work-card reveal" data-reveal>
+            <div class="work-tag">Weboldal</div>
+            <h3>Műanyagnyílászárók</h3>
+            <p>Új, modern weboldal a teljes termékkínálat bemutatásához — villámgyors átfutással.</p>
+            <div class="work-meta">
+              <span>2024</span>
+              <span class="work-badge">⚡ 24 óra alatt kész</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal" data-reveal>
+            <div class="work-tag">Weboldal</div>
+            <h3>Napháló</h3>
+            <p>Egyedi weboldal a csapat számára, letisztult megjelenéssel és gyors betöltéssel.</p>
+            <div class="work-meta">
+              <span>2024. május</span>
+              <span class="work-badge">⚡ 8 óra alatt kész</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal" data-reveal>
+            <div class="work-tag">Webshop</div>
+            <h3>Net-Trade Hungary</h3>
+            <p>Egyedi webshop fejlesztése a koncepciótól az élesítésig, teljesen testreszabva.</p>
+            <div class="work-meta">
+              <span>Indulás: 2023.04.17.</span>
+              <span class="work-badge">🛒 E-commerce</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal" data-reveal>
+            <div class="work-tag">Platform</div>
+            <h3>Home and Confidence</h3>
+            <p>Komplex ingatlanhirdetési platform egy ingatlaniroda számára, egyedi funkciókkal.</p>
+            <div class="work-meta">
+              <span>2023</span>
+              <span class="work-badge">🏠 Ingatlan platform</span>
+            </div>
+          </article>
+
+          <article class="work-card reveal" data-reveal>
+            <div class="work-tag">Weboldal</div>
+            <h3>Vendégház bemutatkozó oldal</h3>
+            <p>Hangulatos, foglalásra ösztönző weboldal egy vendégház számára.</p>
+            <div class="work-meta">
+              <span>2023. november</span>
+              <span class="work-badge">🏡 Turizmus</span>
+            </div>
+          </article>
+
+          <article class="work-card work-cta reveal" data-reveal>
+            <h3>A te projekted lehet a következő</h3>
+            <p>Beszéljük meg az ötletedet — pár órán belül kapsz tőlünk visszajelzést.</p>
+            <a href="#contact" class="btn btn-primary btn-sm">Beszéljünk róla</a>
+          </article>
+        </div>
+
+        <!-- Testimonial -->
+        <figure class="testimonial reveal" data-reveal>
+          <blockquote>
+            „A kivételes szolgáltatás minőségét emelném ki. Az új weboldal modern,
+            felhasználóbarát és gyönyörűen megtervezett lett — tökéletesen tükrözi
+            a vállalkozásunk stílusát és kínálatát.”
+          </blockquote>
+          <figcaption>— Elégedett ügyfél, weboldal projekt</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===================== ABOUT / STATS ===================== -->
+    <section class="section" id="about">
+      <div class="container about-grid">
+        <div class="about-copy reveal" data-reveal>
+          <span class="section-tag">// rólunk</span>
+          <h2 class="section-title">Megbízható IT partner, emberi hangon</h2>
+          <p>
+            A <strong>Luiz-Tech</strong> professzionális informatikai szolgáltatásokkal
+            biztosítja a vállalkozásod zavartalan működését. Tapasztalt csapatunk a
+            rendszerkarbantartástól a hálózatépítésen át a biztonsági megoldásokig magas
+            színvonalú támogatást nyújt.
+          </p>
+          <p>
+            Hiszünk a gyorsaságban és az átláthatóságban: bármilyen platformról kényelmesen
+            elérsz minket, és <strong>12 órán belül ingyenes árajánlatot</strong> adunk. A
+            munkáinkat a precizitás, a modern technológia és a hosszú távú együttműködés
+            jellemzi.
+          </p>
+
+          <div class="about-points">
+            <div class="about-point"><span>✓</span> 100+ elégedett ügyfél</div>
+            <div class="about-point"><span>✓</span> Gyors, kiszámítható átfutás</div>
+            <div class="about-point"><span>✓</span> Modern technológiák</div>
+            <div class="about-point"><span>✓</span> Hosszú távú támogatás</div>
+          </div>
+        </div>
+
+        <div class="about-code reveal" data-reveal>
+          <div class="code-window" aria-hidden="true">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title">about.ts</span>
+            </div>
+            <pre class="code-block"><code><span class="c-key">const</span> <span class="c-var">luizTech</span> = {
+  <span class="c-prop">misszió</span>: <span class="c-str">"Zavartalan működés"</span>,
+  <span class="c-prop">ügyfelek</span>: <span class="c-num">100</span>,
+  <span class="c-prop">árajánlat</span>: <span class="c-str">"12 órán belül"</span>,
+  <span class="c-prop">szolgáltatások</span>: [
+    <span class="c-str">"web"</span>, <span class="c-str">"webshop"</span>, <span class="c-str">"desktop"</span>,
+    <span class="c-str">"security"</span>, <span class="c-str">"hálózat"</span>
+  ],
+  <span class="c-fn">indít</span>() {
+    <span class="c-key">return</span> <span class="c-str">"Beszéljünk a projektedről 🚀"</span>;
+  }
+};</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CTA / CONTACT ===================== -->
+    <section class="section section-alt" id="contact">
+      <div class="container contact-grid">
+        <div class="contact-copy reveal" data-reveal>
+          <span class="section-tag">// kapcsolat</span>
+          <h2 class="section-title">Kérj ingyenes árajánlatot</h2>
+          <p class="section-sub">
+            Írd le pár mondatban, miben segíthetünk. <strong>12 órán belül</strong>
+            válaszolunk, kötelezettség nélkül.
+          </p>
+
+          <ul class="contact-list">
+            <li>
+              <span class="contact-ico">✉️</span>
+              <div>
+                <span class="contact-label">E-mail</span>
+                <a href="mailto:info@luiz-tech.hu">info@luiz-tech.hu</a>
+              </div>
+            </li>
+            <li>
+              <span class="contact-ico">🌐</span>
+              <div>
+                <span class="contact-label">Weboldal</span>
+                <a href="https://luiz-tech.hu" target="_blank" rel="noopener">luiz-tech.hu</a>
+              </div>
+            </li>
+            <li>
+              <span class="contact-ico">⏱️</span>
+              <div>
+                <span class="contact-label">Válaszidő</span>
+                <span>Ingyenes árajánlat 12 órán belül</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <form class="contact-form reveal" data-reveal id="contact-form" novalidate>
+          <div class="field">
+            <label for="name">Neved</label>
+            <input type="text" id="name" name="name" placeholder="Pl. Kovács Anna" required />
+          </div>
+          <div class="field">
+            <label for="email">E-mail címed</label>
+            <input type="email" id="email" name="email" placeholder="pl. anna@example.hu" required />
+          </div>
+          <div class="field">
+            <label for="topic">Miben segíthetünk?</label>
+            <select id="topic" name="topic">
+              <option value="web">Weboldal / webalkalmazás</option>
+              <option value="webshop">Webshop</option>
+              <option value="desktop">Asztali alkalmazás</option>
+              <option value="security">Kiberbiztonság</option>
+              <option value="network">Hálózat &amp; üzemeltetés</option>
+              <option value="other">Egyéb / tanácsadás</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="message">Üzenet</label>
+            <textarea id="message" name="message" rows="4" placeholder="Mesélj a projektedről..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Árajánlat kérése</button>
+          <p class="form-note" id="form-note" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a href="#hero" class="brand">
+          <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
+        </a>
+        <p>Web- és asztali szolgáltatás fejlesztés és üzemeltetés. Megbízható IT partner a vállalkozásod jövőjéhez.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Szolgáltatások</h4>
+        <a href="#services">Webfejlesztés</a>
+        <a href="#services">Webshop</a>
+        <a href="#services">Asztali alkalmazások</a>
+        <a href="#services">Kiberbiztonság</a>
+      </div>
+      <div class="footer-col">
+        <h4>Cég</h4>
+        <a href="#work">Referenciák</a>
+        <a href="#about">Rólunk</a>
+        <a href="#process">Folyamat</a>
+        <a href="#contact">Kapcsolat</a>
+      </div>
+      <div class="footer-col">
+        <h4>Kapcsolat</h4>
+        <a href="mailto:info@luiz-tech.hu">info@luiz-tech.hu</a>
+        <a href="https://luiz-tech.hu" target="_blank" rel="noopener">luiz-tech.hu</a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year"></span> Luiz-Tech. Minden jog fenntartva.</span>
+      <span class="footer-built">Készült ❤️-vel és <code>&lt;/&gt;</code>-vel</span>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
