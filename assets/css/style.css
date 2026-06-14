@@ -37,6 +37,9 @@
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
+/* a [hidden] attribútum mindig nyerjen a layout display szabályok felett
+   (különben a display:grid/flex-es overlay-ek nem rejtődnének el) */
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
