@@ -28,6 +28,7 @@ const DEFAULT_CONFIG = [
   'heroTitle' => 'Technológia, ami magáért beszél',
   'heroText' => 'Válogass kézzel összeállított kínálatunkból — gyors kiszállítás, megbízható minőség.',
   'freeShippingOver' => 25000,
+  'notifyEmail' => 'info@luiz-tech.hu',
 ];
 
 const DEFAULT_PRODUCTS = [
@@ -47,7 +48,7 @@ const DEFAULT_REFERENCES = [
   ['id'=>'r5','tag'=>'Weboldal','title'=>'Vendégház bemutatkozó oldal','description'=>'Hangulatos, foglalásra ösztönző weboldal egy vendégház számára.','details'=>'Hangulatos bemutatkozó weboldal egy vendégház számára, amely a foglalásra ösztönöz: szép képi világ, áttekinthető információk és gyors elérhetőség.','info'=>'2023. november · 🏡 Turizmus','url'=>''],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail'];
 
 /* ---------- Útvonalak ---------- */
 function config_path() { return __DIR__ . '/../config.php'; }
@@ -287,6 +288,7 @@ function save_config(PDO $pdo, array $in) {
       if ($k === 'freeShippingOver') $v = max(0, (int)$v);
       if ($k === 'theme') $v = ($v === 'light') ? 'light' : 'dark';
       if ($k === 'currency') $v = mb_substr((string)$v, 0, 6);
+      if ($k === 'notifyEmail' && !filter_var($v, FILTER_VALIDATE_EMAIL)) continue;
       $up->execute([$k, (string)$v]);
     }
   }
@@ -469,6 +471,13 @@ function create_order(PDO $pdo, array $payload, $user) {
     $pdo->rollBack();
     return ['error' => 'A rendelés mentése sikertelen.'];
   }
+  notify_admin($pdo, 'Új rendelés – ' . $oid,
+    "Új rendelés érkezett a webshopban.\n\nAzonosító: $oid\nÖsszeg: $total\n" .
+    "Vevő: {$customer['name']} <{$customer['email']}>\n" .
+    ($customer['phone'] ? "Telefon: {$customer['phone']}\n" : '') .
+    ($customer['address'] ? "Cím: {$customer['address']}\n" : '') .
+    "\nTételek:\n" . implode("\n", array_map(function ($it) { return "- {$it['name']} x{$it['qty']}"; }, $items)) . "\n");
+
   return ['order' => ['id' => $oid, 'total' => $total, 'status' => 'Új']];
 }
 
@@ -524,6 +533,25 @@ function insert_faq(PDO $pdo, array $f, $sort = 0) {
 function map_faq($r) { return ['id'=>$r['id'], 'question'=>$r['question'], 'answer'=>$r['answer']]; }
 function get_faq(PDO $pdo) { return array_map('map_faq', $pdo->query("SELECT * FROM faq ORDER BY sort ASC")->fetchAll()); }
 
+/* ---------- E-mail értesítés (PHP mail) ---------- */
+function notify_admin(PDO $pdo, $subject, $bodyText) {
+  $cfg = get_config($pdo);
+  $to = filter_var($cfg['notifyEmail'] ?? '', FILTER_VALIDATE_EMAIL);
+  if ($to) send_mail($to, $subject, $bodyText);
+}
+function send_mail($to, $subject, $bodyText) {
+  if (!is_string($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+  if (!function_exists('mail')) return false;
+  $domain = substr(strrchr($to, '@'), 1) ?: 'localhost';
+  $from = 'no-reply@' . $domain;
+  $headers = "From: Luiz-Tech <{$from}>\r\n";
+  $headers .= "MIME-Version: 1.0\r\n";
+  $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+  $headers .= "Content-Transfer-Encoding: 8bit\r\n";
+  $subjEnc = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+  return @mail($to, $subjEnc, $bodyText, $headers);
+}
+
 /* ---------- Messages (leadek a kapcsolati űrlapról) ---------- */
 function create_message(PDO $pdo, array $b) {
   $name = mb_substr(trim((string)($b['name'] ?? '')), 0, 120);
@@ -534,6 +562,9 @@ function create_message(PDO $pdo, array $b) {
   $id = 'MSG-' . strtoupper(substr(uniqid(), -8));
   $stmt = $pdo->prepare("INSERT INTO messages (id,name,email,topic,message,status,created_at) VALUES (?,?,?,?,?,?,?)");
   $stmt->execute([$id, $name, $email, mb_substr((string)($b['topic'] ?? ''), 0, 60), $msg, 'Új', date('Y-m-d H:i:s')]);
+  notify_admin($pdo, 'Új üzenet a weboldalról – ' . $name,
+    "Új megkeresés érkezett a kapcsolati űrlapról.\n\n" .
+    "Név: $name\nE-mail: $email\nTéma: " . (string)($b['topic'] ?? '-') . "\n\nÜzenet:\n$msg\n");
   return ['id' => $id];
 }
 function map_message($r) {
@@ -561,6 +592,8 @@ function create_ticket(PDO $pdo, $userId, $subject, $body) {
       ->execute([$id, $userId, $subject, 'Nyitott', $now, $now]);
   $pdo->prepare("INSERT INTO ticket_messages (ticket_id,author,body,created_at) VALUES (?,?,?,?)")
       ->execute([$id, 'customer', $body, $now]);
+  notify_admin($pdo, 'Új support ticket – ' . $subject,
+    "Új ticket érkezett.\n\nAzonosító: $id\nTárgy: $subject\n\nÜzenet:\n$body\n");
   return ['id' => $id];
 }
 function add_ticket_message(PDO $pdo, $tid, $author, $body, $newStatus = null) {
@@ -572,6 +605,21 @@ function add_ticket_message(PDO $pdo, $tid, $author, $body, $newStatus = null) {
   $status = $newStatus && in_array($newStatus, TICKET_STATUSES, true) ? $newStatus
             : ($author === 'admin' ? 'Válaszra vár' : 'Nyitott');
   $pdo->prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?")->execute([$status, $now, $tid]);
+  // értesítés a másik félnek
+  $tr = $pdo->prepare("SELECT t.subject, u.email FROM tickets t LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ?");
+  $tr->execute([$tid]);
+  $info = $tr->fetch();
+  if ($info) {
+    if ($author === 'admin') {
+      // ügyfél értesítése
+      send_mail($info['email'], 'Válasz a support ticketedre – ' . $info['subject'],
+        "Válasz érkezett a ticketedre ($tid).\n\n$body\n\nVálaszolni a fiókodban tudsz a weboldalon.\n");
+    } else {
+      // admin értesítése
+      notify_admin($pdo, 'Ügyfél-válasz a ticketben – ' . $info['subject'],
+        "Az ügyfél válaszolt a(z) $tid ticketben.\n\n$body\n");
+    }
+  }
   return ['ok' => true];
 }
 

@@ -104,6 +104,7 @@
     setVal('#f-name', cfg.name); setVal('#f-tagline', cfg.tagline);
     setVal('#f-heroTitle', cfg.heroTitle); setVal('#f-heroText', cfg.heroText);
     setVal('#f-currency', cfg.currency); setVal('#f-freeShippingOver', cfg.freeShippingOver);
+    setVal('#f-notifyEmail', cfg.notifyEmail);
     setVal('#f-accent', cfg.accent); setVal('#f-accent-hex', cfg.accent);
     setVal('#f-accent2', cfg.accent2); setVal('#f-accent2-hex', cfg.accent2);
     setTheme(cfg.theme);
@@ -298,6 +299,7 @@
     cfg.heroText = $('#f-heroText').value;
     cfg.currency = $('#f-currency').value || 'Ft';
     cfg.freeShippingOver = parseInt($('#f-freeShippingOver').value, 10) || 0;
+    cfg.notifyEmail = $('#f-notifyEmail').value.trim();
     var btn = $('#save-btn'); btn.disabled = true;
     S.saveConfig(cfg).then(function (saved) {
       if (saved) { cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), saved); if (!Array.isArray(cfg.products)) cfg.products = []; }

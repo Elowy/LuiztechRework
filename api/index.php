@@ -27,7 +27,9 @@ $params = [];
    PUBLIKUS
    ============================================================ */
 if ($method === 'GET' && $route === '/shop') {
-  json_out(get_config_with_products($pdo));
+  $c = get_config_with_products($pdo);
+  unset($c['notifyEmail']); // privát: ne szivárogjon ki a publikus API-n
+  json_out($c);
 }
 if ($method === 'GET' && $route === '/news') {
   json_out(get_news($pdo));
