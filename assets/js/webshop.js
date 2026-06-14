@@ -20,6 +20,9 @@
     });
   }
   function setText(sel, val) { var el = $(sel); if (el != null && val != null) el.textContent = val; }
+  function statusClass(s) {
+    return { 'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled' }[s] || 'st-new';
+  }
 
   /* ---------- Branding ---------- */
   function applyBranding() {
@@ -124,6 +127,7 @@
     if (!ids.length) {
       wrap.innerHTML = '<p class="cart-empty">A kosarad még üres.<br>Böngészd a termékeket! 🛍️</p>';
       $('#cart-checkout').disabled = true;
+      if ($('#cart-drawer').classList.contains('checkout-mode')) exitCheckout();
       return;
     }
     $('#cart-checkout').disabled = false;
@@ -163,26 +167,69 @@
     $('#cart-drawer').classList.remove('open');
     $('#cart-drawer').setAttribute('aria-hidden', 'true');
     $('#cart-overlay').hidden = true;
+    exitCheckout();
   }
 
-  /* ---------- Checkout ---------- */
-  function checkout() {
+  /* ---------- Checkout (2 steps) ---------- */
+  function enterCheckout() {
+    if (!Object.keys(cart).length) return;
+    var drawer = $('#cart-drawer');
+    drawer.classList.add('checkout-mode');
+    $('#cart-checkout').hidden = true;
+    $('#checkout-submit').hidden = false;
+    $('#checkout-back').hidden = false;
+    $('#cart-note').textContent = '';
+    if (currentUser) {
+      if (!$('#co-name').value) $('#co-name').value = currentUser.name || '';
+      if (!$('#co-email').value) $('#co-email').value = currentUser.email || '';
+    }
+    setTimeout(function () { $('#co-name').focus(); }, 30);
+  }
+  function exitCheckout() {
+    var drawer = $('#cart-drawer');
+    drawer.classList.remove('checkout-mode');
+    $('#cart-checkout').hidden = false;
+    $('#checkout-submit').hidden = true;
+    $('#checkout-back').hidden = true;
+    $('#cart-note').textContent = '';
+  }
+  function submitOrder() {
     var note = $('#cart-note');
     var ids = Object.keys(cart);
     if (!ids.length) return;
-    var items = ids.map(function (id) { return { id: id, qty: cart[id] }; });
-    $('#cart-checkout').disabled = true;
-    note.textContent = 'Rendelés feldolgozása...';
-    note.className = 'cart-note';
-    S.createOrder({ items: items }).then(function (resp) {
+    var name = $('#co-name').value.trim();
+    var email = $('#co-email').value.trim();
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      note.textContent = 'Add meg a neved és egy érvényes e-mail címet.';
+      note.className = 'cart-note err';
+      return;
+    }
+    var payload = {
+      items: ids.map(function (id) { return { id: id, qty: cart[id] }; }),
+      customer: {
+        name: name, email: email,
+        phone: $('#co-phone').value.trim(),
+        address: $('#co-address').value.trim(),
+        note: $('#co-note').value.trim()
+      }
+    };
+    var btn = $('#checkout-submit'); btn.disabled = true;
+    note.textContent = 'Rendelés feldolgozása...'; note.className = 'cart-note';
+    S.createOrder(payload).then(function (resp) {
+      btn.disabled = false;
+      if (resp && resp.error) { note.textContent = resp.error; note.className = 'cart-note err'; return; }
       note.textContent = 'Köszönjük a rendelést! Azonosító: ' + (resp.id || '—') +
-        (resp.local ? ' (helyi demó)' : '') + '. Összeg: ' + S.formatPrice(S.cartTotal(cart, cfg), cfg);
+        (resp.local ? ' (helyi demó)' : '') + '. Hamarosan felvesszük veled a kapcsolatot.';
       note.className = 'cart-note ok';
-      cart = {}; S.saveCart(cart); updateCartUI();
+      cart = {}; S.saveCart(cart);
+      $('#checkout-form').reset();
+      exitCheckout();
+      updateCartUI();
+      if (currentUser) loadMyOrders();
     }).catch(function () {
+      btn.disabled = false;
       note.textContent = 'Hiba történt a rendelés során. Próbáld újra.';
       note.className = 'cart-note err';
-      $('#cart-checkout').disabled = false;
     });
   }
 
@@ -275,7 +322,7 @@
         d.className = 'account-order';
         d.innerHTML = '<div class="account-order-head"><span>' + esc(o.id) + '</span><strong>' + S.formatPrice(o.total, cfg) + '</strong></div>' +
           '<div class="account-order-items">' + items + '</div>' +
-          '<div class="account-order-date">' + when + '</div>';
+          '<div class="account-order-date">' + when + ' · <span class="status-badge ' + statusClass(o.status) + '">' + esc(o.status || 'Új') + '</span></div>';
         wrap.appendChild(d);
       });
     });
@@ -308,7 +355,10 @@
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
     var search = $('#shop-search');
     if (search) search.addEventListener('input', function () { query = search.value; renderProducts(); });
-    $('#cart-checkout').addEventListener('click', checkout);
+    $('#cart-checkout').addEventListener('click', enterCheckout);
+    $('#checkout-back').addEventListener('click', exitCheckout);
+    $('#checkout-submit').addEventListener('click', submitOrder);
+    $('#checkout-form').addEventListener('submit', function (e) { e.preventDefault(); submitOrder(); });
 
     S.getShop().then(function (data) {
       cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), data);

@@ -202,6 +202,8 @@ function loginUser(email, pass) {
 }
 
 /* ---------- Orders ---------- */
+const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
+
 function createOrder(payload, user) {
   ensure();
   const byId = {};
@@ -215,22 +217,43 @@ function createOrder(payload, user) {
     })
     .filter(Boolean);
   if (!items.length) return null;
+
+  const c = payload.customer || {};
+  const customer = {
+    name: String((user && user.name) || c.name || '').slice(0, 120),
+    email: String((user && user.email) || c.email || '').slice(0, 160),
+    phone: String(c.phone || '').slice(0, 40),
+    address: String(c.address || '').slice(0, 300),
+    note: String(c.note || '').slice(0, 500)
+  };
+  if (!customer.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
+    return { error: 'Név és érvényes e-mail cím megadása kötelező.' };
+  }
+
   const total = items.reduce((s, it) => s + it.price * it.qty, 0);
   const order = {
     id: 'ORD-' + Date.now().toString(36).toUpperCase(),
     items: items,
     total: total,
     userId: user ? user.id : null,
-    customer: {
-      name: String((user && user.name) || (payload.customer && payload.customer.name) || '').slice(0, 120),
-      email: String((user && user.email) || (payload.customer && payload.customer.email) || '').slice(0, 160)
-    },
+    customer: customer,
+    status: 'Új',
     createdAt: new Date().toISOString()
   };
   db.orders.unshift(order);
   if (db.orders.length > 1000) db.orders.length = 1000;
   persist();
-  return order;
+  return { order: order };
+}
+
+function updateOrderStatus(id, status) {
+  ensure();
+  if (ORDER_STATUSES.indexOf(status) < 0) return { error: 'Érvénytelen státusz.' };
+  const order = db.orders.filter((o) => o.id === id)[0];
+  if (!order) return { error: 'A rendelés nem található.' };
+  order.status = status;
+  persist();
+  return { order: order };
 }
 
 function getOrders() { ensure(); return db.orders; }
@@ -249,8 +272,10 @@ module.exports = {
   loginUser,
   getUserById,
   createOrder,
+  updateOrderStatus,
   getOrders,
   getOrdersByUser,
+  ORDER_STATUSES,
   DEFAULT_CONFIG,
   DEFAULT_PRODUCTS
 };

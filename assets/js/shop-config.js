@@ -138,7 +138,10 @@
       .catch(function (e) { if (e.status) throw e; return Local.setCred(user, pass); });
   }
   function getOrders() {
-    return api('/api/admin/orders').catch(function (e) { if (e.status === 401) throw e; return []; });
+    return api('/api/admin/orders').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], orders: [] }; });
+  }
+  function updateOrderStatus(id, status) {
+    return api('/api/admin/orders/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } });
   }
   function createOrder(payload) {
     return api('/api/orders', { method: 'POST', body: payload })
@@ -210,6 +213,7 @@
     me: me,
     setCredentials: setCredentials,
     getOrders: getOrders,
+    updateOrderStatus: updateOrderStatus,
     createOrder: createOrder,
     registerCustomer: registerCustomer,
     loginCustomer: loginCustomer,

@@ -315,26 +315,63 @@
   /* ============================================================
      ORDERS
      ============================================================ */
+  var ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
+  function statusClass(s) {
+    return { 'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled' }[s] || 'st-new';
+  }
+
   function loadOrders() {
     var wrap = $('#orders-list');
     wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
-    S.getOrders().then(function (orders) {
+    S.getOrders().then(function (data) {
       ordersLoaded = true;
-      if (!orders || !orders.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs beérkezett rendelés.</p>'; return; }
+      var orders = data.orders || [];
+      if (data.statuses && data.statuses.length) ORDER_STATUSES = data.statuses;
+      if (!orders.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs beérkezett rendelés.</p>'; return; }
       wrap.innerHTML = '';
       orders.forEach(function (o) {
         var items = (o.items || []).map(function (it) { return escAttr(it.name) + ' ×' + it.qty; }).join(', ');
         var when = '';
         try { when = new Date(o.createdAt).toLocaleString('hu-HU'); } catch (e) { when = o.createdAt || ''; }
+        var c = o.customer || {};
+        var contact = [c.name, c.email, c.phone].filter(Boolean).map(escAttr).join(' · ');
+        var status = o.status || 'Új';
+        var opts = ORDER_STATUSES.map(function (s) {
+          return '<option value="' + escAttr(s) + '"' + (s === status ? ' selected' : '') + '>' + escAttr(s) + '</option>';
+        }).join('');
+
         var card = document.createElement('div');
         card.className = 'order-card';
         card.innerHTML =
-          '<div class="order-head"><span class="order-id">' + escAttr(o.id) + '</span>' +
-          '<strong class="order-total">' + S.formatPrice(o.total, cfg) + '</strong></div>' +
+          '<div class="order-head">' +
+            '<span class="order-id">' + escAttr(o.id) + '</span>' +
+            '<span class="status-badge ' + statusClass(status) + '" data-badge>' + escAttr(status) + '</span>' +
+            '<strong class="order-total">' + S.formatPrice(o.total, cfg) + '</strong>' +
+          '</div>' +
           '<div class="order-items">' + items + '</div>' +
-          '<div class="order-meta">' + when +
-          (o.customer && (o.customer.name || o.customer.email) ? ' · ' + escAttr(o.customer.name || '') + ' ' + escAttr(o.customer.email || '') : '') +
-          '</div>';
+          (contact ? '<div class="order-contact">👤 ' + contact + '</div>' : '') +
+          (c.address ? '<div class="order-contact">📍 ' + escAttr(c.address) + '</div>' : '') +
+          (c.note ? '<div class="order-contact">📝 ' + escAttr(c.note) + '</div>' : '') +
+          '<div class="order-meta">' + when + '</div>' +
+          '<div class="order-status-row"><label>Státusz:</label>' +
+            '<select class="order-status-select">' + opts + '</select></div>';
+
+        var sel = card.querySelector('.order-status-select');
+        var badge = card.querySelector('[data-badge]');
+        sel.addEventListener('change', function () {
+          var next = sel.value;
+          sel.disabled = true;
+          S.updateOrderStatus(o.id, next).then(function () {
+            badge.textContent = next;
+            badge.className = 'status-badge ' + statusClass(next);
+            sel.disabled = false;
+          }).catch(function (e) {
+            sel.disabled = false;
+            if (e.status === 401) { S.logout(); location.reload(); return; }
+            sel.value = status;
+            alert('Nem sikerült frissíteni a státuszt.');
+          });
+        });
         wrap.appendChild(card);
       });
     }).catch(function (e) {

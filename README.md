@@ -24,14 +24,15 @@ ahol a bolt valós időben testreszabható. A beállítások a böngésző
 `localStorage`-ában tárolódnak (build és backend nélküli prototípus).
 
 - **`webshop.html`** — kirakat: termékek (képpel vagy ikonnal), kategória-szűrő,
-  keresés, kosár (mennyiség, összesítés, rendelés). **Vásárlói fiók:**
-  regisztráció, bejelentkezés és „Rendeléseim" nézet. A bolt nevét, szövegeit,
+  keresés, kosár és **kétlépcsős pénztár** (szállítási adatok: név, e-mail,
+  telefon, cím, megjegyzés). **Vásárlói fiók:** regisztráció, bejelentkezés és
+  „Rendeléseim" nézet a rendelés **státuszával**. A bolt nevét, szövegeit,
   színeit és kínálatát az admin beállításaiból olvassa.
 - **`admin.html`** — belépés után testreszabható:
   - **Általános:** bolt neve, szlogen, kezdőoldal szövegei, pénznem, ingyenes szállítás határa
   - **Megjelenés:** elsődleges/másodlagos szín, kész színsémák, sötét/világos téma, élő előnézet
   - **Termékek:** felvétel / szerkesztés / törlés (**termékkép-feltöltés**, ikon, név, leírás, ár, kategória)
-  - **Rendelések:** a beérkezett rendelések listája
+  - **Rendelések:** a beérkezett rendelések listája (vevőadatok, cím, megjegyzés) **státuszkezeléssel** (Új → Feldolgozás alatt → Teljesítve → Törölve)
   - **Fiók:** admin belépési adatok módosítása
   - **Visszaállítás:** alapértelmezett beállítások visszatöltése
 
@@ -108,7 +109,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `POST /api/admin/upload`     |  ✓ (admin) | termékkép feltöltése (PNG/JPG/WEBP/GIF, max 4 MB) |
 | `POST /api/admin/account`    |  ✓ (admin) | admin belépési adatok módosítása |
 | `POST /api/admin/reset`      |  ✓ (admin) | alapértelmezettre állítás   |
-| `GET /api/admin/orders`      |  ✓ (admin) | beérkezett rendelések       |
+| `GET /api/admin/orders`      |  ✓ (admin) | beérkezett rendelések + státuszok |
+| `PATCH /api/admin/orders/:id`|  ✓ (admin) | rendelés státuszának módosítása |
 
 > A fizetési integráció szándékosan nincs bekötve (a rendelés rögzítése demó).
 > Élesben ide egy fizetési szolgáltató (pl. Stripe/Barion/SimplePay) köthető be.

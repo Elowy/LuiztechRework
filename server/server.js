@@ -98,9 +98,10 @@ app.get('/api/shop', (req, res) => {
 
 app.post('/api/orders', (req, res) => {
   const customer = currentCustomer(req); // attach account if logged in
-  const order = db.createOrder(req.body || {}, customer);
-  if (!order) return res.status(400).json({ error: 'A kosár üres vagy érvénytelen.' });
-  res.status(201).json({ ok: true, id: order.id, total: order.total });
+  const result = db.createOrder(req.body || {}, customer);
+  if (!result) return res.status(400).json({ error: 'A kosár üres vagy érvénytelen.' });
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json({ ok: true, id: result.order.id, total: result.order.total, status: result.order.status });
 });
 
 /* ============================================================
@@ -154,7 +155,13 @@ app.post('/api/admin/account', requireAuth, (req, res) => {
 });
 
 app.get('/api/admin/orders', requireAuth, (req, res) => {
-  res.json(db.getOrders());
+  res.json({ statuses: db.ORDER_STATUSES, orders: db.getOrders() });
+});
+
+app.patch('/api/admin/orders/:id', requireAuth, (req, res) => {
+  const result = db.updateOrderStatus(req.params.id, (req.body || {}).status);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json({ ok: true, order: result.order });
 });
 
 // product image upload (own JSON parser with a larger limit)
