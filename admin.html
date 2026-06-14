@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Webshop testreszabás | Luiz-Tech</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0a0e17" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/admin.css" />
+</head>
+<body class="admin-body">
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- ===================== LOGIN ===================== -->
+  <section class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title">auth — luiz-tech admin</span>
+      </div>
+      <div class="login-body">
+        <a href="index.html" class="brand login-brand">
+          <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
+        </a>
+        <h1 class="login-title">Belépés a testreszabáshoz</h1>
+        <p class="login-sub">Jelentkezz be a webshop beállításainak szerkesztéséhez.</p>
+
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label for="login-user">Felhasználónév</label>
+            <input type="text" id="login-user" autocomplete="username" placeholder="admin" required />
+          </div>
+          <div class="field">
+            <label for="login-pass">Jelszó</label>
+            <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Belépés</button>
+          <p class="login-error" id="login-error" role="alert"></p>
+        </form>
+
+        <p class="login-hint">
+          <span class="login-hint-tag">demó hozzáférés</span>
+          felhasználó: <code>admin</code> · jelszó: <code>luiztech</code>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ADMIN PANEL ===================== -->
+  <div class="admin-shell" id="admin-shell" hidden>
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <a href="index.html" class="brand">
+        <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
+        <span class="brand-sub">Admin</span>
+      </a>
+      <div class="admin-topbar-actions">
+        <span class="save-state" id="save-state"></span>
+        <a href="webshop.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Bolt megtekintése ↗</a>
+        <button class="btn btn-primary btn-sm" id="save-btn">Mentés</button>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Kilépés</button>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <!-- Sidebar -->
+      <nav class="admin-sidebar" aria-label="Admin szekciók">
+        <button class="admin-tab active" data-tab="general">🏪 Általános</button>
+        <button class="admin-tab" data-tab="appearance">🎨 Megjelenés</button>
+        <button class="admin-tab" data-tab="products">📦 Termékek</button>
+        <button class="admin-tab" data-tab="account">🔐 Fiók</button>
+        <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
+      </nav>
+
+      <!-- Content -->
+      <div class="admin-content">
+        <!-- GENERAL -->
+        <section class="admin-panel active" data-panel="general">
+          <h2 class="admin-h">Általános beállítások</h2>
+          <p class="admin-desc">A bolt alapadatai és a kezdőoldal szövegei.</p>
+          <div class="field">
+            <label for="f-name">Bolt neve</label>
+            <input type="text" id="f-name" />
+          </div>
+          <div class="field">
+            <label for="f-tagline">Szlogen</label>
+            <input type="text" id="f-tagline" />
+          </div>
+          <div class="field">
+            <label for="f-heroTitle">Kezdőoldal címsor</label>
+            <input type="text" id="f-heroTitle" />
+          </div>
+          <div class="field">
+            <label for="f-heroText">Kezdőoldal leírás</label>
+            <textarea id="f-heroText" rows="3"></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="f-currency">Pénznem</label>
+              <input type="text" id="f-currency" maxlength="6" />
+            </div>
+            <div class="field">
+              <label for="f-freeShippingOver">Ingyenes szállítás felett</label>
+              <input type="number" id="f-freeShippingOver" min="0" step="1000" />
+            </div>
+          </div>
+        </section>
+
+        <!-- APPEARANCE -->
+        <section class="admin-panel" data-panel="appearance">
+          <h2 class="admin-h">Megjelenés</h2>
+          <p class="admin-desc">Színek és téma. A változás azonnal látszik az előnézetben.</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="f-accent">Elsődleges szín</label>
+              <div class="color-field">
+                <input type="color" id="f-accent" />
+                <input type="text" id="f-accent-hex" class="hex-input" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-accent2">Másodlagos szín</label>
+              <div class="color-field">
+                <input type="color" id="f-accent2" />
+                <input type="text" id="f-accent2-hex" class="hex-input" />
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Téma</label>
+            <div class="theme-toggle">
+              <button type="button" class="theme-opt" data-theme="dark">🌙 Sötét</button>
+              <button type="button" class="theme-opt" data-theme="light">☀️ Világos</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Színsémák</label>
+            <div class="swatches" id="swatches"></div>
+          </div>
+
+          <div class="preview-card" id="preview-card">
+            <span class="preview-label">Élő előnézet</span>
+            <div class="preview-shop">
+              <div class="preview-pill" id="preview-name">Luiz-Tech Shop</div>
+              <div class="preview-product">
+                <div class="preview-emoji">🛒</div>
+                <div>
+                  <div class="preview-title">Webshop indító csomag</div>
+                  <div class="preview-price" id="preview-price">249 000 Ft</div>
+                </div>
+                <button class="preview-add">Kosárba</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="admin-panel" data-panel="products">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Termékek</h2>
+              <p class="admin-desc">Vedd fel, szerkeszd vagy töröld a bolt kínálatát.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-product">+ Új termék</button>
+          </div>
+          <div class="product-admin-list" id="product-admin-list"></div>
+        </section>
+
+        <!-- ACCOUNT -->
+        <section class="admin-panel" data-panel="account">
+          <h2 class="admin-h">Belépési adatok</h2>
+          <p class="admin-desc">Módosítsd az admin felhasználónevet és jelszót. (Csak ezen az eszközön tárolódik.)</p>
+          <div class="field">
+            <label for="f-acc-user">Felhasználónév</label>
+            <input type="text" id="f-acc-user" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="f-acc-pass">Új jelszó</label>
+            <input type="password" id="f-acc-pass" autocomplete="new-password" placeholder="Hagyd üresen, ha nem változtatod" />
+          </div>
+          <button class="btn btn-primary btn-sm" id="save-account">Belépési adatok mentése</button>
+          <p class="admin-inline-note" id="account-note" role="status"></p>
+        </section>
+
+        <!-- DANGER -->
+        <section class="admin-panel" data-panel="danger">
+          <h2 class="admin-h">Visszaállítás</h2>
+          <p class="admin-desc">Visszaállítja a bolt összes beállítását és termékét az alapértelmezettre. Ez nem vonható vissza.</p>
+          <button class="btn btn-ghost btn-sm danger-btn" id="reset-btn">Alapértelmezett beállítások visszaállítása</button>
+          <p class="admin-inline-note" id="reset-note" role="status"></p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PRODUCT EDIT MODAL ===================== -->
+  <div class="modal-overlay" id="product-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="modal-title">termék szerkesztése</span>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="m-id" />
+        <div class="field-row">
+          <div class="field" style="flex:0 0 90px">
+            <label for="m-emoji">Ikon</label>
+            <input type="text" id="m-emoji" maxlength="4" placeholder="🛒" />
+          </div>
+          <div class="field">
+            <label for="m-name">Megnevezés</label>
+            <input type="text" id="m-name" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="m-desc">Leírás</label>
+          <textarea id="m-desc" rows="2"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="m-price">Ár</label>
+            <input type="number" id="m-price" min="0" step="1000" />
+          </div>
+          <div class="field">
+            <label for="m-category">Kategória</label>
+            <input type="text" id="m-category" list="cat-list" />
+            <datalist id="cat-list"></datalist>
+          </div>
+        </div>
+        <p class="modal-err" id="modal-err"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost btn-sm" id="modal-cancel">Mégse</button>
+        <button class="btn btn-primary btn-sm" id="modal-save">Termék mentése</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/shop-config.js"></script>
+  <script src="assets/js/admin.js" defer></script>
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>

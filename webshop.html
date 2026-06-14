@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webshop — Luiz-Tech</title>
+  <meta name="description" content="Luiz-Tech webshop — egyedi e-commerce megoldás, valós időben testreszabható kínálattal." />
+  <meta name="theme-color" content="#0a0e17" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/webshop.css" />
+</head>
+<body class="shop-body">
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header scrolled" id="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand" aria-label="Luiz-Tech főoldal">
+        <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
+        <span class="brand-sub">Shop</span>
+      </a>
+
+      <nav class="main-nav shop-nav" aria-label="Webshop navigáció">
+        <a href="index.html">Főoldal</a>
+        <a href="#products">Termékek</a>
+        <a href="admin.html" class="nav-admin" title="Belépés a testreszabáshoz">⚙︎ Admin</a>
+        <button class="cart-btn" id="cart-btn" aria-label="Kosár megnyitása">
+          🛒 <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shop-main">
+    <!-- ===================== SHOP HERO ===================== -->
+    <section class="shop-hero">
+      <div class="container">
+        <span class="eyebrow"><span class="pulse-dot"></span> <span id="shop-name-eyebrow">Luiz-Tech Shop</span></span>
+        <h1 class="shop-hero-title" id="shop-hero-title">Technológia, ami magáért beszél</h1>
+        <p class="shop-hero-text" id="shop-hero-text">Válogass kézzel összeállított kínálatunkból.</p>
+        <p class="shop-shipping-note" id="shop-shipping-note"></p>
+      </div>
+    </section>
+
+    <!-- ===================== FILTER + PRODUCTS ===================== -->
+    <section class="section" id="products">
+      <div class="container">
+        <div class="shop-toolbar">
+          <div class="shop-filters" id="shop-filters" role="tablist" aria-label="Kategóriák"></div>
+          <div class="shop-search">
+            <input type="search" id="shop-search" placeholder="Keresés a termékek között..." aria-label="Keresés" />
+          </div>
+        </div>
+
+        <div class="products-shop-grid" id="products-grid"></div>
+        <p class="shop-empty" id="shop-empty" hidden>Nincs a keresésnek megfelelő termék.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== CART DRAWER ===================== -->
+  <div class="cart-overlay" id="cart-overlay" hidden></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Kosár" aria-hidden="true">
+    <div class="cart-head">
+      <h2>Kosár</h2>
+      <button class="cart-close" id="cart-close" aria-label="Kosár bezárása">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot">
+      <div class="cart-total-row">
+        <span>Összesen</span>
+        <strong id="cart-total">0 Ft</strong>
+      </div>
+      <button class="btn btn-primary btn-block" id="cart-checkout">Megrendelés</button>
+      <p class="cart-note" id="cart-note" role="status"></p>
+    </div>
+  </aside>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site-footer">
+    <div class="container footer-bottom" style="border-top:0;">
+      <span>© <span id="year"></span> <span id="footer-shop-name">Luiz-Tech Shop</span></span>
+      <span class="footer-built"><a href="admin.html" style="color:var(--accent)">⚙︎ Webshop testreszabása</a></span>
+    </div>
+  </footer>
+
+  <script src="assets/js/shop-config.js"></script>
+  <script src="assets/js/webshop.js" defer></script>
+  <script src="assets/js/main.js" defer></script>
+</body>
+</html>
