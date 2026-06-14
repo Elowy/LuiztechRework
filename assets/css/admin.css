@@ -287,6 +287,20 @@
 .icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
 .icon-danger:hover { color: #ff7a7a; border-color: #ff7a7a; }
 
+/* ---------- Orders ---------- */
+.orders-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.order-card {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.order-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.order-id { font-family: var(--mono); font-size: .85rem; color: var(--accent); }
+.order-total { font-family: var(--mono); font-size: 1.05rem; }
+.order-items { margin-top: 8px; color: var(--text); font-size: .92rem; }
+.order-meta { margin-top: 6px; font-size: .8rem; color: var(--text-dim); }
+
 .admin-inline-note { font-size: .88rem; margin-top: 14px; min-height: 1em; }
 .admin-inline-note.ok { color: var(--accent-3); }
 .admin-inline-note.err { color: #ff7a7a; }

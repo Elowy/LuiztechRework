@@ -7,7 +7,18 @@ Thumbs.db
 .idea/
 *.swp
 
+# Node
+node_modules/
+npm-debug.log*
+.npm/
+
+# Runtime data (file-backed datastore)
+data/
+
+# Env
+.env
+.env.local
+
 # Logs / temp
 *.log
-node_modules/
 .cache/

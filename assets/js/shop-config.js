@@ -1,18 +1,17 @@
 /* ============================================================
-   Luiz-Tech Webshop — shared config layer
-   Stores shop customisation + cart in localStorage so the
-   storefront (webshop.html) and admin panel (admin.html)
-   share the same source of truth.  (Buildless prototype.)
+   Luiz-Tech Webshop — client data layer
+   Talks to the backend API; falls back to localStorage when no
+   backend is reachable (so the static demo keeps working).
+   Cart stays client-side until checkout.
    ============================================================ */
 (function (global) {
   'use strict';
 
-  var CONFIG_KEY = 'luiztech_shop_config_v1';
   var CART_KEY = 'luiztech_shop_cart_v1';
-  var AUTH_KEY = 'luiztech_admin_session_v1';
-  var CRED_KEY = 'luiztech_admin_cred_v1';
+  var CONFIG_KEY = 'luiztech_shop_config_v1';   // fallback only
+  var CRED_KEY = 'luiztech_admin_cred_v1';      // fallback only
+  var AUTH_KEY = 'luiztech_admin_session_v1';   // fallback only
 
-  /* ---------- Defaults ---------- */
   var DEFAULT_CONFIG = {
     name: 'Luiz-Tech Shop',
     tagline: 'Egyedi webshop, percek alatt testreszabva.',
@@ -33,100 +32,157 @@
     ]
   };
 
-  /* ---------- Helpers ---------- */
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function readJSON(k, f) { try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : f; } catch (e) { return f; } }
+  function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 
-  function readJSON(key, fallback) {
-    try {
-      var raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) { return fallback; }
-  }
-  function writeJSON(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-    catch (e) { return false; }
+  /* ---------- API helper ---------- */
+  var backendUp = null; // null = unknown, true/false once probed
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    opts.credentials = 'same-origin';
+    if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+    return fetch(path, opts).then(function (res) {
+      backendUp = true;
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) { var err = new Error(data.error || ('HTTP ' + res.status)); err.status = res.status; throw err; }
+        return data;
+      });
+    }).catch(function (e) {
+      // network/parse failure → backend considered down (unless it was an HTTP error)
+      if (e.status === undefined) backendUp = false;
+      throw e;
+    });
   }
 
-  /* ---------- Config ---------- */
-  function getConfig() {
-    var saved = readJSON(CONFIG_KEY, null);
-    if (!saved) return clone(DEFAULT_CONFIG);
-    // merge with defaults so new fields don't break older saves
-    var merged = clone(DEFAULT_CONFIG);
-    Object.keys(saved).forEach(function (k) { merged[k] = saved[k]; });
-    return merged;
-  }
-  function saveConfig(cfg) { return writeJSON(CONFIG_KEY, cfg); }
-  function resetConfig() { localStorage.removeItem(CONFIG_KEY); return clone(DEFAULT_CONFIG); }
+  /* ============================================================
+     LOCAL fallback implementations
+     ============================================================ */
+  var Local = {
+    getConfig: function () {
+      var saved = readJSON(CONFIG_KEY, null);
+      if (!saved) return clone(DEFAULT_CONFIG);
+      var merged = clone(DEFAULT_CONFIG);
+      Object.keys(saved).forEach(function (k) { merged[k] = saved[k]; });
+      return merged;
+    },
+    saveConfig: function (cfg) { writeJSON(CONFIG_KEY, cfg); return Local.getConfig(); },
+    reset: function () { localStorage.removeItem(CONFIG_KEY); return clone(DEFAULT_CONFIG); },
+    cred: function () { return readJSON(CRED_KEY, { user: 'admin', pass: 'luiztech' }); },
+    login: function (u, p) { var c = Local.cred(); if (u === c.user && p === c.pass) { sessionStorage.setItem(AUTH_KEY, '1'); return true; } return false; },
+    logout: function () { sessionStorage.removeItem(AUTH_KEY); },
+    isLoggedIn: function () { return sessionStorage.getItem(AUTH_KEY) === '1'; },
+    setCred: function (u, p) { var c = Local.cred(); writeJSON(CRED_KEY, { user: u || c.user, pass: p || c.pass }); return { user: u || c.user }; }
+  };
 
-  /* ---------- Cart ---------- */
-  function getCart() { return readJSON(CART_KEY, {}); } // { productId: qty }
-  function saveCart(cart) { return writeJSON(CART_KEY, cart); }
-  function cartCount(cart) {
-    cart = cart || getCart();
-    return Object.keys(cart).reduce(function (n, k) { return n + cart[k]; }, 0);
-  }
-  function cartTotal(cart, cfg) {
-    cart = cart || getCart();
-    cfg = cfg || getConfig();
+  /* ============================================================
+     CART (always client-side)
+     ============================================================ */
+  function getCart() { return readJSON(CART_KEY, {}); }
+  function saveCart(c) { return writeJSON(CART_KEY, c); }
+  function cartCount(c) { c = c || getCart(); return Object.keys(c).reduce(function (n, k) { return n + c[k]; }, 0); }
+  function cartTotal(c, cfg) {
+    c = c || getCart();
     var byId = {};
-    cfg.products.forEach(function (p) { byId[p.id] = p; });
-    return Object.keys(cart).reduce(function (sum, id) {
-      return sum + (byId[id] ? byId[id].price * cart[id] : 0);
-    }, 0);
+    (cfg && cfg.products ? cfg.products : []).forEach(function (p) { byId[p.id] = p; });
+    return Object.keys(c).reduce(function (s, id) { return s + (byId[id] ? byId[id].price * c[id] : 0); }, 0);
   }
 
-  /* ---------- Auth (demo / client-side only) ---------- */
-  function getCredentials() {
-    return readJSON(CRED_KEY, { user: 'admin', pass: 'luiztech' });
+  /* ============================================================
+     PUBLIC ASYNC API (with fallback)
+     ============================================================ */
+  function getShop() {
+    return api('/api/shop').catch(function () { return Local.getConfig(); });
   }
-  function setCredentials(user, pass) { return writeJSON(CRED_KEY, { user: user, pass: pass }); }
+  function getConfig() {
+    return api('/api/admin/config').catch(function (e) {
+      if (e.status === 401) throw e;          // real auth error → propagate
+      return Local.getConfig();               // backend down → local
+    });
+  }
+  function saveConfig(cfg) {
+    return api('/api/admin/config', { method: 'PUT', body: cfg }).catch(function (e) {
+      if (e.status) throw e;
+      return Local.saveConfig(cfg);
+    });
+  }
+  function resetConfig() {
+    return api('/api/admin/reset', { method: 'POST' }).catch(function (e) {
+      if (e.status) throw e;
+      return Local.reset();
+    });
+  }
   function login(user, pass) {
-    var c = getCredentials();
-    if (user === c.user && pass === c.pass) {
-      sessionStorage.setItem(AUTH_KEY, '1');
-      return true;
-    }
-    return false;
+    return api('/api/auth/login', { method: 'POST', body: { user: user, pass: pass } })
+      .then(function () { return true; })
+      .catch(function (e) {
+        if (e.status === 401) return false;     // wrong credentials
+        return Local.login(user, pass);         // backend down → local demo
+      });
   }
-  function logout() { sessionStorage.removeItem(AUTH_KEY); }
-  function isLoggedIn() { return sessionStorage.getItem(AUTH_KEY) === '1'; }
+  function logout() {
+    Local.logout();
+    return api('/api/auth/logout', { method: 'POST' }).catch(function () { return { ok: true }; });
+  }
+  function me() {
+    return api('/api/auth/me')
+      .then(function (d) { return !!d.authenticated; })
+      .catch(function (e) {
+        if (e.status === 401) return false;
+        return Local.isLoggedIn();
+      });
+  }
+  function setCredentials(user, pass) {
+    return api('/api/admin/account', { method: 'POST', body: { user: user, pass: pass } })
+      .catch(function (e) { if (e.status) throw e; return Local.setCred(user, pass); });
+  }
+  function getOrders() {
+    return api('/api/admin/orders').catch(function (e) { if (e.status === 401) throw e; return []; });
+  }
+  function createOrder(payload) {
+    return api('/api/orders', { method: 'POST', body: payload })
+      .catch(function (e) { if (e.status) throw e; return { ok: true, id: 'DEMO-' + Date.now().toString(36).toUpperCase(), local: true }; });
+  }
 
-  /* ---------- Formatting ---------- */
+  /* ============================================================
+     Helpers
+     ============================================================ */
   function formatPrice(value, cfg) {
-    cfg = cfg || getConfig();
-    var n = Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return n + ' ' + cfg.currency;
+    var cur = (cfg && cfg.currency) || 'Ft';
+    var n = Math.round(value || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return n + ' ' + cur;
   }
-
-  /* ---------- Apply theme variables to a document ---------- */
   function applyTheme(cfg, root) {
-    cfg = cfg || getConfig();
     root = root || document.documentElement;
-    root.style.setProperty('--shop-accent', cfg.accent);
-    root.style.setProperty('--shop-accent-2', cfg.accent2 || cfg.accent);
+    root.style.setProperty('--shop-accent', cfg.accent || '#38e1ff');
+    root.style.setProperty('--shop-accent-2', cfg.accent2 || cfg.accent || '#6c7bff');
     root.setAttribute('data-shop-theme', cfg.theme || 'dark');
   }
-
   function uid() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   global.ShopStore = {
     DEFAULT_CONFIG: DEFAULT_CONFIG,
+    // async
+    getShop: getShop,
     getConfig: getConfig,
     saveConfig: saveConfig,
     resetConfig: resetConfig,
+    login: login,
+    logout: logout,
+    me: me,
+    setCredentials: setCredentials,
+    getOrders: getOrders,
+    createOrder: createOrder,
+    // sync helpers
     getCart: getCart,
     saveCart: saveCart,
     cartCount: cartCount,
     cartTotal: cartTotal,
-    getCredentials: getCredentials,
-    setCredentials: setCredentials,
-    login: login,
-    logout: logout,
-    isLoggedIn: isLoggedIn,
     formatPrice: formatPrice,
     applyTheme: applyTheme,
     uid: uid,
-    clone: clone
+    clone: clone,
+    isBackendUp: function () { return backendUp; }
   };
 })(window);

@@ -1,5 +1,5 @@
 /* ============================================================
-   Luiz-Tech Webshop — storefront
+   Luiz-Tech Webshop — storefront (async / API-backed)
    ============================================================ */
 (function () {
   'use strict';
@@ -9,12 +9,19 @@
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
 
-  var cfg = S.getConfig();
+  var cfg = S.clone(S.DEFAULT_CONFIG);
   var cart = S.getCart();
   var activeCat = 'all';
   var query = '';
 
-  /* ---------- Apply branding ---------- */
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function setText(sel, val) { var el = $(sel); if (el != null && val != null) el.textContent = val; }
+
+  /* ---------- Branding ---------- */
   function applyBranding() {
     S.applyTheme(cfg);
     setText('#shop-name-eyebrow', cfg.name);
@@ -29,12 +36,11 @@
         : '';
     }
   }
-  function setText(sel, val) { var el = $(sel); if (el != null && val != null) el.textContent = val; }
 
   /* ---------- Filters ---------- */
   function buildFilters() {
     var cats = ['all'];
-    cfg.products.forEach(function (p) { if (p.category && cats.indexOf(p.category) < 0) cats.push(p.category); });
+    (cfg.products || []).forEach(function (p) { if (p.category && cats.indexOf(p.category) < 0) cats.push(p.category); });
     var wrap = $('#shop-filters');
     wrap.innerHTML = '';
     cats.forEach(function (cat) {
@@ -54,7 +60,7 @@
 
   /* ---------- Products ---------- */
   function visibleProducts() {
-    return cfg.products.filter(function (p) {
+    return (cfg.products || []).filter(function (p) {
       var catOk = activeCat === 'all' || p.category === activeCat;
       var q = query.trim().toLowerCase();
       var qOk = !q || (p.name + ' ' + (p.desc || '')).toLowerCase().indexOf(q) > -1;
@@ -81,7 +87,7 @@
           '<p>' + esc(p.desc || '') + '</p>' +
           '<div class="shop-product-foot">' +
             '<span class="shop-product-price">' + S.formatPrice(p.price, cfg) + '</span>' +
-            '<button class="btn btn-primary btn-sm add-to-cart" data-id="' + p.id + '">Kosárba</button>' +
+            '<button class="btn btn-primary btn-sm add-to-cart" data-id="' + esc(p.id) + '">Kosárba</button>' +
           '</div>' +
         '</div>';
       grid.appendChild(card);
@@ -97,34 +103,18 @@
     });
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
   /* ---------- Cart ---------- */
-  function addToCart(id) {
-    cart[id] = (cart[id] || 0) + 1;
-    S.saveCart(cart);
-    updateCartUI();
-    openCart();
-  }
-  function setQty(id, qty) {
-    if (qty <= 0) delete cart[id]; else cart[id] = qty;
-    S.saveCart(cart);
-    updateCartUI();
-  }
+  function addToCart(id) { cart[id] = (cart[id] || 0) + 1; S.saveCart(cart); updateCartUI(); openCart(); }
+  function setQty(id, qty) { if (qty <= 0) delete cart[id]; else cart[id] = qty; S.saveCart(cart); updateCartUI(); }
 
   function updateCartUI() {
     var count = S.cartCount(cart);
     setText('#cart-count', count);
-    var cc = $('#cart-count');
-    if (cc) cc.classList.toggle('has', count > 0);
+    var cc = $('#cart-count'); if (cc) cc.classList.toggle('has', count > 0);
     setText('#cart-total', S.formatPrice(S.cartTotal(cart, cfg), cfg));
 
     var byId = {};
-    cfg.products.forEach(function (p) { byId[p.id] = p; });
+    (cfg.products || []).forEach(function (p) { byId[p.id] = p; });
     var wrap = $('#cart-items');
     wrap.innerHTML = '';
     var ids = Object.keys(cart);
@@ -146,9 +136,9 @@
           '<span class="cart-row-price">' + S.formatPrice(p.price, cfg) + '</span>' +
         '</div>' +
         '<div class="cart-qty">' +
-          '<button class="qty-btn" data-act="dec" data-id="' + id + '" aria-label="Kevesebb">−</button>' +
+          '<button class="qty-btn" data-act="dec" data-id="' + esc(id) + '" aria-label="Kevesebb">−</button>' +
           '<span>' + cart[id] + '</span>' +
-          '<button class="qty-btn" data-act="inc" data-id="' + id + '" aria-label="Több">+</button>' +
+          '<button class="qty-btn" data-act="inc" data-id="' + esc(id) + '" aria-label="Több">+</button>' +
         '</div>';
       wrap.appendChild(row);
     });
@@ -161,7 +151,6 @@
     });
   }
 
-  /* ---------- Cart drawer ---------- */
   function openCart() {
     $('#cart-drawer').classList.add('open');
     $('#cart-drawer').setAttribute('aria-hidden', 'false');
@@ -173,37 +162,43 @@
     $('#cart-overlay').hidden = true;
   }
 
-  /* ---------- Init ---------- */
-  applyBranding();
-  buildFilters();
-  renderProducts();
-  updateCartUI();
-
-  $('#cart-btn').addEventListener('click', openCart);
-  $('#cart-close').addEventListener('click', closeCart);
-  $('#cart-overlay').addEventListener('click', closeCart);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
-
-  var search = $('#shop-search');
-  if (search) {
-    search.addEventListener('input', function () { query = search.value; renderProducts(); });
+  /* ---------- Checkout ---------- */
+  function checkout() {
+    var note = $('#cart-note');
+    var ids = Object.keys(cart);
+    if (!ids.length) return;
+    var items = ids.map(function (id) { return { id: id, qty: cart[id] }; });
+    $('#cart-checkout').disabled = true;
+    note.textContent = 'Rendelés feldolgozása...';
+    note.className = 'cart-note';
+    S.createOrder({ items: items }).then(function (resp) {
+      note.textContent = 'Köszönjük a rendelést! Azonosító: ' + (resp.id || '—') +
+        (resp.local ? ' (helyi demó)' : '') + '. Összeg: ' + S.formatPrice(S.cartTotal(cart, cfg), cfg);
+      note.className = 'cart-note ok';
+      cart = {}; S.saveCart(cart); updateCartUI();
+    }).catch(function () {
+      note.textContent = 'Hiba történt a rendelés során. Próbáld újra.';
+      note.className = 'cart-note err';
+      $('#cart-checkout').disabled = false;
+    });
   }
 
-  $('#cart-checkout').addEventListener('click', function () {
-    var note = $('#cart-note');
-    note.textContent = 'Köszönjük a rendelést! (Demó — éles fizetés nincs bekötve.) Összeg: ' +
-      S.formatPrice(S.cartTotal(cart, cfg), cfg);
-    note.className = 'cart-note ok';
-    cart = {}; S.saveCart(cart); updateCartUI();
-    $('#cart-note').className = 'cart-note ok';
-    $('#cart-note').textContent = note.textContent;
-  });
+  /* ---------- Init ---------- */
+  function init() {
+    $('#cart-btn').addEventListener('click', openCart);
+    $('#cart-close').addEventListener('click', closeCart);
+    $('#cart-overlay').addEventListener('click', closeCart);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
+    var search = $('#shop-search');
+    if (search) search.addEventListener('input', function () { query = search.value; renderProducts(); });
+    $('#cart-checkout').addEventListener('click', checkout);
 
-  /* React to changes made in the admin panel (another tab) */
-  window.addEventListener('storage', function (e) {
-    if (e.key && e.key.indexOf('luiztech_shop_config') === 0) {
-      cfg = S.getConfig();
+    S.getShop().then(function (data) {
+      cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), data);
+      if (!Array.isArray(cfg.products)) cfg.products = [];
       applyBranding(); buildFilters(); renderProducts(); updateCartUI();
-    }
-  });
+    });
+  }
+
+  init();
 })();

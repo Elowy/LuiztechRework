@@ -1,0 +1,18 @@
+{
+  "name": "luiz-tech-webshop",
+  "version": "1.0.0",
+  "description": "Luiz-Tech weboldal + webshop és admin backend (Express + fájl-alapú adattár).",
+  "type": "commonjs",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "license": "MIT"
+}
