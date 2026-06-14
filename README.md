@@ -87,6 +87,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### Deploy lehetőségek
 
+> **RackForest / cPanel webtárhelyre** lépésről lépésre: lásd a
+> [`DEPLOY-cPanel.md`](DEPLOY-cPanel.md) útmutatót.
+
 - **Docker** (bármilyen konténer-host):
   ```bash
   docker build -t luiz-tech .
