@@ -1,0 +1,202 @@
+<?php
+/* ============================================================
+   Luiz-Tech — REST API router (PHP)
+   A .htaccess minden /api/* kérést ide irányít.
+   ============================================================ */
+require __DIR__ . '/lib.php';
+start_app_session();
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$pos = strpos($uri, '/api');
+$route = $pos !== false ? substr($uri, $pos + 4) : $uri;   // pl. "/shop", "/admin/orders/ORD-1"
+$route = '/' . trim($route, '/');
+if ($route === '/') { /* gyökér */ }
+$method = $_SERVER['REQUEST_METHOD'];
+
+/* ---- segéd: route minta illesztés ---- */
+function match_route($pattern, $route, &$params) {
+  $regex = '#^' . preg_replace('#\{[^/]+\}#', '([^/]+)', $pattern) . '$#';
+  if (preg_match($regex, $route, $m)) { $params = array_slice($m, 1); return true; }
+  return false;
+}
+
+$pdo = db();
+$params = [];
+
+/* ============================================================
+   PUBLIKUS
+   ============================================================ */
+if ($method === 'GET' && $route === '/shop') {
+  json_out(get_config_with_products($pdo));
+}
+if ($method === 'GET' && $route === '/news') {
+  json_out(get_news($pdo));
+}
+if ($method === 'POST' && $route === '/orders') {
+  $cust = current_customer($pdo);
+  $r = create_order($pdo, body(), $cust);
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true, 'id' => $r['order']['id'], 'total' => $r['order']['total'], 'status' => $r['order']['status']], 201);
+}
+
+/* ============================================================
+   ADMIN AUTH
+   ============================================================ */
+if ($method === 'POST' && $route === '/auth/login') {
+  $b = body();
+  $row = $pdo->query("SELECT * FROM admin WHERE id = 1")->fetch();
+  if (!$row || ($b['user'] ?? '') !== $row['username'] || !password_verify((string)($b['pass'] ?? ''), $row['hash'])) {
+    json_error('Hibás felhasználónév vagy jelszó.', 401);
+  }
+  $_SESSION['is_admin'] = true;
+  $_SESSION['admin_user'] = $row['username'];
+  json_out(['ok' => true, 'user' => $row['username']]);
+}
+if ($method === 'POST' && $route === '/auth/logout') {
+  unset($_SESSION['is_admin'], $_SESSION['admin_user']);
+  json_out(['ok' => true]);
+}
+if ($method === 'GET' && $route === '/auth/me') {
+  if (empty($_SESSION['is_admin'])) json_out(['authenticated' => false], 401);
+  json_out(['authenticated' => true, 'user' => $_SESSION['admin_user'] ?? 'admin']);
+}
+
+/* ============================================================
+   ADMIN (védett)
+   ============================================================ */
+if ($method === 'GET' && $route === '/admin/config') {
+  require_admin();
+  json_out(get_config_with_products($pdo));
+}
+if ($method === 'PUT' && $route === '/admin/config') {
+  require_admin();
+  json_out(save_config($pdo, body()));
+}
+if ($method === 'POST' && $route === '/admin/reset') {
+  require_admin();
+  json_out(reset_all($pdo));
+}
+if ($method === 'POST' && $route === '/admin/account') {
+  require_admin();
+  $b = body();
+  $user = trim((string)($b['user'] ?? ''));
+  if ($user === '') json_error('A felhasználónév kötelező.', 400);
+  $pass = (string)($b['pass'] ?? '');
+  if ($pass !== '') {
+    $stmt = $pdo->prepare("UPDATE admin SET username = ?, hash = ? WHERE id = 1");
+    $stmt->execute([mb_substr($user, 0, 60), password_hash($pass, PASSWORD_DEFAULT)]);
+  } else {
+    $stmt = $pdo->prepare("UPDATE admin SET username = ? WHERE id = 1");
+    $stmt->execute([mb_substr($user, 0, 60)]);
+  }
+  $_SESSION['admin_user'] = mb_substr($user, 0, 60);
+  json_out(['ok' => true, 'user' => $_SESSION['admin_user']]);
+}
+if ($method === 'GET' && $route === '/admin/orders') {
+  require_admin();
+  $rows = $pdo->query("SELECT * FROM orders ORDER BY created_at DESC")->fetchAll();
+  $orders = array_map(function ($r) use ($pdo) { return map_order($pdo, $r); }, $rows);
+  json_out(['statuses' => ORDER_STATUSES, 'orders' => $orders]);
+}
+if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
+  require_admin();
+  $status = (string)(body()['status'] ?? '');
+  if (!in_array($status, ORDER_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
+  $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
+  $stmt->execute([$status, $params[0]]);
+  if ($stmt->rowCount() === 0) {
+    $chk = $pdo->prepare("SELECT id FROM orders WHERE id = ?"); $chk->execute([$params[0]]);
+    if (!$chk->fetch()) json_error('A rendelés nem található.', 404);
+  }
+  $row = $pdo->prepare("SELECT * FROM orders WHERE id = ?"); $row->execute([$params[0]]);
+  json_out(['ok' => true, 'order' => map_order($pdo, $row->fetch())]);
+}
+
+/* ---- hírek ---- */
+if ($method === 'POST' && $route === '/admin/news') {
+  require_admin();
+  $b = body();
+  $title = trim((string)($b['title'] ?? ''));
+  if ($title === '') json_error('A cím megadása kötelező.', 400);
+  $id = 'n' . uniqid();
+  $stmt = $pdo->prepare("INSERT INTO news (id,title,body,`date`,created_at) VALUES (?,?,?,?,?)");
+  $stmt->execute([
+    $id, mb_substr($title, 0, 200), mb_substr((string)($b['body'] ?? ''), 0, 4000),
+    mb_substr((string)($b['date'] ?? date('Y-m-d')), 0, 30), date('Y-m-d H:i:s'),
+  ]);
+  $row = $pdo->prepare("SELECT * FROM news WHERE id = ?"); $row->execute([$id]);
+  json_out(map_news($row->fetch()), 201);
+}
+if ($method === 'PUT' && match_route('/admin/news/{id}', $route, $params)) {
+  require_admin();
+  $b = body();
+  $title = trim((string)($b['title'] ?? ''));
+  if ($title === '') json_error('A cím megadása kötelező.', 400);
+  $chk = $pdo->prepare("SELECT id FROM news WHERE id = ?"); $chk->execute([$params[0]]);
+  if (!$chk->fetch()) json_error('A hír nem található.', 404);
+  $stmt = $pdo->prepare("UPDATE news SET title = ?, body = ?, `date` = ? WHERE id = ?");
+  $stmt->execute([mb_substr($title, 0, 200), mb_substr((string)($b['body'] ?? ''), 0, 4000), mb_substr((string)($b['date'] ?? date('Y-m-d')), 0, 30), $params[0]]);
+  $row = $pdo->prepare("SELECT * FROM news WHERE id = ?"); $row->execute([$params[0]]);
+  json_out(map_news($row->fetch()));
+}
+if ($method === 'DELETE' && match_route('/admin/news/{id}', $route, $params)) {
+  require_admin();
+  $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?"); $stmt->execute([$params[0]]);
+  json_out(['ok' => $stmt->rowCount() > 0]);
+}
+
+/* ---- képfeltöltés ---- */
+if ($method === 'POST' && $route === '/admin/upload') {
+  require_admin();
+  $r = save_data_url(body()['data'] ?? null);
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true, 'url' => $r['url']], 201);
+}
+
+/* ============================================================
+   VÁSÁRLÓI FIÓK
+   ============================================================ */
+if ($method === 'POST' && $route === '/account/register') {
+  $b = body();
+  $name = trim((string)($b['name'] ?? ''));
+  $email = trim((string)($b['email'] ?? ''));
+  $pass = (string)($b['pass'] ?? '');
+  if ($name === '') json_error('A név megadása kötelező.', 400);
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_error('Érvénytelen e-mail cím.', 400);
+  if (strlen($pass) < 6) json_error('A jelszó legalább 6 karakter legyen.', 400);
+  $chk = $pdo->prepare("SELECT id FROM users WHERE email = ?"); $chk->execute([mb_strtolower($email)]);
+  if ($chk->fetch()) json_error('Ezzel az e-mail címmel már van fiók.', 400);
+  $id = 'u' . uniqid();
+  $stmt = $pdo->prepare("INSERT INTO users (id,name,email,hash,created_at) VALUES (?,?,?,?,?)");
+  $stmt->execute([$id, mb_substr($name, 0, 120), mb_strtolower(mb_substr($email, 0, 190)), password_hash($pass, PASSWORD_DEFAULT), date('Y-m-d H:i:s')]);
+  $_SESSION['uid'] = $id;
+  json_out(['ok' => true, 'user' => ['id' => $id, 'name' => $name, 'email' => mb_strtolower($email)]], 201);
+}
+if ($method === 'POST' && $route === '/account/login') {
+  $b = body();
+  $email = mb_strtolower(trim((string)($b['email'] ?? '')));
+  $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?"); $stmt->execute([$email]);
+  $u = $stmt->fetch();
+  if (!$u || !password_verify((string)($b['pass'] ?? ''), $u['hash'])) json_error('Hibás e-mail cím vagy jelszó.', 401);
+  $_SESSION['uid'] = $u['id'];
+  json_out(['ok' => true, 'user' => ['id' => $u['id'], 'name' => $u['name'], 'email' => $u['email']]]);
+}
+if ($method === 'POST' && $route === '/account/logout') {
+  unset($_SESSION['uid']);
+  json_out(['ok' => true]);
+}
+if ($method === 'GET' && $route === '/account/me') {
+  $u = current_customer($pdo);
+  if (!$u) json_out(['authenticated' => false], 401);
+  json_out(['authenticated' => true, 'user' => $u]);
+}
+if ($method === 'GET' && $route === '/account/orders') {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
+  $stmt->execute([$u['id']]);
+  json_out(array_map(function ($r) use ($pdo) { return map_order($pdo, $r); }, $stmt->fetchAll()));
+}
+
+/* ---- nincs ilyen útvonal ---- */
+json_error('Ismeretlen API végpont: ' . $route, 404);

@@ -12,8 +12,14 @@ node_modules/
 npm-debug.log*
 .npm/
 
-# Runtime data (file-backed datastore)
+# Runtime data (file-backed datastore — Node verzió)
 data/
+
+# PHP backend — éles DB-konfig és feltöltött képek
+config.php
+uploads/*
+!uploads/.gitkeep
+!uploads/.htaccess
 
 # Env
 .env

@@ -1,0 +1,23 @@
+# ---- Luiz-Tech (PHP backend) ----
+DirectoryIndex index.html index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Minden /api/* kérés a PHP routerhez
+  RewriteRule ^api/?$ api/index.php [QSA,L]
+  RewriteRule ^api/.*$ api/index.php [QSA,L]
+</IfModule>
+
+# A DB-konfig és az adat-fájlok közvetlen elérésének tiltása
+<FilesMatch "^(config\.php|config\.sample\.php)$">
+  Require all denied
+</FilesMatch>
+
+# Feltöltött képeknél ne fusson semmilyen szkript (biztonság)
+<IfModule mod_headers.c>
+  <FilesMatch "\.(png|jpe?g|webp|gif)$">
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+</IfModule>
+# (A PHP futtatás tiltása az uploads mappában az uploads/.htaccess-ben van.)

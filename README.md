@@ -50,7 +50,19 @@ A feltöltött termékképek a `data/uploads/` mappába kerülnek, és a `/uploa
 > (éles deploynál az `ADMIN_USER` / `ADMIN_PASS` env változókkal módosítható,
 > illetve később az admin „Fiók" menüjében).
 
-## Backend (csak deployolni kell)
+## Backend — két változat
+
+A backend **kétféleképpen** is futtatható, azonos API-val és frontenddel:
+
+1. **PHP + MySQL** *(cPanel webtárhelyhez ajánlott)* — csak feltöltöd a fájlokat,
+   és lefuttatod a `setup.php` telepítőt. Részletek:
+   [`DEPLOY-cPanel.md`](DEPLOY-cPanel.md). A hozzá tartozó fájlok: `api/`,
+   `setup.php`, `.htaccess`, `uploads/`, `config.php` (a telepítő hozza létre).
+2. **Node.js + Express** *(VPS/Docker/saját szerver)* — lásd alább.
+
+A frontend mindkettővel ugyanúgy működik (azonos `/api/...` végpontok).
+
+## Node.js backend
 
 Az oldalhoz tartozik egy **Node.js + Express** szerver, ami egyben kiszolgálja
 a statikus oldalt **és** a webshop/admin REST API-t — egy app, egy port.
@@ -134,7 +146,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 index.html              # főoldal (one-page)
 webshop.html            # webshop kirakat
 admin.html              # belépés + testreszabó felület
-server/
+api/                    # PHP backend (cPanel + MySQL)
+  index.php             # REST API router (ugyanazok a végpontok)
+  lib.php               # DB, séma, alapértékek, segédfüggvények
+setup.php               # PHP telepítő varázsló (DB + admin beállítás)
+.htaccess               # /api → PHP router, biztonsági szabályok
+uploads/                # feltöltött termékképek (PHP verzió)
+config.php              # DB-kapcsolat (a setup.php hozza létre; git-ignorált)
+server/                 # Node.js backend (VPS/Docker alternatíva)
   server.js             # Express app: statikus kiszolgálás + REST API
   db.js                 # fájl-alapú JSON adattár (config, termékek, vásárlók, rendelések)
   auth.js               # jelszó-hash (scrypt) + token aláírás (HMAC)
