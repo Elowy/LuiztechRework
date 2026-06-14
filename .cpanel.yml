@@ -1,0 +1,18 @@
+---
+# cPanel Git™ Version Control deploy-szkript.
+# Akkor használd, ha a tárhelyen a cPanel "Git Version Control"-lal klónozod
+# a repót, és a "Deploy HEAD Commit" gombbal (vagy webhookkal) telepítesz.
+#
+# FONTOS: a DEPLOYPATH-ot állítsd a SAJÁT dokumentumgyökeredre!
+# A config.php-t és az uploads/ mappát szándékosan NEM másoljuk felül.
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/luiztecs/luiz-tech.hu/luiztech
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp index.html webshop.html admin.html $DEPLOYPATH/
+    - /bin/cp .htaccess $DEPLOYPATH/
+    - /bin/cp setup.php $DEPLOYPATH/
+    - /bin/cp -R assets $DEPLOYPATH/
+    - /bin/cp -R api $DEPLOYPATH/
+    - /bin/mkdir -p $DEPLOYPATH/uploads
+    - /bin/cp uploads/.htaccess $DEPLOYPATH/uploads/ 2>/dev/null || true

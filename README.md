@@ -101,6 +101,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 > **RackForest / cPanel webtárhelyre** lépésről lépésre: lásd a
 > [`DEPLOY-cPanel.md`](DEPLOY-cPanel.md) útmutatót.
+>
+> **Automatikus deploy** (push → szerver) GitHub Actions FTP-vel vagy cPanel Git-tel:
+> lásd [`DEPLOY-AUTO.md`](DEPLOY-AUTO.md).
 
 - **Docker** (bármilyen konténer-host):
   ```bash

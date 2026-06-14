@@ -1,0 +1,55 @@
+name: Deploy to cPanel (FTP)
+
+# Automatikus feltöltés a tárhelyre minden push-nál (a megadott ágakon),
+# illetve kézzel is indítható a GitHub "Actions" fülről.
+on:
+  push:
+    branches:
+      - main
+      - claude/luiz-tech-redesign-animations-6bwssl
+  workflow_dispatch:
+
+concurrency:
+  group: ftp-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTP(S)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps          # ha a tárhely nem támogatja: állítsd "ftp"-re
+          port: 21
+          # A tárhelyen a dokumentumgyökér útvonala (Repository variable).
+          # Pl. "/luiz-tech.hu/luiztech/"  — a végén legyen "/".
+          server-dir: ${{ vars.FTP_SERVER_DIR }}
+          local-dir: ./
+          # Soha ne töröljön le mindent vakon; a sync-state alapján dolgozik.
+          dangerous-clean-slate: false
+          # Ezeket NEM töltjük fel és NEM is töröljük a szerverről:
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            node_modules/**
+            server/**
+            data/**
+            app.js
+            package.json
+            package-lock.json
+            Dockerfile
+            Procfile
+            .dockerignore
+            **/*.md
+            config.php
+            config.sample.php
+            uploads/**
+            .gitignore
