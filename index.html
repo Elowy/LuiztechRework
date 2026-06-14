@@ -306,7 +306,8 @@
         </div>
 
         <div class="work-grid">
-          <article class="work-card reveal" data-reveal>
+          <article class="work-card clickable reveal" data-reveal tabindex="0" role="button"
+            data-more="A megkeresést követően 24 órán belül átadtuk a kész, reszponzív weboldalt. A termékkínálat áttekinthető bemutatása, gyors betöltés és SEO-barát felépítés volt a fókuszban.">
             <div class="work-tag">Weboldal</div>
             <h3>Műanyagnyílászárók</h3>
             <p>Új, modern weboldal a teljes termékkínálat bemutatásához — villámgyors átfutással.</p>
@@ -316,7 +317,8 @@
             </div>
           </article>
 
-          <article class="work-card reveal" data-reveal>
+          <article class="work-card clickable reveal" data-reveal tabindex="0" role="button"
+            data-more="A Napháló csapata egyedi, letisztult weboldalt kapott, amelyet mindössze 8 óra alatt készítettünk el és élesítettünk — a tartalom és a márka stílusához igazítva.">
             <div class="work-tag">Weboldal</div>
             <h3>Napháló</h3>
             <p>Egyedi weboldal a csapat számára, letisztult megjelenéssel és gyors betöltéssel.</p>
@@ -326,7 +328,8 @@
             </div>
           </article>
 
-          <article class="work-card reveal" data-reveal>
+          <article class="work-card clickable reveal" data-reveal tabindex="0" role="button"
+            data-more="Teljesen egyedi webshopot építettünk a Net-Trade Hungary számára: a koncepciótól a tervezésen át az élesítésig. Az áruház 2023. április 17-én indult, testreszabott funkciókkal és könnyen kezelhető adminfelülettel.">
             <div class="work-tag">Webshop</div>
             <h3>Net-Trade Hungary</h3>
             <p>Egyedi webshop fejlesztése a koncepciótól az élesítésig, teljesen testreszabva.</p>
@@ -336,7 +339,8 @@
             </div>
           </article>
 
-          <article class="work-card reveal" data-reveal>
+          <article class="work-card clickable reveal" data-reveal tabindex="0" role="button"
+            data-more="Egy ingatlaniroda számára komplex hirdetési platformot fejlesztettünk: ingatlanok feltöltése és kezelése, keresés és szűrés, valamint egyedi funkciók — mindez egy könnyen bővíthető rendszerben.">
             <div class="work-tag">Platform</div>
             <h3>Home and Confidence</h3>
             <p>Komplex ingatlanhirdetési platform egy ingatlaniroda számára, egyedi funkciókkal.</p>
@@ -346,7 +350,8 @@
             </div>
           </article>
 
-          <article class="work-card reveal" data-reveal>
+          <article class="work-card clickable reveal" data-reveal tabindex="0" role="button"
+            data-more="Hangulatos bemutatkozó weboldal egy vendégház számára, amely a foglalásra ösztönöz: szép képi világ, áttekinthető információk és gyors elérhetőség. 2023 novemberében készült el.">
             <div class="work-tag">Weboldal</div>
             <h3>Vendégház bemutatkozó oldal</h3>
             <p>Hangulatos, foglalásra ösztönző weboldal egy vendégház számára.</p>
@@ -372,6 +377,18 @@
           </blockquote>
           <figcaption>— Elégedett ügyfél, weboldal projekt</figcaption>
         </figure>
+      </div>
+    </section>
+
+    <!-- ===================== NEWS (dynamic) ===================== -->
+    <section class="section" id="news" hidden>
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// hírek</span>
+          <h2 class="section-title">Aktualitások</h2>
+          <p class="section-sub">Legfrissebb híreink, projektjeink és bejelentéseink.</p>
+        </div>
+        <div class="news-grid" id="news-grid"></div>
       </div>
     </section>
 
@@ -493,6 +510,19 @@
       </div>
     </section>
   </main>
+
+  <!-- ===================== REFERENCE MODAL ===================== -->
+  <div class="ref-modal-overlay" id="ref-modal" hidden>
+    <div class="ref-modal" role="dialog" aria-modal="true" aria-labelledby="ref-modal-title">
+      <button class="ref-modal-close" id="ref-modal-close" aria-label="Bezárás">✕</button>
+      <span class="work-tag" id="ref-modal-tag">Projekt</span>
+      <h3 id="ref-modal-title">Projekt</h3>
+      <p id="ref-modal-desc"></p>
+      <p class="ref-modal-more" id="ref-modal-more"></p>
+      <div class="ref-modal-meta" id="ref-modal-meta"></div>
+      <a href="#contact" class="btn btn-primary btn-sm" id="ref-modal-cta">Kérek hasonlót</a>
+    </div>
+  </div>
 
   <!-- ===================== FOOTER ===================== -->
   <footer class="site-footer">

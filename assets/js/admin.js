@@ -12,6 +12,8 @@
   var cfg = S.clone(S.DEFAULT_CONFIG);
   var dirty = false;
   var ordersLoaded = false;
+  var newsLoaded = false;
+  var newsItems = [];
 
   var PALETTES = [
     { a: '#38e1ff', b: '#6c7bff' }, { a: '#00ffa3', b: '#38e1ff' },
@@ -71,6 +73,7 @@
       tab.classList.add('active');
       $$('.admin-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === name); });
       if (name === 'orders' && !ordersLoaded) loadOrders();
+      if (name === 'news' && !newsLoaded) loadNews();
     });
   });
 
@@ -171,7 +174,8 @@
       row.innerHTML =
         '<span class="pa-emoji">' + (p.image ? '<img src="' + escAttr(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
         '<div class="pa-info"><span class="pa-name">' + escAttr(p.name) + '</span>' +
-        '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' + S.formatPrice(p.price, cfg) + '</span></div>' +
+        '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' + S.formatPrice(p.price, cfg) +
+          ' · ' + (p.stock == null ? 'korlátlan' : (p.stock === 0 ? '⚠ elfogyott' : p.stock + ' db')) + '</span></div>' +
         '<div class="pa-actions">' +
         '<button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
         '<button class="icon-btn icon-danger" data-act="del" title="Törlés">🗑</button></div>';
@@ -205,6 +209,7 @@
     $('#m-desc').value = p ? (p.desc || '') : '';
     $('#m-price').value = p ? p.price : '';
     $('#m-category').value = p ? (p.category || '') : '';
+    $('#m-stock').value = (p && p.stock != null) ? p.stock : '';
     $('#m-image').value = p ? (p.image || '') : '';
     $('#modal-err').textContent = '';
     $('#image-err').textContent = '';
@@ -262,7 +267,9 @@
     var price = parseInt($('#m-price').value, 10);
     if (!name) { $('#modal-err').textContent = 'A megnevezés kötelező.'; return; }
     if (isNaN(price) || price < 0) { $('#modal-err').textContent = 'Adj meg érvényes árat.'; return; }
-    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
+    var stockRaw = $('#m-stock').value.trim();
+    var stock = stockRaw === '' ? null : Math.max(0, parseInt(stockRaw, 10) || 0);
+    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
     if (editingId) {
       cfg.products = cfg.products.map(function (p) { return p.id === editingId ? Object.assign(p, data) : p; });
     } else {
@@ -310,6 +317,75 @@
       setNote('#reset-note', 'Beállítások visszaállítva. ✓', true);
       markClean();
     }).catch(function () { setNote('#reset-note', 'Visszaállítás sikertelen.', false); });
+  });
+
+  /* ============================================================
+     NEWS
+     ============================================================ */
+  function loadNews() {
+    var wrap = $('#news-admin-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getNews().then(function (items) {
+      newsLoaded = true;
+      newsItems = items || [];
+      renderNewsList();
+    }).catch(function () { wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a híreket.</p>'; });
+  }
+  function renderNewsList() {
+    var wrap = $('#news-admin-list');
+    wrap.innerHTML = '';
+    if (!newsItems.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs hír. Adj hozzá egyet!</p>'; return; }
+    newsItems.forEach(function (n) {
+      var row = document.createElement('div');
+      row.className = 'news-admin-row';
+      row.innerHTML =
+        '<div class="news-admin-info">' +
+          '<span class="news-admin-title">' + escAttr(n.title) + '</span>' +
+          '<span class="news-admin-date">' + escAttr(n.date || '') + '</span>' +
+        '</div>' +
+        '<div class="pa-actions">' +
+          '<button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
+          '<button class="icon-btn icon-danger" data-act="del" title="Törlés">🗑</button></div>';
+      row.querySelector('[data-act="edit"]').addEventListener('click', function () { openNewsModal(n); });
+      row.querySelector('[data-act="del"]').addEventListener('click', function () {
+        if (!confirm('Biztosan törlöd: "' + n.title + '"?')) return;
+        S.deleteNews(n.id).then(function () { newsItems = newsItems.filter(function (x) { return x.id !== n.id; }); renderNewsList(); })
+          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+      });
+      wrap.appendChild(row);
+    });
+  }
+  function openNewsModal(n) {
+    $('#news-modal-title').textContent = n ? 'hír szerkesztése' : 'új hír';
+    $('#n-id').value = n ? n.id : '';
+    $('#n-title').value = n ? n.title : '';
+    $('#n-date').value = n ? (n.date || '').slice(0, 10) : new Date().toISOString().slice(0, 10);
+    $('#n-body').value = n ? (n.body || '') : '';
+    $('#news-modal-err').textContent = '';
+    $('#news-modal').hidden = false;
+    setTimeout(function () { $('#n-title').focus(); }, 30);
+  }
+  function closeNewsModal() { $('#news-modal').hidden = true; }
+  $('#add-news').addEventListener('click', function () { openNewsModal(null); });
+  $('#news-modal-cancel').addEventListener('click', closeNewsModal);
+  $('#news-modal').addEventListener('click', function (e) { if (e.target === this) closeNewsModal(); });
+  $('#news-modal-save').addEventListener('click', function () {
+    var title = $('#n-title').value.trim();
+    if (!title) { $('#news-modal-err').textContent = 'A cím kötelező.'; return; }
+    var payload = { title: title, date: $('#n-date').value, body: $('#n-body').value.trim() };
+    var id = $('#n-id').value;
+    var btn = $('#news-modal-save'); btn.disabled = true;
+    var p = id ? S.updateNews(id, payload) : S.addNews(payload);
+    p.then(function (item) {
+      btn.disabled = false;
+      if (id) newsItems = newsItems.map(function (x) { return x.id === id ? item : x; });
+      else newsItems.unshift(item);
+      renderNewsList(); closeNewsModal();
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (e.status === 401) { S.logout(); location.reload(); return; }
+      $('#news-modal-err').textContent = e.message || 'Mentés sikertelen.';
+    });
   });
 
   /* ============================================================

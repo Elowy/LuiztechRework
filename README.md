@@ -31,10 +31,16 @@ ahol a bolt valós időben testreszabható. A beállítások a böngésző
 - **`admin.html`** — belépés után testreszabható:
   - **Általános:** bolt neve, szlogen, kezdőoldal szövegei, pénznem, ingyenes szállítás határa
   - **Megjelenés:** elsődleges/másodlagos szín, kész színsémák, sötét/világos téma, élő előnézet
-  - **Termékek:** felvétel / szerkesztés / törlés (**termékkép-feltöltés**, ikon, név, leírás, ár, kategória)
+  - **Termékek:** felvétel / szerkesztés / törlés (**termékkép-feltöltés**, ikon, név, leírás, ár, kategória, **készlet**)
+  - **Hírek:** a főoldalon megjelenő hírek/aktualitások kezelése (felvétel / szerkesztés / törlés)
   - **Rendelések:** a beérkezett rendelések listája (vevőadatok, cím, megjegyzés) **státuszkezeléssel** (Új → Feldolgozás alatt → Teljesítve → Törölve)
   - **Fiók:** admin belépési adatok módosítása
   - **Visszaállítás:** alapértelmezett beállítások visszatöltése
+
+A **készlet** terméknél megadható: üresen hagyva korlátlan (nem követett),
+számként megadva rendeléskor automatikusan csökken, 0-nál „Elfogyott". A
+**főoldal** referenciakártyái kattinthatók (részletek modálban), és — ha fut a
+backend — megjelenik az **Aktualitások** (hírek) szekció.
 
 A **vásárlói fiókok** és az **admin** külön munkamenetet (cookie-t) használnak.
 A feltöltött termékképek a `data/uploads/` mappába kerülnek, és a `/uploads/...`
@@ -94,8 +100,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 | metódus + útvonal            | védett | leírás                          |
 |------------------------------|:------:|---------------------------------|
-| `GET /api/shop`              |   –    | publikus bolt-adat + termékek   |
-| `POST /api/orders`           |   –    | rendelés leadása (fiókhoz köti, ha be van jelentkezve) |
+| `GET /api/shop`              |   –    | publikus bolt-adat + termékek (készlettel) |
+| `GET /api/news`              |   –    | hírek listája (publikus)        |
+| `POST /api/orders`           |   –    | rendelés leadása (készlet-ellenőrzéssel; fiókhoz köti, ha be van jelentkezve) |
 | `POST /api/account/register` |   –    | vásárlói regisztráció           |
 | `POST /api/account/login`    |   –    | vásárlói bejelentkezés          |
 | `POST /api/account/logout`   |   –    | vásárlói kijelentkezés          |
@@ -111,6 +118,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `POST /api/admin/reset`      |  ✓ (admin) | alapértelmezettre állítás   |
 | `GET /api/admin/orders`      |  ✓ (admin) | beérkezett rendelések + státuszok |
 | `PATCH /api/admin/orders/:id`|  ✓ (admin) | rendelés státuszának módosítása |
+| `POST /api/admin/news`       |  ✓ (admin) | hír létrehozása                 |
+| `PUT /api/admin/news/:id`    |  ✓ (admin) | hír módosítása                  |
+| `DELETE /api/admin/news/:id` |  ✓ (admin) | hír törlése                     |
 
 > A fizetési integráció szándékosan nincs bekötve (a rendelés rögzítése demó).
 > Élesben ide egy fizetési szolgáltató (pl. Stripe/Barion/SimplePay) köthető be.

@@ -75,6 +75,7 @@
         <button class="admin-tab active" data-tab="general">🏪 Általános</button>
         <button class="admin-tab" data-tab="appearance">🎨 Megjelenés</button>
         <button class="admin-tab" data-tab="products">📦 Termékek</button>
+        <button class="admin-tab" data-tab="news">📰 Hírek</button>
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
         <button class="admin-tab" data-tab="account">🔐 Fiók</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
@@ -174,6 +175,18 @@
           <div class="product-admin-list" id="product-admin-list"></div>
         </section>
 
+        <!-- NEWS -->
+        <section class="admin-panel" data-panel="news">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Hírek</h2>
+              <p class="admin-desc">A főoldalon megjelenő hírek és aktualitások.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-news">+ Új hír</button>
+          </div>
+          <div class="news-admin-list" id="news-admin-list"></div>
+        </section>
+
         <!-- ORDERS -->
         <section class="admin-panel" data-panel="orders">
           <div class="admin-panel-head">
@@ -262,12 +275,49 @@
             <input type="text" id="m-category" list="cat-list" />
             <datalist id="cat-list"></datalist>
           </div>
+          <div class="field">
+            <label for="m-stock">Készlet</label>
+            <input type="number" id="m-stock" min="0" step="1" placeholder="korlátlan" />
+          </div>
         </div>
+        <p class="modal-hint">A készletet hagyd üresen a korlátlan (nem követett) kínálathoz. 0 = elfogyott.</p>
         <p class="modal-err" id="modal-err"></p>
       </div>
       <div class="modal-foot">
         <button class="btn btn-ghost btn-sm" id="modal-cancel">Mégse</button>
         <button class="btn btn-primary btn-sm" id="modal-save">Termék mentése</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== NEWS EDIT MODAL ===================== -->
+  <div class="modal-overlay" id="news-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="news-modal-title">hír szerkesztése</span>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="n-id" />
+        <div class="field">
+          <label for="n-title">Cím</label>
+          <input type="text" id="n-title" />
+        </div>
+        <div class="field">
+          <label for="n-date">Dátum</label>
+          <input type="date" id="n-date" />
+        </div>
+        <div class="field">
+          <label for="n-body">Tartalom</label>
+          <textarea id="n-body" rows="5"></textarea>
+        </div>
+        <p class="modal-err" id="news-modal-err"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost btn-sm" id="news-modal-cancel">Mégse</button>
+        <button class="btn btn-primary btn-sm" id="news-modal-save">Hír mentése</button>
       </div>
     </div>
   </div>

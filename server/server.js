@@ -96,6 +96,10 @@ app.get('/api/shop', (req, res) => {
   res.json(db.getPublicShop());
 });
 
+app.get('/api/news', (req, res) => {
+  res.json(db.getNews());
+});
+
 app.post('/api/orders', (req, res) => {
   const customer = currentCustomer(req); // attach account if logged in
   const result = db.createOrder(req.body || {}, customer);
@@ -162,6 +166,21 @@ app.patch('/api/admin/orders/:id', requireAuth, (req, res) => {
   const result = db.updateOrderStatus(req.params.id, (req.body || {}).status);
   if (result.error) return res.status(400).json({ error: result.error });
   res.json({ ok: true, order: result.order });
+});
+
+// news management
+app.post('/api/admin/news', requireAuth, (req, res) => {
+  const r = db.addNews(req.body || {});
+  if (r.error) return res.status(400).json({ error: r.error });
+  res.status(201).json(r.item);
+});
+app.put('/api/admin/news/:id', requireAuth, (req, res) => {
+  const r = db.updateNews(req.params.id, req.body || {});
+  if (r.error) return res.status(r.error === 'A hír nem található.' ? 404 : 400).json({ error: r.error });
+  res.json(r.item);
+});
+app.delete('/api/admin/news/:id', requireAuth, (req, res) => {
+  res.json(db.deleteNews(req.params.id));
 });
 
 // product image upload (own JSON parser with a larger limit)

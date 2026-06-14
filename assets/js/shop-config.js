@@ -175,6 +175,12 @@
     return api('/api/account/orders').catch(function () { return []; });
   }
 
+  /* ---------- News ---------- */
+  function getNews() { return api('/api/news').catch(function () { return []; }); }
+  function addNews(n) { return api('/api/admin/news', { method: 'POST', body: n }); }
+  function updateNews(id, n) { return api('/api/admin/news/' + encodeURIComponent(id), { method: 'PUT', body: n }); }
+  function deleteNews(id) { return api('/api/admin/news/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
   /* ---------- Image upload (admin) ---------- */
   function uploadImage(dataUrl) {
     return api('/api/admin/upload', { method: 'POST', body: { data: dataUrl } })
@@ -220,6 +226,10 @@
     logoutCustomer: logoutCustomer,
     customerMe: customerMe,
     myOrders: myOrders,
+    getNews: getNews,
+    addNews: addNews,
+    updateNews: updateNews,
+    deleteNews: deleteNews,
     uploadImage: uploadImage,
     // sync helpers
     getCart: getCart,

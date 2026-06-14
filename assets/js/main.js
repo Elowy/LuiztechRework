@@ -187,6 +187,62 @@
   }
 
   /* ============================================================
+     Clickable references → detail modal
+     ============================================================ */
+  const refModal = $('#ref-modal');
+  if (refModal) {
+    const openRef = (card) => {
+      const tag = card.querySelector('.work-tag');
+      const title = card.querySelector('h3');
+      const desc = card.querySelector('p');
+      const meta = card.querySelector('.work-meta');
+      $('#ref-modal-tag').textContent = tag ? tag.textContent : 'Projekt';
+      $('#ref-modal-title').textContent = title ? title.textContent : '';
+      $('#ref-modal-desc').textContent = desc ? desc.textContent : '';
+      $('#ref-modal-more').textContent = card.getAttribute('data-more') || '';
+      $('#ref-modal-meta').innerHTML = meta ? meta.innerHTML : '';
+      refModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    };
+    const closeRef = () => { refModal.hidden = true; document.body.style.overflow = ''; };
+
+    $$('.work-card.clickable').forEach((card) => {
+      card.addEventListener('click', () => openRef(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRef(card); }
+      });
+    });
+    $('#ref-modal-close').addEventListener('click', closeRef);
+    refModal.addEventListener('click', (e) => { if (e.target === refModal) closeRef(); });
+    $('#ref-modal-cta').addEventListener('click', closeRef);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !refModal.hidden) closeRef(); });
+  }
+
+  /* ============================================================
+     News (loaded from backend if available)
+     ============================================================ */
+  const newsSection = $('#news');
+  const newsGrid = $('#news-grid');
+  if (newsSection && newsGrid && typeof fetch === 'function') {
+    const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmtDate = (d) => { try { return new Date(d).toLocaleDateString('hu-HU'); } catch (e) { return d || ''; } };
+    fetch('/api/news', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((items) => {
+        if (!Array.isArray(items) || !items.length) return;
+        newsGrid.innerHTML = items.slice(0, 6).map((n) =>
+          '<article class="news-card reveal in">' +
+            '<time class="news-date">' + escHtml(fmtDate(n.date)) + '</time>' +
+            '<h3>' + escHtml(n.title) + '</h3>' +
+            (n.body ? '<p>' + escHtml(n.body) + '</p>' : '') +
+          '</article>'
+        ).join('');
+        newsSection.hidden = false;
+      })
+      .catch(() => { /* no backend → keep section hidden */ });
+  }
+
+  /* ============================================================
      Particle network background canvas
      ============================================================ */
   const canvas = $('#bg-canvas');

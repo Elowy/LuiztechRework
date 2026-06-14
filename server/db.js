@@ -46,7 +46,8 @@ function defaults() {
       hash: admin.hash
     },
     users: [],
-    orders: []
+    orders: [],
+    news: []
   };
 }
 
@@ -60,6 +61,7 @@ function load() {
       db.products = db.products || [];
       db.users = db.users || [];
       db.orders = db.orders || [];
+      db.news = db.news || [];
     } else {
       db = defaults();
       persist();
@@ -94,6 +96,14 @@ function getConfig() {
 
 const ALLOWED_CONFIG = ['name', 'tagline', 'accent', 'accent2', 'theme', 'currency', 'heroTitle', 'heroText', 'freeShippingOver'];
 
+function parseStock(v) {
+  // empty / null / undefined => null (korlátlan, nem követett)
+  if (v === '' || v === null || v === undefined) return null;
+  const n = Number(v);
+  if (!isFinite(n)) return null;
+  return Math.max(0, Math.round(n));
+}
+
 function sanitizeProduct(p, fallbackId) {
   let image = String(p.image || '').slice(0, 300);
   // only allow our own uploaded paths or http(s) urls
@@ -105,7 +115,8 @@ function sanitizeProduct(p, fallbackId) {
     price: Math.max(0, Math.round(Number(p.price) || 0)),
     category: String(p.category || '').slice(0, 60),
     emoji: String(p.emoji || '📦').slice(0, 8),
-    image: image
+    image: image,
+    stock: parseStock(p.stock)
   };
 }
 
@@ -218,6 +229,15 @@ function createOrder(payload, user) {
     .filter(Boolean);
   if (!items.length) return null;
 
+  // stock check (only for tracked products)
+  const shortages = items.filter((it) => {
+    const p = byId[it.id];
+    return p && p.stock !== null && p.stock !== undefined && it.qty > p.stock;
+  });
+  if (shortages.length) {
+    return { error: 'Nincs elég készlet: ' + shortages.map((s) => s.name).join(', ') + '.' };
+  }
+
   const c = payload.customer || {};
   const customer = {
     name: String((user && user.name) || c.name || '').slice(0, 120),
@@ -240,6 +260,12 @@ function createOrder(payload, user) {
     status: 'Új',
     createdAt: new Date().toISOString()
   };
+  // decrement tracked stock
+  items.forEach((it) => {
+    const p = byId[it.id];
+    if (p && p.stock !== null && p.stock !== undefined) p.stock = Math.max(0, p.stock - it.qty);
+  });
+
   db.orders.unshift(order);
   if (db.orders.length > 1000) db.orders.length = 1000;
   persist();
@@ -259,6 +285,44 @@ function updateOrderStatus(id, status) {
 function getOrders() { ensure(); return db.orders; }
 function getOrdersByUser(userId) { ensure(); return db.orders.filter((o) => o.userId === userId); }
 
+/* ---------- News / announcements ---------- */
+function sanitizeNews(n, existing) {
+  const item = existing || { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), createdAt: new Date().toISOString() };
+  item.title = String(n.title || '').slice(0, 160);
+  item.body = String(n.body || '').slice(0, 4000);
+  item.date = String(n.date || (existing && existing.date) || new Date().toISOString().slice(0, 10)).slice(0, 30);
+  return item;
+}
+
+function getNews() { ensure(); return db.news; }
+
+function addNews(n) {
+  ensure();
+  if (!String(n.title || '').trim()) return { error: 'A cím megadása kötelező.' };
+  const item = sanitizeNews(n);
+  db.news.unshift(item);
+  persist();
+  return { item: item };
+}
+
+function updateNews(id, n) {
+  ensure();
+  const item = db.news.filter((x) => x.id === id)[0];
+  if (!item) return { error: 'A hír nem található.' };
+  if (!String(n.title || '').trim()) return { error: 'A cím megadása kötelező.' };
+  sanitizeNews(n, item);
+  persist();
+  return { item: item };
+}
+
+function deleteNews(id) {
+  ensure();
+  const before = db.news.length;
+  db.news = db.news.filter((x) => x.id !== id);
+  persist();
+  return { ok: db.news.length < before };
+}
+
 module.exports = {
   load,
   getPublicShop,
@@ -276,6 +340,10 @@ module.exports = {
   getOrders,
   getOrdersByUser,
   ORDER_STATUSES,
+  getNews,
+  addNews,
+  updateNews,
+  deleteNews,
   DEFAULT_CONFIG,
   DEFAULT_PRODUCTS
 };

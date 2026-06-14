@@ -83,17 +83,25 @@
       var media = p.image
         ? '<img class="shop-product-img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy">'
         : '<span class="shop-product-emoji">' + (p.emoji || '📦') + '</span>';
+      var soldOut = p.stock === 0;
+      var lowStock = p.stock != null && p.stock > 0 && p.stock <= 5;
+      var stockTag = soldOut ? '<span class="shop-product-stock sold">Elfogyott</span>'
+        : (lowStock ? '<span class="shop-product-stock low">Utolsó ' + p.stock + ' db</span>' : '');
+      var btn = soldOut
+        ? '<button class="btn btn-ghost btn-sm" disabled>Elfogyott</button>'
+        : '<button class="btn btn-primary btn-sm add-to-cart" data-id="' + esc(p.id) + '">Kosárba</button>';
       card.innerHTML =
-        '<div class="shop-product-media">' +
+        '<div class="shop-product-media' + (soldOut ? ' is-sold' : '') + '">' +
           media +
           (p.category ? '<span class="shop-product-cat">' + esc(p.category) + '</span>' : '') +
+          stockTag +
         '</div>' +
         '<div class="shop-product-body">' +
           '<h3>' + esc(p.name) + '</h3>' +
           '<p>' + esc(p.desc || '') + '</p>' +
           '<div class="shop-product-foot">' +
             '<span class="shop-product-price">' + S.formatPrice(p.price, cfg) + '</span>' +
-            '<button class="btn btn-primary btn-sm add-to-cart" data-id="' + esc(p.id) + '">Kosárba</button>' +
+            btn +
           '</div>' +
         '</div>';
       grid.appendChild(card);
@@ -110,8 +118,26 @@
   }
 
   /* ---------- Cart ---------- */
-  function addToCart(id) { cart[id] = (cart[id] || 0) + 1; S.saveCart(cart); updateCartUI(); openCart(); }
-  function setQty(id, qty) { if (qty <= 0) delete cart[id]; else cart[id] = qty; S.saveCart(cart); updateCartUI(); }
+  function productById(id) {
+    var found = null;
+    (cfg.products || []).forEach(function (p) { if (p.id === id) found = p; });
+    return found;
+  }
+  function stockLimit(id) {
+    var p = productById(id);
+    return (p && p.stock != null) ? p.stock : Infinity;
+  }
+  function addToCart(id) {
+    var limit = stockLimit(id);
+    if (limit <= 0) return;
+    cart[id] = Math.min((cart[id] || 0) + 1, limit);
+    S.saveCart(cart); updateCartUI(); openCart();
+  }
+  function setQty(id, qty) {
+    var limit = stockLimit(id);
+    if (qty <= 0) delete cart[id]; else cart[id] = Math.min(qty, limit);
+    S.saveCart(cart); updateCartUI();
+  }
 
   function updateCartUI() {
     var count = S.cartCount(cart);

@@ -354,6 +354,22 @@
 .status-badge.st-done { color: #00ffa3; background: rgba(0,255,163,.12); }
 .status-badge.st-cancelled { color: #ff7a7a; background: rgba(255,122,122,.12); }
 
+/* ---------- News admin ---------- */
+.news-admin-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.news-admin-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.news-admin-info { flex-grow: 1; display: flex; flex-direction: column; }
+.news-admin-title { font-weight: 600; }
+.news-admin-date { font-family: var(--mono); font-size: .8rem; color: var(--text-dim); }
+.modal-hint { font-size: .8rem; color: var(--text-dim); margin: -6px 0 8px; }
+
 .admin-inline-note { font-size: .88rem; margin-top: 14px; min-height: 1em; }
 .admin-inline-note.ok { color: var(--accent-3); }
 .admin-inline-note.err { color: #ff7a7a; }
