@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /setup.php
+Disallow: /api/
+
+Sitemap: https://luiz-tech.hu/sitemap.xml

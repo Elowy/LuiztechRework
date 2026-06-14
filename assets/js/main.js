@@ -180,9 +180,30 @@
         note.className = 'form-note err';
         return;
       }
-      note.textContent = 'Köszönjük, ' + name + '! Hamarosan jelentkezünk — jellemzően 12 órán belül.';
-      note.className = 'form-note ok';
-      form.reset();
+      const payload = {
+        name: name, email: email,
+        topic: ($('#topic') || {}).value || '',
+        message: ($('#message') || {}).value || ''
+      };
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      note.textContent = 'Küldés...'; note.className = 'form-note';
+      const done = (ok) => {
+        if (btn) btn.disabled = false;
+        if (ok) {
+          note.textContent = 'Köszönjük, ' + name + '! Megkaptuk az üzeneted — jellemzően 12 órán belül válaszolunk.';
+          note.className = 'form-note ok';
+          form.reset();
+        } else {
+          note.textContent = 'Hiba történt a küldés során. Próbáld újra, vagy írj az info@luiz-tech.hu címre.';
+          note.className = 'form-note err';
+        }
+      };
+      fetch('/api/messages', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then((r) => done(r.ok)).catch(() => done(false));
     });
   }
 
@@ -279,6 +300,24 @@
         newsSection.hidden = false;
       })
       .catch(() => { /* no backend → keep section hidden */ });
+  }
+
+  /* ============================================================
+     FAQ (loaded from backend if available)
+     ============================================================ */
+  const faqList = $('#faq-list');
+  if (faqList && typeof fetch === 'function') {
+    const escF = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    fetch('/api/faq', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((items) => {
+        if (!Array.isArray(items) || !items.length) return;
+        faqList.innerHTML = items.map((it) =>
+          '<details class="faq-item"><summary>' + escF(it.question) + '</summary>' +
+          '<div class="faq-answer">' + escF(it.answer) + '</div></details>'
+        ).join('');
+      })
+      .catch(() => { /* nincs backend → marad a statikus */ });
   }
 
   /* ============================================================

@@ -7,18 +7,45 @@
   <meta name="description" content="Luiz-Tech — professzionális informatikai szolgáltatások: webfejlesztés, webshop, asztali alkalmazások, kiberbiztonság, hálózati támogatás és üzemeltetés. Ingyenes árajánlat 12 órán belül." />
   <meta name="theme-color" content="#0a0e17" />
 
+  <link rel="canonical" href="https://luiz-tech.hu/" />
+
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Luiz-Tech — Web- és asztali fejlesztés, IT üzemeltetés" />
   <meta property="og:description" content="Professzionális IT szolgáltatások: webfejlesztés, webshop, kiberbiztonság, hálózati támogatás. Ingyenes árajánlat 12 órán belül." />
   <meta property="og:locale" content="hu_HU" />
+  <meta property="og:url" content="https://luiz-tech.hu/" />
+  <meta property="og:site_name" content="Luiz-Tech" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Luiz-Tech — Web- és asztali fejlesztés, IT üzemeltetés" />
+  <meta name="twitter:description" content="Professzionális IT szolgáltatások: webfejlesztés, webshop, kiberbiztonság, hálózati támogatás." />
+
+  <!-- Strukturált adat (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "Luiz-Tech",
+    "description": "Web- és asztali alkalmazások fejlesztése, webshopok, kiberbiztonság és teljes körű IT-üzemeltetés.",
+    "url": "https://luiz-tech.hu/",
+    "email": "info@luiz-tech.hu",
+    "areaServed": "HU",
+    "knowsAbout": ["Webfejlesztés", "Webshop", "Asztali alkalmazások", "Kiberbiztonság", "Hálózat", "SEO"],
+    "makesOffer": [
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Webfejlesztés" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Webshop fejlesztés" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Kiberbiztonság" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "IT üzemeltetés" } }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=3" />
+  <link rel="stylesheet" href="assets/css/style.css?v=4" />
 </head>
 <body>
   <!-- Animated background canvas (particle network) -->
@@ -262,6 +289,57 @@
       </div>
     </section>
 
+    <!-- ===================== PRICING ===================== -->
+    <section class="section" id="pricing">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// csomagok</span>
+          <h2 class="section-title">Átlátható árazás</h2>
+          <p class="section-sub">Válaszd a hozzád illő csomagot — az árak tájékoztató jellegűek, a végleges ajánlatot 12 órán belül küldjük.</p>
+        </div>
+        <div class="pricing-grid">
+          <article class="price-card reveal" data-reveal>
+            <h3>Induló</h3>
+            <div class="price">99 000 Ft<span>-tól</span></div>
+            <p class="price-sub">Bemutatkozó weboldalakhoz.</p>
+            <ul>
+              <li>Egyoldalas / bemutatkozó oldal</li>
+              <li>Reszponzív, mobilbarát design</li>
+              <li>Alap SEO beállítás</li>
+              <li>Kapcsolati űrlap</li>
+            </ul>
+            <a href="#contact" class="btn btn-ghost btn-block">Árajánlat</a>
+          </article>
+          <article class="price-card price-featured reveal" data-reveal>
+            <div class="price-badge">Népszerű</div>
+            <h3>Üzleti</h3>
+            <div class="price">249 000 Ft<span>-tól</span></div>
+            <p class="price-sub">Több oldalas weboldal vagy webshop.</p>
+            <ul>
+              <li>Több oldalas weboldal / webshop</li>
+              <li>Egyedi design + admin felület</li>
+              <li>SEO &amp; teljesítmény optimalizálás</li>
+              <li>Fizetési &amp; szállítási integráció</li>
+              <li>1 hónap támogatás</li>
+            </ul>
+            <a href="#contact" class="btn btn-primary btn-block">Árajánlat</a>
+          </article>
+          <article class="price-card reveal" data-reveal>
+            <h3>Egyedi / Üzemeltetés</h3>
+            <div class="price">Egyedi</div>
+            <p class="price-sub">Komplex rendszerek és folyamatos IT.</p>
+            <ul>
+              <li>Egyedi web-/asztali alkalmazás</li>
+              <li>Kiberbiztonsági audit</li>
+              <li>Hálózat &amp; szerver üzemeltetés</li>
+              <li>Folyamatos havidíjas támogatás</li>
+            </ul>
+            <a href="#contact" class="btn btn-ghost btn-block">Beszéljünk</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== PROCESS ===================== -->
     <section class="section" id="process">
       <div class="container">
@@ -473,6 +551,35 @@
       </div>
     </section>
 
+    <!-- ===================== FAQ ===================== -->
+    <section class="section section-alt" id="faq">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// gyik</span>
+          <h2 class="section-title">Gyakori kérdések</h2>
+          <p class="section-sub">A leggyakrabban felmerülő kérdések — ha valami kimaradt, írj bátran!</p>
+        </div>
+        <div class="faq-list" id="faq-list">
+          <details class="faq-item">
+            <summary>Mennyi idő alatt készül el egy weboldal?</summary>
+            <div class="faq-answer">Egyszerűbb oldalakat akár 8–24 óra alatt élesítünk; összetettebb projekteknél a pontos időt az ingyenes árajánlatban adjuk meg.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Mennyibe kerül egy projekt?</summary>
+            <div class="faq-answer">Minden megoldás egyedi. Írd le pár mondatban az igényed, és 12 órán belül küldünk egy átlátható, kötelezettségmentes árajánlatot.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Vállaltok üzemeltetést és karbantartást is?</summary>
+            <div class="faq-answer">Igen. Hálózat, szerver, mentés, biztonsági frissítések és folyamatos támogatás — igény szerint havidíjas konstrukcióban is.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Hogyan kezelitek az adatok biztonságát?</summary>
+            <div class="faq-answer">Titkosított jelszótárolás, rendszeres mentés, biztonsági szkennelés és felhasználói képzés. A kiberbiztonság minden megoldásunk alapja.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== CTA / CONTACT ===================== -->
     <section class="section section-alt" id="contact">
       <div class="container contact-grid">
@@ -591,6 +698,6 @@
     </div>
   </footer>
 
-  <script src="assets/js/main.js?v=3" defer></script>
+  <script src="assets/js/main.js?v=4" defer></script>
 </body>
 </html>

@@ -21,7 +21,10 @@
   }
   function setText(sel, val) { var el = $(sel); if (el != null && val != null) el.textContent = val; }
   function statusClass(s) {
-    return { 'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled' }[s] || 'st-new';
+    return {
+      'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled',
+      'Nyitott': 'st-new', 'Válaszra vár': 'st-progress', 'Megoldva': 'st-done', 'Lezárt': 'st-done'
+    }[s] || 'st-new';
   }
 
   /* ---------- Branding ---------- */
@@ -329,6 +332,68 @@
     $('#account-drawer').setAttribute('aria-hidden', 'false');
     $('#account-overlay').hidden = false;
     loadMyOrders();
+    loadMyTickets();
+  }
+
+  /* ---------- Support tickets ---------- */
+  function loadMyTickets() {
+    var wrap = $('#account-tickets');
+    wrap.innerHTML = '<p class="cart-empty" style="margin-top:8px">Betöltés...</p>';
+    S.myTickets().then(function (data) {
+      var list = (data && data.tickets) || [];
+      if (!list.length) { wrap.innerHTML = '<p class="cart-empty" style="margin-top:8px">Még nincs ticketed.</p>'; return; }
+      wrap.innerHTML = '';
+      list.forEach(function (t) {
+        var d = document.createElement('button');
+        d.className = 'account-ticket';
+        d.innerHTML = '<span>' + esc(t.subject) + '</span><span class="status-badge ' + statusClass(t.status) + '">' + esc(t.status) + '</span>';
+        d.addEventListener('click', function () { openTicketView(t.id); });
+        wrap.appendChild(d);
+      });
+    }).catch(function () { wrap.innerHTML = '<p class="cart-empty" style="margin-top:8px">Nem sikerült betölteni.</p>'; });
+  }
+  function renderThread(t) {
+    return (t.messages || []).map(function (m) {
+      var when = ''; try { when = new Date(m.createdAt).toLocaleString('hu-HU'); } catch (e) {}
+      return '<div class="tmsg ' + (m.author === 'admin' ? 'tmsg-admin' : 'tmsg-cust') + '">' +
+        '<div class="tmsg-meta">' + (m.author === 'admin' ? 'Luiz-Tech' : 'Te') + ' · ' + when + '</div>' +
+        '<div class="tmsg-body">' + esc(m.body) + '</div></div>';
+    }).join('');
+  }
+  var viewTicketId = null;
+  function openTicketView(id) {
+    viewTicketId = id;
+    $('#tv-err').textContent = ''; $('#tv-body').value = '';
+    $('#tv-thread').innerHTML = '<p class="cart-empty">Betöltés...</p>';
+    $('#ticket-view-modal').hidden = false;
+    S.getMyTicket(id).then(function (t) {
+      $('#tv-subject').textContent = t.subject;
+      $('#tv-thread').innerHTML = renderThread(t);
+    }).catch(function () { $('#tv-thread').innerHTML = '<p class="cart-empty">Nem sikerült betölteni.</p>'; });
+  }
+  function initTickets() {
+    $('#ticket-new-btn').addEventListener('click', function () {
+      $('#tn-subject').value = ''; $('#tn-body').value = ''; $('#tn-err').textContent = '';
+      $('#ticket-new-modal').hidden = false;
+    });
+    $('#ticket-new-close').addEventListener('click', function () { $('#ticket-new-modal').hidden = true; });
+    $('#ticket-new-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+    $('#tn-send').addEventListener('click', function () {
+      var subject = $('#tn-subject').value.trim(), body = $('#tn-body').value.trim();
+      if (!subject || !body) { $('#tn-err').textContent = 'Tárgy és leírás megadása kötelező.'; return; }
+      var btn = this; btn.disabled = true;
+      S.createTicket(subject, body).then(function () { btn.disabled = false; $('#ticket-new-modal').hidden = true; loadMyTickets(); })
+        .catch(function (e) { btn.disabled = false; $('#tn-err').textContent = (e && e.message) || 'Hiba történt.'; });
+    });
+    $('#ticket-view-close').addEventListener('click', function () { $('#ticket-view-modal').hidden = true; });
+    $('#ticket-view-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+    $('#tv-send').addEventListener('click', function () {
+      var body = $('#tv-body').value.trim();
+      if (!body) { $('#tv-err').textContent = 'Az üzenet nem lehet üres.'; return; }
+      var btn = this; btn.disabled = true;
+      S.replyMyTicket(viewTicketId, body).then(function () { btn.disabled = false; openTicketView(viewTicketId); loadMyTickets(); })
+        .catch(function (e) { btn.disabled = false; $('#tv-err').textContent = (e && e.message) || 'Hiba történt.'; });
+    });
   }
   function closeAccount() {
     $('#account-drawer').classList.remove('open');
@@ -375,6 +440,7 @@
   /* ---------- Init ---------- */
   function init() {
     initAuth();
+    initTickets();
     $('#cart-btn').addEventListener('click', openCart);
     $('#cart-close').addEventListener('click', closeCart);
     $('#cart-overlay').addEventListener('click', closeCart);

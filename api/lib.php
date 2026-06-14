@@ -7,6 +7,16 @@
 date_default_timezone_set('Europe/Budapest');
 
 const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
+const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
+const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
+const SCHEMA_VERSION = 2;
+
+const DEFAULT_FAQ = [
+  ['id'=>'f1','question'=>'Mennyi idő alatt készül el egy weboldal?','answer'=>'Egyszerűbb oldalakat akár 8–24 óra alatt élesítünk; összetettebb projekteknél a pontos időt az ingyenes árajánlatban adjuk meg.'],
+  ['id'=>'f2','question'=>'Mennyibe kerül egy projekt?','answer'=>'Minden megoldás egyedi. Írd le pár mondatban az igényed, és 12 órán belül küldünk egy átlátható, kötelezettségmentes árajánlatot.'],
+  ['id'=>'f3','question'=>'Vállaltok üzemeltetést és karbantartást is?','answer'=>'Igen. Hálózat, szerver, mentés, biztonsági frissítések és folyamatos támogatás — igény szerint havidíjas konstrukcióban is.'],
+  ['id'=>'f4','question'=>'Hogyan kezelitek az adatok biztonságát?','answer'=>'Titkosított jelszótárolás, rendszeres mentés, biztonsági szkennelés és felhasználói képzés. A kiberbiztonság minden megoldásunk alapja.'],
+];
 
 const DEFAULT_CONFIG = [
   'name' => 'Luiz-Tech Shop',
@@ -82,21 +92,27 @@ function db() {
   return $pdo;
 }
 
-/* Könnyű "migráció": ha új tábla hiányzik egy korábbi telepítésből,
-   létrehozzuk (és a referenciáknál egyszer felvisszük az alapokat). */
+/* Verziózott migráció: új táblákat hoz létre egy korábbi telepítéshez,
+   és egyszer feltölti az új tartalom-táblák alapjait. Sémabumpkor fut le. */
 function migrate(PDO $pdo) {
   try {
-    $pdo->query("SELECT 1 FROM refs LIMIT 1");
+    $row = $pdo->query("SELECT v FROM settings WHERE k = 'schema_version'")->fetch();
+    $ver = $row ? (int)$row['v'] : 0;
   } catch (Throwable $e) {
-    try {
-      create_schema($pdo);
-      $cnt = (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'];
-      if ($cnt === 0) {
-        $i = 0;
-        foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
-      }
-    } catch (Throwable $e2) { /* csendben tovább */ }
+    return; // settings sincs → nincs rendesen telepítve
   }
+  if ($ver >= SCHEMA_VERSION) return;
+  try {
+    create_schema($pdo);
+    if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
+      $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
+    }
+    if ((int)$pdo->query("SELECT COUNT(*) c FROM faq")->fetch()['c'] === 0) {
+      $i = 0; foreach (DEFAULT_FAQ as $f) insert_faq($pdo, $f, $i++);
+    }
+    $pdo->prepare("INSERT INTO settings (k, v) VALUES ('schema_version', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)")
+        ->execute([(string)SCHEMA_VERSION]);
+  } catch (Throwable $e2) { /* csendben tovább */ }
 }
 
 /* PDO felépítése megadott adatokból (setup-hoz, kivétellel) */
@@ -181,6 +197,42 @@ function create_schema(PDO $pdo) {
     url VARCHAR(300) DEFAULT '',
     sort INT NOT NULL DEFAULT 0
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS messages (
+    id VARCHAR(40) PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    email VARCHAR(190) NOT NULL,
+    topic VARCHAR(60) DEFAULT '',
+    message TEXT,
+    status VARCHAR(40) NOT NULL DEFAULT 'Új',
+    created_at DATETIME NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS faq (
+    id VARCHAR(40) PRIMARY KEY,
+    question VARCHAR(300) NOT NULL,
+    answer TEXT,
+    sort INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS tickets (
+    id VARCHAR(40) PRIMARY KEY,
+    user_id VARCHAR(40) NOT NULL,
+    subject VARCHAR(200) NOT NULL,
+    status VARCHAR(40) NOT NULL DEFAULT 'Nyitott',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    KEY user_idx (user_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS ticket_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id VARCHAR(40) NOT NULL,
+    author VARCHAR(20) NOT NULL DEFAULT 'customer',
+    body TEXT,
+    created_at DATETIME NOT NULL,
+    KEY ticket_idx (ticket_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 function seed_defaults(PDO $pdo) {
@@ -204,6 +256,15 @@ function seed_defaults(PDO $pdo) {
     $i = 0;
     foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
   }
+  // faq
+  $cnt = (int)$pdo->query("SELECT COUNT(*) c FROM faq")->fetch()['c'];
+  if ($cnt === 0) {
+    $i = 0;
+    foreach (DEFAULT_FAQ as $f) insert_faq($pdo, $f, $i++);
+  }
+  // séma-verzió
+  $pdo->prepare("INSERT INTO settings (k, v) VALUES ('schema_version', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)")
+      ->execute([(string)SCHEMA_VERSION]);
 }
 
 /* ---------- Config ---------- */
@@ -450,6 +511,68 @@ function map_reference($r) {
 }
 function get_references(PDO $pdo) {
   return array_map('map_reference', $pdo->query("SELECT * FROM refs ORDER BY sort ASC, title ASC")->fetchAll());
+}
+
+/* ---------- FAQ ---------- */
+function insert_faq(PDO $pdo, array $f, $sort = 0) {
+  $id = (string)($f['id'] ?? '');
+  if ($id === '') $id = 'f' . uniqid();
+  $stmt = $pdo->prepare("INSERT INTO faq (id,question,answer,sort) VALUES (?,?,?,?)");
+  $stmt->execute([$id, mb_substr((string)($f['question'] ?? ''), 0, 300), mb_substr((string)($f['answer'] ?? ''), 0, 4000), (int)$sort]);
+  return $id;
+}
+function map_faq($r) { return ['id'=>$r['id'], 'question'=>$r['question'], 'answer'=>$r['answer']]; }
+function get_faq(PDO $pdo) { return array_map('map_faq', $pdo->query("SELECT * FROM faq ORDER BY sort ASC")->fetchAll()); }
+
+/* ---------- Messages (leadek a kapcsolati űrlapról) ---------- */
+function create_message(PDO $pdo, array $b) {
+  $name = mb_substr(trim((string)($b['name'] ?? '')), 0, 120);
+  $email = mb_substr(trim((string)($b['email'] ?? '')), 0, 190);
+  $msg = mb_substr(trim((string)($b['message'] ?? '')), 0, 4000);
+  if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) return ['error' => 'Név és érvényes e-mail cím megadása kötelező.'];
+  if ($msg === '') return ['error' => 'Az üzenet nem lehet üres.'];
+  $id = 'MSG-' . strtoupper(substr(uniqid(), -8));
+  $stmt = $pdo->prepare("INSERT INTO messages (id,name,email,topic,message,status,created_at) VALUES (?,?,?,?,?,?,?)");
+  $stmt->execute([$id, $name, $email, mb_substr((string)($b['topic'] ?? ''), 0, 60), $msg, 'Új', date('Y-m-d H:i:s')]);
+  return ['id' => $id];
+}
+function map_message($r) {
+  return ['id'=>$r['id'],'name'=>$r['name'],'email'=>$r['email'],'topic'=>$r['topic'],'message'=>$r['message'],'status'=>$r['status'],'createdAt'=>str_replace(' ','T',$r['created_at'])];
+}
+function get_messages(PDO $pdo) { return array_map('map_message', $pdo->query("SELECT * FROM messages ORDER BY created_at DESC")->fetchAll()); }
+
+/* ---------- Support ticketek ---------- */
+function map_ticket($r) {
+  return ['id'=>$r['id'],'userId'=>$r['user_id'],'subject'=>$r['subject'],'status'=>$r['status'],
+    'createdAt'=>str_replace(' ','T',$r['created_at']),'updatedAt'=>str_replace(' ','T',$r['updated_at'])];
+}
+function ticket_messages(PDO $pdo, $tid) {
+  $stmt = $pdo->prepare("SELECT author, body, created_at FROM ticket_messages WHERE ticket_id = ? ORDER BY id ASC");
+  $stmt->execute([$tid]);
+  return array_map(function ($m) { return ['author'=>$m['author'],'body'=>$m['body'],'createdAt'=>str_replace(' ','T',$m['created_at'])]; }, $stmt->fetchAll());
+}
+function create_ticket(PDO $pdo, $userId, $subject, $body) {
+  $subject = mb_substr(trim((string)$subject), 0, 200);
+  $body = mb_substr(trim((string)$body), 0, 4000);
+  if ($subject === '' || $body === '') return ['error' => 'Tárgy és üzenet megadása kötelező.'];
+  $id = 'TIC-' . strtoupper(substr(uniqid(), -8));
+  $now = date('Y-m-d H:i:s');
+  $pdo->prepare("INSERT INTO tickets (id,user_id,subject,status,created_at,updated_at) VALUES (?,?,?,?,?,?)")
+      ->execute([$id, $userId, $subject, 'Nyitott', $now, $now]);
+  $pdo->prepare("INSERT INTO ticket_messages (ticket_id,author,body,created_at) VALUES (?,?,?,?)")
+      ->execute([$id, 'customer', $body, $now]);
+  return ['id' => $id];
+}
+function add_ticket_message(PDO $pdo, $tid, $author, $body, $newStatus = null) {
+  $body = mb_substr(trim((string)$body), 0, 4000);
+  if ($body === '') return ['error' => 'Az üzenet nem lehet üres.'];
+  $now = date('Y-m-d H:i:s');
+  $pdo->prepare("INSERT INTO ticket_messages (ticket_id,author,body,created_at) VALUES (?,?,?,?)")
+      ->execute([$tid, $author, $body, $now]);
+  $status = $newStatus && in_array($newStatus, TICKET_STATUSES, true) ? $newStatus
+            : ($author === 'admin' ? 'Válaszra vár' : 'Nyitott');
+  $pdo->prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?")->execute([$status, $now, $tid]);
+  return ['ok' => true];
 }
 
 /* ---------- Képfeltöltés ---------- */

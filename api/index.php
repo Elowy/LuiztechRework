@@ -35,6 +35,14 @@ if ($method === 'GET' && $route === '/news') {
 if ($method === 'GET' && $route === '/references') {
   json_out(get_references($pdo));
 }
+if ($method === 'GET' && $route === '/faq') {
+  json_out(get_faq($pdo));
+}
+if ($method === 'POST' && $route === '/messages') {
+  $r = create_message($pdo, body());
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true, 'id' => $r['id']], 201);
+}
 if ($method === 'POST' && $route === '/orders') {
   $cust = current_customer($pdo);
   $r = create_order($pdo, body(), $cust);
@@ -183,6 +191,82 @@ if ($method === 'DELETE' && match_route('/admin/references/{id}', $route, $param
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 
+/* ---- üzenetek / leadek ---- */
+if ($method === 'GET' && $route === '/admin/messages') {
+  require_admin();
+  json_out(['statuses' => MESSAGE_STATUSES, 'messages' => get_messages($pdo)]);
+}
+if ($method === 'PATCH' && match_route('/admin/messages/{id}', $route, $params)) {
+  require_admin();
+  $status = (string)(body()['status'] ?? '');
+  if (!in_array($status, MESSAGE_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
+  $stmt = $pdo->prepare("UPDATE messages SET status = ? WHERE id = ?"); $stmt->execute([$status, $params[0]]);
+  json_out(['ok' => true]);
+}
+if ($method === 'DELETE' && match_route('/admin/messages/{id}', $route, $params)) {
+  require_admin();
+  $stmt = $pdo->prepare("DELETE FROM messages WHERE id = ?"); $stmt->execute([$params[0]]);
+  json_out(['ok' => $stmt->rowCount() > 0]);
+}
+
+/* ---- GYIK ---- */
+if ($method === 'POST' && $route === '/admin/faq') {
+  require_admin();
+  $b = body();
+  if (trim((string)($b['question'] ?? '')) === '') json_error('A kérdés megadása kötelező.', 400);
+  $id = insert_faq($pdo, $b, (int)$pdo->query("SELECT COUNT(*) c FROM faq")->fetch()['c']);
+  $row = $pdo->prepare("SELECT * FROM faq WHERE id = ?"); $row->execute([$id]);
+  json_out(map_faq($row->fetch()), 201);
+}
+if ($method === 'PUT' && match_route('/admin/faq/{id}', $route, $params)) {
+  require_admin();
+  $b = body();
+  if (trim((string)($b['question'] ?? '')) === '') json_error('A kérdés megadása kötelező.', 400);
+  $chk = $pdo->prepare("SELECT id FROM faq WHERE id = ?"); $chk->execute([$params[0]]);
+  if (!$chk->fetch()) json_error('A kérdés nem található.', 404);
+  $stmt = $pdo->prepare("UPDATE faq SET question = ?, answer = ? WHERE id = ?");
+  $stmt->execute([mb_substr((string)$b['question'], 0, 300), mb_substr((string)($b['answer'] ?? ''), 0, 4000), $params[0]]);
+  $row = $pdo->prepare("SELECT * FROM faq WHERE id = ?"); $row->execute([$params[0]]);
+  json_out(map_faq($row->fetch()));
+}
+if ($method === 'DELETE' && match_route('/admin/faq/{id}', $route, $params)) {
+  require_admin();
+  $stmt = $pdo->prepare("DELETE FROM faq WHERE id = ?"); $stmt->execute([$params[0]]);
+  json_out(['ok' => $stmt->rowCount() > 0]);
+}
+
+/* ---- support ticketek (admin) ---- */
+if ($method === 'GET' && $route === '/admin/tickets') {
+  require_admin();
+  $rows = $pdo->query("SELECT * FROM tickets ORDER BY updated_at DESC")->fetchAll();
+  json_out(['statuses' => TICKET_STATUSES, 'tickets' => array_map('map_ticket', $rows)]);
+}
+if ($method === 'GET' && match_route('/admin/tickets/{id}', $route, $params)) {
+  require_admin();
+  $row = $pdo->prepare("SELECT * FROM tickets WHERE id = ?"); $row->execute([$params[0]]);
+  $t = $row->fetch();
+  if (!$t) json_error('A ticket nem található.', 404);
+  $out = map_ticket($t); $out['messages'] = ticket_messages($pdo, $t['id']);
+  json_out($out);
+}
+if ($method === 'POST' && match_route('/admin/tickets/{id}/reply', $route, $params)) {
+  require_admin();
+  $b = body();
+  $chk = $pdo->prepare("SELECT id FROM tickets WHERE id = ?"); $chk->execute([$params[0]]);
+  if (!$chk->fetch()) json_error('A ticket nem található.', 404);
+  $r = add_ticket_message($pdo, $params[0], 'admin', $b['body'] ?? '', $b['status'] ?? null);
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true]);
+}
+if ($method === 'PATCH' && match_route('/admin/tickets/{id}', $route, $params)) {
+  require_admin();
+  $status = (string)(body()['status'] ?? '');
+  if (!in_array($status, TICKET_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
+  $stmt = $pdo->prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?");
+  $stmt->execute([$status, date('Y-m-d H:i:s'), $params[0]]);
+  json_out(['ok' => true]);
+}
+
 /* ---- képfeltöltés ---- */
 if ($method === 'POST' && $route === '/admin/upload') {
   require_admin();
@@ -236,6 +320,41 @@ if ($method === 'GET' && $route === '/account/orders') {
   $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC");
   $stmt->execute([$u['id']]);
   json_out(array_map(function ($r) use ($pdo) { return map_order($pdo, $r); }, $stmt->fetchAll()));
+}
+
+/* ---- support ticketek (vásárló) ---- */
+if ($method === 'GET' && $route === '/account/tickets') {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  $stmt = $pdo->prepare("SELECT * FROM tickets WHERE user_id = ? ORDER BY updated_at DESC");
+  $stmt->execute([$u['id']]);
+  json_out(['statuses' => TICKET_STATUSES, 'tickets' => array_map('map_ticket', $stmt->fetchAll())]);
+}
+if ($method === 'POST' && $route === '/account/tickets') {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  $b = body();
+  $r = create_ticket($pdo, $u['id'], $b['subject'] ?? '', $b['body'] ?? '');
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true, 'id' => $r['id']], 201);
+}
+if ($method === 'GET' && match_route('/account/tickets/{id}', $route, $params)) {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  $row = $pdo->prepare("SELECT * FROM tickets WHERE id = ? AND user_id = ?"); $row->execute([$params[0], $u['id']]);
+  $t = $row->fetch();
+  if (!$t) json_error('A ticket nem található.', 404);
+  $out = map_ticket($t); $out['messages'] = ticket_messages($pdo, $t['id']);
+  json_out($out);
+}
+if ($method === 'POST' && match_route('/account/tickets/{id}/reply', $route, $params)) {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  $row = $pdo->prepare("SELECT id FROM tickets WHERE id = ? AND user_id = ?"); $row->execute([$params[0], $u['id']]);
+  if (!$row->fetch()) json_error('A ticket nem található.', 404);
+  $r = add_ticket_message($pdo, $params[0], 'customer', body()['body'] ?? '');
+  if (isset($r['error'])) json_error($r['error'], 400);
+  json_out(['ok' => true]);
 }
 
 /* ---- nincs ilyen útvonal ---- */

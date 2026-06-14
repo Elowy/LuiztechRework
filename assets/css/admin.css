@@ -354,6 +354,29 @@
 .status-badge.st-done { color: #00ffa3; background: rgba(0,255,163,.12); }
 .status-badge.st-cancelled { color: #ff7a7a; background: rgba(255,122,122,.12); }
 
+/* ---------- Support tickets (admin) ---------- */
+.ticket-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+.ticket-list { display: flex; flex-direction: column; gap: 8px; }
+.ticket-list-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  text-align: left; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); cursor: pointer; font-size: .9rem;
+}
+.ticket-list-item:hover { border-color: var(--border-strong); }
+.ticket-list-item.active { border-color: var(--accent); background: var(--grad-soft); }
+.ticket-subj { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-detail {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
+}
+.ticket-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.ticket-reply textarea {
+  width: 100%; padding: 11px 14px; background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-family: var(--font); font-size: .92rem; margin-bottom: 10px;
+}
+.ticket-reply textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+@media (max-width: 760px) { .ticket-layout { grid-template-columns: 1fr; } }
+
 /* ---------- News admin ---------- */
 .news-admin-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .news-admin-row {

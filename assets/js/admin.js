@@ -16,6 +16,10 @@
   var newsItems = [];
   var refsLoaded = false;
   var refItems = [];
+  var faqLoaded = false;
+  var faqItems = [];
+  var messagesLoaded = false;
+  var ticketsLoaded = false;
 
   var PALETTES = [
     { a: '#38e1ff', b: '#6c7bff' }, { a: '#00ffa3', b: '#38e1ff' },
@@ -77,6 +81,9 @@
       if (name === 'orders' && !ordersLoaded) loadOrders();
       if (name === 'news' && !newsLoaded) loadNews();
       if (name === 'references' && !refsLoaded) loadReferences();
+      if (name === 'faq' && !faqLoaded) loadFaq();
+      if (name === 'messages' && !messagesLoaded) loadMessages();
+      if (name === 'support' && !ticketsLoaded) loadTickets();
     });
   });
 
@@ -467,11 +474,170 @@
   });
 
   /* ============================================================
+     FAQ
+     ============================================================ */
+  function loadFaq() {
+    var wrap = $('#faq-admin-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getFaq().then(function (items) {
+      faqLoaded = true; faqItems = items || []; renderFaqList();
+    }).catch(function () { wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+  }
+  function renderFaqList() {
+    var wrap = $('#faq-admin-list'); wrap.innerHTML = '';
+    if (!faqItems.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs kérdés. Adj hozzá egyet!</p>'; return; }
+    faqItems.forEach(function (f) {
+      var row = document.createElement('div');
+      row.className = 'news-admin-row';
+      row.innerHTML = '<div class="news-admin-info"><span class="news-admin-title">' + escAttr(f.question) + '</span></div>' +
+        '<div class="pa-actions"><button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
+        '<button class="icon-btn icon-danger" data-act="del" title="Törlés">🗑</button></div>';
+      row.querySelector('[data-act="edit"]').addEventListener('click', function () { openFaqModal(f); });
+      row.querySelector('[data-act="del"]').addEventListener('click', function () {
+        if (!confirm('Biztosan törlöd?')) return;
+        S.deleteFaq(f.id).then(function () { faqItems = faqItems.filter(function (x) { return x.id !== f.id; }); renderFaqList(); })
+          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+      });
+      wrap.appendChild(row);
+    });
+  }
+  function openFaqModal(f) {
+    $('#faq-modal-title').textContent = f ? 'kérdés szerkesztése' : 'új kérdés';
+    $('#fq-id').value = f ? f.id : '';
+    $('#fq-question').value = f ? f.question : '';
+    $('#fq-answer').value = f ? (f.answer || '') : '';
+    $('#faq-modal-err').textContent = '';
+    $('#faq-modal').hidden = false;
+    setTimeout(function () { $('#fq-question').focus(); }, 30);
+  }
+  $('#add-faq').addEventListener('click', function () { openFaqModal(null); });
+  $('#faq-modal-cancel').addEventListener('click', function () { $('#faq-modal').hidden = true; });
+  $('#faq-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+  $('#faq-modal-save').addEventListener('click', function () {
+    var q = $('#fq-question').value.trim();
+    if (!q) { $('#faq-modal-err').textContent = 'A kérdés kötelező.'; return; }
+    var payload = { question: q, answer: $('#fq-answer').value.trim() };
+    var id = $('#fq-id').value;
+    var btn = $('#faq-modal-save'); btn.disabled = true;
+    var p = id ? S.updateFaq(id, payload) : S.addFaq(payload);
+    p.then(function (item) {
+      btn.disabled = false;
+      if (id) faqItems = faqItems.map(function (x) { return x.id === id ? item : x; });
+      else faqItems.push(item);
+      renderFaqList(); $('#faq-modal').hidden = true;
+    }).catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logout(); location.reload(); return; } $('#faq-modal-err').textContent = e.message || 'Mentés sikertelen.'; });
+  });
+
+  /* ============================================================
+     MESSAGES / LEADS
+     ============================================================ */
+  var MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
+  function loadMessages() {
+    var wrap = $('#messages-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getMessages().then(function (data) {
+      messagesLoaded = true;
+      if (data.statuses && data.statuses.length) MESSAGE_STATUSES = data.statuses;
+      var list = data.messages || [];
+      if (!list.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs üzenet.</p>'; return; }
+      wrap.innerHTML = '';
+      list.forEach(function (m) {
+        var when = ''; try { when = new Date(m.createdAt).toLocaleString('hu-HU'); } catch (e) { when = m.createdAt || ''; }
+        var opts = MESSAGE_STATUSES.map(function (s) { return '<option value="' + escAttr(s) + '"' + (s === m.status ? ' selected' : '') + '>' + escAttr(s) + '</option>'; }).join('');
+        var card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML =
+          '<div class="order-head"><span class="status-badge ' + statusClass(m.status) + '" data-badge>' + escAttr(m.status) + '</span>' +
+            '<span class="order-meta" style="margin-left:auto">' + when + '</span></div>' +
+          '<div class="order-contact">👤 ' + escAttr(m.name) + ' · <a href="mailto:' + escAttr(m.email) + '">' + escAttr(m.email) + '</a>' + (m.topic ? ' · ' + escAttr(m.topic) : '') + '</div>' +
+          '<div class="order-items" style="white-space:pre-wrap">' + escAttr(m.message) + '</div>' +
+          '<div class="order-status-row"><label>Státusz:</label><select class="order-status-select">' + opts + '</select>' +
+            '<button class="icon-btn icon-danger" data-del title="Törlés">🗑</button></div>';
+        var sel = card.querySelector('.order-status-select');
+        var badge = card.querySelector('[data-badge]');
+        sel.addEventListener('change', function () {
+          S.updateMessageStatus(m.id, sel.value).then(function () { badge.textContent = sel.value; badge.className = 'status-badge ' + statusClass(sel.value); })
+            .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+        });
+        card.querySelector('[data-del]').addEventListener('click', function () {
+          if (!confirm('Törlöd ezt az üzenetet?')) return;
+          S.deleteMessage(m.id).then(function () { card.remove(); }).catch(function () {});
+        });
+        wrap.appendChild(card);
+      });
+    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+  }
+  $('#refresh-messages').addEventListener('click', loadMessages);
+
+  /* ============================================================
+     SUPPORT TICKETS
+     ============================================================ */
+  var TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
+  function loadTickets() {
+    var wrap = $('#tickets-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getTickets().then(function (data) {
+      ticketsLoaded = true;
+      if (data.statuses && data.statuses.length) TICKET_STATUSES = data.statuses;
+      var list = data.tickets || [];
+      if (!list.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs ticket.</p>'; return; }
+      wrap.innerHTML = '';
+      list.forEach(function (t) {
+        var b = document.createElement('button');
+        b.className = 'ticket-list-item';
+        b.innerHTML = '<span class="ticket-subj">' + escAttr(t.subject) + '</span>' +
+          '<span class="status-badge ' + statusClass(t.status) + '">' + escAttr(t.status) + '</span>';
+        b.addEventListener('click', function () {
+          $$('.ticket-list-item').forEach(function (x) { x.classList.remove('active'); });
+          b.classList.add('active');
+          openTicket(t.id);
+        });
+        wrap.appendChild(b);
+      });
+    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+  }
+  function openTicket(id) {
+    var wrap = $('#ticket-detail');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getTicket(id).then(function (t) {
+      var msgs = (t.messages || []).map(function (m) {
+        var when = ''; try { when = new Date(m.createdAt).toLocaleString('hu-HU'); } catch (e) {}
+        return '<div class="tmsg ' + (m.author === 'admin' ? 'tmsg-admin' : 'tmsg-cust') + '">' +
+          '<div class="tmsg-meta">' + (m.author === 'admin' ? 'Te (admin)' : 'Ügyfél') + ' · ' + when + '</div>' +
+          '<div class="tmsg-body">' + escAttr(m.body) + '</div></div>';
+      }).join('');
+      var opts = TICKET_STATUSES.map(function (s) { return '<option value="' + escAttr(s) + '"' + (s === t.status ? ' selected' : '') + '>' + escAttr(s) + '</option>'; }).join('');
+      wrap.innerHTML =
+        '<div class="ticket-detail-head"><strong>' + escAttr(t.subject) + '</strong>' +
+          '<select class="order-status-select" id="ticket-status">' + opts + '</select></div>' +
+        '<div class="ticket-thread">' + msgs + '</div>' +
+        '<div class="ticket-reply"><textarea id="ticket-reply-body" rows="3" placeholder="Válasz írása..."></textarea>' +
+          '<button class="btn btn-primary btn-sm" id="ticket-reply-send">Válasz küldése</button>' +
+          '<p class="admin-inline-note" id="ticket-reply-note"></p></div>';
+      $('#ticket-status').addEventListener('change', function () {
+        S.updateTicketStatus(id, this.value).then(function () { loadTickets(); }).catch(function () {});
+      });
+      $('#ticket-reply-send').addEventListener('click', function () {
+        var body = $('#ticket-reply-body').value.trim();
+        if (!body) { setNote('#ticket-reply-note', 'Az üzenet nem lehet üres.', false); return; }
+        var btn = this; btn.disabled = true;
+        S.replyTicket(id, body, $('#ticket-status').value).then(function () { btn.disabled = false; openTicket(id); loadTickets(); })
+          .catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logout(); location.reload(); return; } setNote('#ticket-reply-note', 'Hiba a küldéskor.', false); });
+      });
+    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+  }
+  $('#refresh-tickets').addEventListener('click', loadTickets);
+
+  /* ============================================================
      ORDERS
      ============================================================ */
   var ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
   function statusClass(s) {
-    return { 'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled' }[s] || 'st-new';
+    return {
+      'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled',
+      'Folyamatban': 'st-progress', 'Lezárt': 'st-done',
+      'Nyitott': 'st-new', 'Válaszra vár': 'st-progress', 'Megoldva': 'st-done'
+    }[s] || 'st-new';
   }
 
   function loadOrders() {

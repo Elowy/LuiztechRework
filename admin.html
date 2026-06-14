@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=3" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=3" />
+  <link rel="stylesheet" href="assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=4" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -77,7 +77,10 @@
         <button class="admin-tab" data-tab="products">📦 Termékek</button>
         <button class="admin-tab" data-tab="news">📰 Hírek</button>
         <button class="admin-tab" data-tab="references">🏆 Referenciák</button>
+        <button class="admin-tab" data-tab="faq">❓ GYIK</button>
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
+        <button class="admin-tab" data-tab="messages">📨 Üzenetek</button>
+        <button class="admin-tab" data-tab="support">🎫 Support</button>
         <button class="admin-tab" data-tab="account">🔐 Fiók</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
       </nav>
@@ -200,6 +203,18 @@
           <div class="news-admin-list" id="reference-admin-list"></div>
         </section>
 
+        <!-- FAQ -->
+        <section class="admin-panel" data-panel="faq">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">GYIK</h2>
+              <p class="admin-desc">A főoldalon megjelenő gyakori kérdések.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-faq">+ Új kérdés</button>
+          </div>
+          <div class="news-admin-list" id="faq-admin-list"></div>
+        </section>
+
         <!-- ORDERS -->
         <section class="admin-panel" data-panel="orders">
           <div class="admin-panel-head">
@@ -210,6 +225,35 @@
             <button class="btn btn-ghost btn-sm" id="refresh-orders">⟳ Frissítés</button>
           </div>
           <div class="orders-list" id="orders-list"></div>
+        </section>
+
+        <!-- MESSAGES -->
+        <section class="admin-panel" data-panel="messages">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Üzenetek / Leadek</h2>
+              <p class="admin-desc">A kapcsolati űrlapról beérkezett megkeresések.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refresh-messages">⟳ Frissítés</button>
+          </div>
+          <div class="orders-list" id="messages-list"></div>
+        </section>
+
+        <!-- SUPPORT -->
+        <section class="admin-panel" data-panel="support">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Support ticketek</h2>
+              <p class="admin-desc">Ügyfél-hibabejelentések és kérdések.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refresh-tickets">⟳ Frissítés</button>
+          </div>
+          <div class="ticket-layout">
+            <div class="ticket-list" id="tickets-list"></div>
+            <div class="ticket-detail" id="ticket-detail">
+              <p class="admin-desc">Válassz egy ticketet a megtekintéshez.</p>
+            </div>
+          </div>
         </section>
 
         <!-- ACCOUNT -->
@@ -383,8 +427,36 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=3"></script>
-  <script src="assets/js/admin.js?v=3" defer></script>
-  <script src="assets/js/main.js?v=3" defer></script>
+  <!-- ===================== FAQ EDIT MODAL ===================== -->
+  <div class="modal-overlay" id="faq-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="faq-modal-title">kérdés szerkesztése</span>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fq-id" />
+        <div class="field">
+          <label for="fq-question">Kérdés</label>
+          <input type="text" id="fq-question" />
+        </div>
+        <div class="field">
+          <label for="fq-answer">Válasz</label>
+          <textarea id="fq-answer" rows="4"></textarea>
+        </div>
+        <p class="modal-err" id="faq-modal-err"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost btn-sm" id="faq-modal-cancel">Mégse</button>
+        <button class="btn btn-primary btn-sm" id="faq-modal-save">Mentés</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/shop-config.js?v=4"></script>
+  <script src="assets/js/admin.js?v=4" defer></script>
+  <script src="assets/js/main.js?v=4" defer></script>
 </body>
 </html>

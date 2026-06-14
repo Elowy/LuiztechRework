@@ -187,6 +187,29 @@
   function updateReference(id, r) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'PUT', body: r }); }
   function deleteReference(id) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
+  /* ---------- FAQ ---------- */
+  function getFaq() { return api('/api/faq').catch(function () { return []; }); }
+  function addFaq(f) { return api('/api/admin/faq', { method: 'POST', body: f }); }
+  function updateFaq(id, f) { return api('/api/admin/faq/' + encodeURIComponent(id), { method: 'PUT', body: f }); }
+  function deleteFaq(id) { return api('/api/admin/faq/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
+  /* ---------- Messages / leads (admin) ---------- */
+  function getMessages() { return api('/api/admin/messages').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], messages: [] }; }); }
+  function updateMessageStatus(id, status) { return api('/api/admin/messages/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } }); }
+  function deleteMessage(id) { return api('/api/admin/messages/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
+  /* ---------- Support tickets ---------- */
+  // customer
+  function myTickets() { return api('/api/account/tickets').catch(function () { return { statuses: [], tickets: [] }; }); }
+  function getMyTicket(id) { return api('/api/account/tickets/' + encodeURIComponent(id)); }
+  function createTicket(subject, bodyText) { return api('/api/account/tickets', { method: 'POST', body: { subject: subject, body: bodyText } }); }
+  function replyMyTicket(id, bodyText) { return api('/api/account/tickets/' + encodeURIComponent(id) + '/reply', { method: 'POST', body: { body: bodyText } }); }
+  // admin
+  function getTickets() { return api('/api/admin/tickets').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], tickets: [] }; }); }
+  function getTicket(id) { return api('/api/admin/tickets/' + encodeURIComponent(id)); }
+  function replyTicket(id, bodyText, status) { return api('/api/admin/tickets/' + encodeURIComponent(id) + '/reply', { method: 'POST', body: { body: bodyText, status: status } }); }
+  function updateTicketStatus(id, status) { return api('/api/admin/tickets/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } }); }
+
   /* ---------- Image upload (admin) ---------- */
   function uploadImage(dataUrl) {
     return api('/api/admin/upload', { method: 'POST', body: { data: dataUrl } })
@@ -240,6 +263,21 @@
     addReference: addReference,
     updateReference: updateReference,
     deleteReference: deleteReference,
+    getFaq: getFaq,
+    addFaq: addFaq,
+    updateFaq: updateFaq,
+    deleteFaq: deleteFaq,
+    getMessages: getMessages,
+    updateMessageStatus: updateMessageStatus,
+    deleteMessage: deleteMessage,
+    myTickets: myTickets,
+    getMyTicket: getMyTicket,
+    createTicket: createTicket,
+    replyMyTicket: replyMyTicket,
+    getTickets: getTickets,
+    getTicket: getTicket,
+    replyTicket: replyTicket,
+    updateTicketStatus: updateTicketStatus,
     uploadImage: uploadImage,
     // sync helpers
     getCart: getCart,

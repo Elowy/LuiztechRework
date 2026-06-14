@@ -400,6 +400,17 @@
 .checkout-form textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .cart-foot .btn + .btn { margin-top: 8px; }
 
+/* ---------- Account tickets ---------- */
+.account-tickets-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.account-tickets { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.account-ticket {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  text-align: left; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); cursor: pointer; font-size: .9rem;
+}
+.account-ticket:hover { border-color: var(--border-strong); }
+
 /* ---------- Status badges ---------- */
 .status-badge {
   display: inline-block;

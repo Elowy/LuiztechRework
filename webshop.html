@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=3" />
-  <link rel="stylesheet" href="assets/css/webshop.css?v=3" />
+  <link rel="stylesheet" href="assets/css/style.css?v=4" />
+  <link rel="stylesheet" href="assets/css/webshop.css?v=4" />
 </head>
 <body class="shop-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -170,11 +170,56 @@
       <div class="account-greeting" id="account-greeting"></div>
       <h3 class="account-subhead">Rendeléseim</h3>
       <div class="account-orders" id="account-orders"></div>
+      <div class="account-tickets-head">
+        <h3 class="account-subhead">Support ticketek</h3>
+        <button class="btn btn-ghost btn-sm" id="ticket-new-btn">+ Új</button>
+      </div>
+      <div class="account-tickets" id="account-tickets"></div>
     </div>
     <div class="cart-foot">
       <button class="btn btn-ghost btn-block" id="account-logout">Kilépés</button>
     </div>
   </aside>
+
+  <!-- ===================== NEW TICKET MODAL ===================== -->
+  <div class="modal-overlay" id="ticket-new-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Új support ticket">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+        <span class="terminal-title">új support ticket</span>
+        <button class="modal-x" id="ticket-new-close" aria-label="Bezárás">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="tn-subject">Tárgy</label>
+          <input type="text" id="tn-subject" placeholder="Pl. nem működik az e-mail" />
+        </div>
+        <div class="field">
+          <label for="tn-body">Leírás</label>
+          <textarea id="tn-body" rows="4" placeholder="Írd le a problémát részletesen..."></textarea>
+        </div>
+        <p class="auth-err" id="tn-err"></p>
+        <button class="btn btn-primary btn-block" id="tn-send">Ticket létrehozása</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TICKET VIEW MODAL ===================== -->
+  <div class="modal-overlay" id="ticket-view-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Ticket">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+        <span class="terminal-title" id="tv-subject">ticket</span>
+        <button class="modal-x" id="ticket-view-close" aria-label="Bezárás">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ticket-thread" id="tv-thread"></div>
+        <div class="field"><textarea id="tv-body" rows="3" placeholder="Válasz írása..."></textarea></div>
+        <p class="auth-err" id="tv-err"></p>
+        <button class="btn btn-primary btn-block" id="tv-send">Válasz küldése</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===================== FOOTER ===================== -->
   <footer class="site-footer">
@@ -184,8 +229,8 @@
     </div>
   </footer>
 
-  <script src="assets/js/shop-config.js?v=3"></script>
-  <script src="assets/js/webshop.js?v=3" defer></script>
-  <script src="assets/js/main.js?v=3" defer></script>
+  <script src="assets/js/shop-config.js?v=4"></script>
+  <script src="assets/js/webshop.js?v=4" defer></script>
+  <script src="assets/js/main.js?v=4" defer></script>
 </body>
 </html>
