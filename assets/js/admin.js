@@ -14,6 +14,8 @@
   var ordersLoaded = false;
   var newsLoaded = false;
   var newsItems = [];
+  var refsLoaded = false;
+  var refItems = [];
 
   var PALETTES = [
     { a: '#38e1ff', b: '#6c7bff' }, { a: '#00ffa3', b: '#38e1ff' },
@@ -74,6 +76,7 @@
       $$('.admin-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === name); });
       if (name === 'orders' && !ordersLoaded) loadOrders();
       if (name === 'news' && !newsLoaded) loadNews();
+      if (name === 'references' && !refsLoaded) loadReferences();
     });
   });
 
@@ -385,6 +388,81 @@
       btn.disabled = false;
       if (e.status === 401) { S.logout(); location.reload(); return; }
       $('#news-modal-err').textContent = e.message || 'Mentés sikertelen.';
+    });
+  });
+
+  /* ============================================================
+     REFERENCES
+     ============================================================ */
+  function loadReferences() {
+    var wrap = $('#reference-admin-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getReferences().then(function (items) {
+      refsLoaded = true;
+      refItems = items || [];
+      renderReferenceList();
+    }).catch(function () { wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a referenciákat.</p>'; });
+  }
+  function renderReferenceList() {
+    var wrap = $('#reference-admin-list');
+    wrap.innerHTML = '';
+    if (!refItems.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs referencia. Adj hozzá egyet!</p>'; return; }
+    refItems.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'news-admin-row';
+      row.innerHTML =
+        '<div class="news-admin-info">' +
+          '<span class="news-admin-title">' + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
+          '<span class="news-admin-date">' + escAttr(r.tag || '—') + (r.info ? ' · ' + escAttr(r.info) : '') + '</span>' +
+        '</div>' +
+        '<div class="pa-actions">' +
+          '<button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
+          '<button class="icon-btn icon-danger" data-act="del" title="Törlés">🗑</button></div>';
+      row.querySelector('[data-act="edit"]').addEventListener('click', function () { openRefModal(r); });
+      row.querySelector('[data-act="del"]').addEventListener('click', function () {
+        if (!confirm('Biztosan törlöd: "' + r.title + '"?')) return;
+        S.deleteReference(r.id).then(function () { refItems = refItems.filter(function (x) { return x.id !== r.id; }); renderReferenceList(); })
+          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+      });
+      wrap.appendChild(row);
+    });
+  }
+  function openRefModal(r) {
+    $('#reference-modal-title').textContent = r ? 'referencia szerkesztése' : 'új referencia';
+    $('#r-id').value = r ? r.id : '';
+    $('#r-title').value = r ? r.title : '';
+    $('#r-tag').value = r ? (r.tag || '') : '';
+    $('#r-description').value = r ? (r.description || '') : '';
+    $('#r-details').value = r ? (r.details || '') : '';
+    $('#r-info').value = r ? (r.info || '') : '';
+    $('#r-url').value = r ? (r.url || '') : '';
+    $('#reference-modal-err').textContent = '';
+    $('#reference-modal').hidden = false;
+    setTimeout(function () { $('#r-title').focus(); }, 30);
+  }
+  function closeRefModal() { $('#reference-modal').hidden = true; }
+  $('#add-reference').addEventListener('click', function () { openRefModal(null); });
+  $('#reference-modal-cancel').addEventListener('click', closeRefModal);
+  $('#reference-modal').addEventListener('click', function (e) { if (e.target === this) closeRefModal(); });
+  $('#reference-modal-save').addEventListener('click', function () {
+    var title = $('#r-title').value.trim();
+    if (!title) { $('#reference-modal-err').textContent = 'A cím kötelező.'; return; }
+    var payload = {
+      title: title, tag: $('#r-tag').value.trim(), description: $('#r-description').value.trim(),
+      details: $('#r-details').value.trim(), info: $('#r-info').value.trim(), url: $('#r-url').value.trim()
+    };
+    var id = $('#r-id').value;
+    var btn = $('#reference-modal-save'); btn.disabled = true;
+    var p = id ? S.updateReference(id, payload) : S.addReference(payload);
+    p.then(function (item) {
+      btn.disabled = false;
+      if (id) refItems = refItems.map(function (x) { return x.id === id ? item : x; });
+      else refItems.push(item);
+      renderReferenceList(); closeRefModal();
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (e.status === 401) { S.logout(); location.reload(); return; }
+      $('#reference-modal-err').textContent = e.message || 'Mentés sikertelen.';
     });
   });
 

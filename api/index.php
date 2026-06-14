@@ -32,6 +32,9 @@ if ($method === 'GET' && $route === '/shop') {
 if ($method === 'GET' && $route === '/news') {
   json_out(get_news($pdo));
 }
+if ($method === 'GET' && $route === '/references') {
+  json_out(get_references($pdo));
+}
 if ($method === 'POST' && $route === '/orders') {
   $cust = current_customer($pdo);
   $r = create_order($pdo, body(), $cust);
@@ -142,6 +145,40 @@ if ($method === 'PUT' && match_route('/admin/news/{id}', $route, $params)) {
 if ($method === 'DELETE' && match_route('/admin/news/{id}', $route, $params)) {
   require_admin();
   $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?"); $stmt->execute([$params[0]]);
+  json_out(['ok' => $stmt->rowCount() > 0]);
+}
+
+/* ---- referenciák ---- */
+if ($method === 'POST' && $route === '/admin/references') {
+  require_admin();
+  $b = body();
+  if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
+  $id = insert_reference($pdo, $b, (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c']);
+  $row = $pdo->prepare("SELECT * FROM refs WHERE id = ?"); $row->execute([$id]);
+  json_out(map_reference($row->fetch()), 201);
+}
+if ($method === 'PUT' && match_route('/admin/references/{id}', $route, $params)) {
+  require_admin();
+  $b = body();
+  if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
+  $chk = $pdo->prepare("SELECT id FROM refs WHERE id = ?"); $chk->execute([$params[0]]);
+  if (!$chk->fetch()) json_error('A referencia nem található.', 404);
+  $stmt = $pdo->prepare("UPDATE refs SET tag=?, title=?, description=?, details=?, info=?, url=? WHERE id=?");
+  $stmt->execute([
+    mb_substr((string)($b['tag'] ?? ''), 0, 60),
+    mb_substr((string)($b['title'] ?? ''), 0, 160),
+    mb_substr((string)($b['description'] ?? ''), 0, 600),
+    mb_substr((string)($b['details'] ?? ''), 0, 2000),
+    mb_substr((string)($b['info'] ?? ''), 0, 160),
+    clean_url($b['url'] ?? ''),
+    $params[0],
+  ]);
+  $row = $pdo->prepare("SELECT * FROM refs WHERE id = ?"); $row->execute([$params[0]]);
+  json_out(map_reference($row->fetch()));
+}
+if ($method === 'DELETE' && match_route('/admin/references/{id}', $route, $params)) {
+  require_admin();
+  $stmt = $pdo->prepare("DELETE FROM refs WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 

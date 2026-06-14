@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=2" />
+  <link rel="stylesheet" href="assets/css/style.css?v=3" />
 </head>
 <body>
   <!-- Animated background canvas (particle network) -->
@@ -380,6 +380,35 @@
       </div>
     </section>
 
+    <!-- ===================== LIVE PEEK (hunthorde.com) ===================== -->
+    <section class="section" id="peek">
+      <div class="container">
+        <div class="section-head reveal" data-reveal>
+          <span class="section-tag">// élő betekintő</span>
+          <h2 class="section-title">Pillants be egy élő projektbe</h2>
+          <p class="section-sub">Egy kis ablak a <strong>hunthorde.com</strong>-ra — kattints rá, és megnyílik teljes méretben.</p>
+        </div>
+        <div class="peek-wrap reveal" data-reveal>
+          <div class="peek-window">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="peek-url">🔒 hunthorde.com</span>
+            </div>
+            <div class="peek-viewport">
+              <div class="peek-fallback">hunthorde.com — élő előnézet</div>
+              <iframe src="https://hunthorde.com" title="hunthorde.com élő előnézet"
+                loading="lazy" referrerpolicy="no-referrer"
+                sandbox="allow-scripts allow-same-origin"></iframe>
+              <a class="peek-open" href="https://hunthorde.com" target="_blank" rel="noopener" aria-label="hunthorde.com megnyitása új lapon"></a>
+            </div>
+          </div>
+          <a href="https://hunthorde.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm peek-cta">Megnyitás új lapon ↗</a>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== NEWS (dynamic) ===================== -->
     <section class="section" id="news" hidden>
       <div class="container">
@@ -520,7 +549,10 @@
       <p id="ref-modal-desc"></p>
       <p class="ref-modal-more" id="ref-modal-more"></p>
       <div class="ref-modal-meta" id="ref-modal-meta"></div>
-      <a href="#contact" class="btn btn-primary btn-sm" id="ref-modal-cta">Kérek hasonlót</a>
+      <div class="ref-modal-actions">
+        <a href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" id="ref-modal-link" hidden>Weboldal megtekintése ↗</a>
+        <a href="#contact" class="btn btn-primary btn-sm" id="ref-modal-cta">Kérek hasonlót</a>
+      </div>
     </div>
   </div>
 
@@ -555,10 +587,10 @@
     </div>
     <div class="container footer-bottom">
       <span>© <span id="year"></span> Luiz-Tech. Minden jog fenntartva.</span>
-      <span class="footer-built">Készült ❤️-vel és <code>&lt;/&gt;</code>-vel</span>
+      <span class="footer-built"><a href="#" data-cookie-settings>Süti beállítások</a> · Készült ❤️-vel és <code>&lt;/&gt;</code>-vel</span>
     </div>
   </footer>
 
-  <script src="assets/js/main.js?v=2" defer></script>
+  <script src="assets/js/main.js?v=3" defer></script>
 </body>
 </html>

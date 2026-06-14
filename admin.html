@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=2" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=2" />
+  <link rel="stylesheet" href="assets/css/style.css?v=3" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=3" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -76,6 +76,7 @@
         <button class="admin-tab" data-tab="appearance">🎨 Megjelenés</button>
         <button class="admin-tab" data-tab="products">📦 Termékek</button>
         <button class="admin-tab" data-tab="news">📰 Hírek</button>
+        <button class="admin-tab" data-tab="references">🏆 Referenciák</button>
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
         <button class="admin-tab" data-tab="account">🔐 Fiók</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
@@ -185,6 +186,18 @@
             <button class="btn btn-primary btn-sm" id="add-news">+ Új hír</button>
           </div>
           <div class="news-admin-list" id="news-admin-list"></div>
+        </section>
+
+        <!-- REFERENCES -->
+        <section class="admin-panel" data-panel="references">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Referenciák</h2>
+              <p class="admin-desc">A főoldalon megjelenő referenciák — megadható hozzájuk webcím is.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-reference">+ Új referencia</button>
+          </div>
+          <div class="news-admin-list" id="reference-admin-list"></div>
         </section>
 
         <!-- ORDERS -->
@@ -322,8 +335,56 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=2"></script>
-  <script src="assets/js/admin.js?v=2" defer></script>
-  <script src="assets/js/main.js?v=2" defer></script>
+  <!-- ===================== REFERENCE EDIT MODAL ===================== -->
+  <div class="modal-overlay" id="reference-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reference-modal-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="reference-modal-title">referencia szerkesztése</span>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="r-id" />
+        <div class="field-row">
+          <div class="field">
+            <label for="r-title">Cím</label>
+            <input type="text" id="r-title" />
+          </div>
+          <div class="field" style="flex:0 0 150px">
+            <label for="r-tag">Címke</label>
+            <input type="text" id="r-tag" placeholder="Weboldal / Webshop…" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="r-description">Rövid leírás (kártyán)</label>
+          <textarea id="r-description" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="r-details">Részletek (felugró ablakban)</label>
+          <textarea id="r-details" rows="3"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="r-info">Meta (pl. dátum, jelvény)</label>
+            <input type="text" id="r-info" placeholder="2024 · ⚡ 24 óra alatt" />
+          </div>
+          <div class="field">
+            <label for="r-url">Webcím (URL)</label>
+            <input type="url" id="r-url" placeholder="https://pelda.hu" />
+          </div>
+        </div>
+        <p class="modal-err" id="reference-modal-err"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost btn-sm" id="reference-modal-cancel">Mégse</button>
+        <button class="btn btn-primary btn-sm" id="reference-modal-save">Mentés</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/shop-config.js?v=3"></script>
+  <script src="assets/js/admin.js?v=3" defer></script>
+  <script src="assets/js/main.js?v=3" defer></script>
 </body>
 </html>

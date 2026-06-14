@@ -29,6 +29,14 @@ const DEFAULT_PRODUCTS = [
   ['id'=>'p6','name'=>'SEO indító csomag','desc'=>'Keresőoptimalizálás, technikai audit és kulcsszókutatás.','price'=>79000,'category'=>'Marketing','emoji'=>'📈','image'=>'','stock'=>null],
 ];
 
+const DEFAULT_REFERENCES = [
+  ['id'=>'r1','tag'=>'Weboldal','title'=>'Műanyagnyílászárók','description'=>'Új, modern weboldal a teljes termékkínálat bemutatásához — villámgyors átfutással.','details'=>'A megkeresést követően 24 órán belül átadtuk a kész, reszponzív weboldalt. A termékkínálat áttekinthető bemutatása, gyors betöltés és SEO-barát felépítés volt a fókuszban.','info'=>'2024 · ⚡ 24 óra alatt kész','url'=>''],
+  ['id'=>'r2','tag'=>'Weboldal','title'=>'Napháló','description'=>'Egyedi weboldal a csapat számára, letisztult megjelenéssel és gyors betöltéssel.','details'=>'A Napháló csapata egyedi, letisztult weboldalt kapott, amelyet mindössze 8 óra alatt készítettünk el és élesítettünk.','info'=>'2024. május · ⚡ 8 óra alatt kész','url'=>''],
+  ['id'=>'r3','tag'=>'Webshop','title'=>'Net-Trade Hungary','description'=>'Egyedi webshop fejlesztése a koncepciótól az élesítésig, teljesen testreszabva.','details'=>'Teljesen egyedi webshopot építettünk: a koncepciótól a tervezésen át az élesítésig. Az áruház 2023. április 17-én indult, testreszabott funkciókkal.','info'=>'Indulás: 2023.04.17. · 🛒 E-commerce','url'=>''],
+  ['id'=>'r4','tag'=>'Platform','title'=>'Home and Confidence','description'=>'Komplex ingatlanhirdetési platform egy ingatlaniroda számára, egyedi funkciókkal.','details'=>'Egy ingatlaniroda számára komplex hirdetési platformot fejlesztettünk: ingatlanok feltöltése és kezelése, keresés és szűrés, egyedi funkciókkal.','info'=>'2023 · 🏠 Ingatlan platform','url'=>''],
+  ['id'=>'r5','tag'=>'Weboldal','title'=>'Vendégház bemutatkozó oldal','description'=>'Hangulatos, foglalásra ösztönző weboldal egy vendégház számára.','details'=>'Hangulatos bemutatkozó weboldal egy vendégház számára, amely a foglalásra ösztönöz: szép képi világ, áttekinthető információk és gyors elérhetőség.','info'=>'2023. november · 🏡 Turizmus','url'=>''],
+];
+
 const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver'];
 
 /* ---------- Útvonalak ---------- */
@@ -144,6 +152,17 @@ function create_schema(PDO $pdo) {
     date VARCHAR(30) DEFAULT '',
     created_at DATETIME NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS refs (
+    id VARCHAR(40) PRIMARY KEY,
+    tag VARCHAR(60) DEFAULT '',
+    title VARCHAR(160) NOT NULL,
+    description VARCHAR(600) DEFAULT '',
+    details VARCHAR(2000) DEFAULT '',
+    info VARCHAR(160) DEFAULT '',
+    url VARCHAR(300) DEFAULT '',
+    sort INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 function seed_defaults(PDO $pdo) {
@@ -160,6 +179,12 @@ function seed_defaults(PDO $pdo) {
     foreach (DEFAULT_PRODUCTS as $p) {
       insert_product($pdo, $p, $i++);
     }
+  }
+  // references
+  $cnt = (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'];
+  if ($cnt === 0) {
+    $i = 0;
+    foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
   }
 }
 
@@ -374,6 +399,39 @@ function map_news($r) {
 }
 function get_news(PDO $pdo) {
   return array_map('map_news', $pdo->query("SELECT * FROM news ORDER BY `date` DESC, created_at DESC")->fetchAll());
+}
+
+/* ---------- References ---------- */
+function clean_url($u) {
+  $u = mb_substr((string)$u, 0, 300);
+  if ($u !== '' && !preg_match('#^https?://#i', $u)) $u = 'https://' . $u;
+  return $u;
+}
+function insert_reference(PDO $pdo, array $r, $sort = 0) {
+  $id = (string)($r['id'] ?? '');
+  if ($id === '') $id = 'r' . uniqid();
+  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,sort) VALUES (?,?,?,?,?,?,?,?)");
+  $stmt->execute([
+    $id,
+    mb_substr((string)($r['tag'] ?? ''), 0, 60),
+    mb_substr((string)($r['title'] ?? ''), 0, 160),
+    mb_substr((string)($r['description'] ?? ''), 0, 600),
+    mb_substr((string)($r['details'] ?? ''), 0, 2000),
+    mb_substr((string)($r['info'] ?? ''), 0, 160),
+    clean_url($r['url'] ?? ''),
+    (int)$sort,
+  ]);
+  return $id;
+}
+function map_reference($r) {
+  return [
+    'id' => $r['id'], 'tag' => $r['tag'], 'title' => $r['title'],
+    'description' => $r['description'], 'details' => $r['details'],
+    'info' => $r['info'], 'url' => $r['url'],
+  ];
+}
+function get_references(PDO $pdo) {
+  return array_map('map_reference', $pdo->query("SELECT * FROM refs ORDER BY sort ASC, title ASC")->fetchAll());
 }
 
 /* ---------- Képfeltöltés ---------- */

@@ -191,31 +191,70 @@
      ============================================================ */
   const refModal = $('#ref-modal');
   if (refModal) {
+    const escH = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const openRef = (card) => {
       const tag = card.querySelector('.work-tag');
       const title = card.querySelector('h3');
       const desc = card.querySelector('p');
       const meta = card.querySelector('.work-meta');
+      const url = card.getAttribute('data-url') || '';
       $('#ref-modal-tag').textContent = tag ? tag.textContent : 'Projekt';
       $('#ref-modal-title').textContent = title ? title.textContent : '';
       $('#ref-modal-desc').textContent = desc ? desc.textContent : '';
       $('#ref-modal-more').textContent = card.getAttribute('data-more') || '';
       $('#ref-modal-meta').innerHTML = meta ? meta.innerHTML : '';
+      const link = $('#ref-modal-link');
+      if (url) { link.href = url; link.hidden = false; } else { link.hidden = true; }
       refModal.hidden = false;
       document.body.style.overflow = 'hidden';
     };
     const closeRef = () => { refModal.hidden = true; document.body.style.overflow = ''; };
 
-    $$('.work-card.clickable').forEach((card) => {
-      card.addEventListener('click', () => openRef(card));
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRef(card); }
+    const wireCards = () => {
+      $$('.work-card.clickable').forEach((card) => {
+        if (card.dataset.wired) return;
+        card.dataset.wired = '1';
+        card.addEventListener('click', () => openRef(card));
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRef(card); }
+        });
       });
-    });
+    };
+    wireCards();
+
     $('#ref-modal-close').addEventListener('click', closeRef);
     refModal.addEventListener('click', (e) => { if (e.target === refModal) closeRef(); });
     $('#ref-modal-cta').addEventListener('click', closeRef);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !refModal.hidden) closeRef(); });
+
+    // Dinamikus referenciák a backendből (ha van) — különben marad a statikus tartalom
+    const grid = $('.work-grid');
+    if (grid && typeof fetch === 'function') {
+      fetch('/api/references', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((items) => {
+          if (!Array.isArray(items) || !items.length) return;
+          const cards = items.map((it) => {
+            const more = escH(it.details || it.description || '');
+            const urlAttr = it.url ? ' data-url="' + escH(it.url) + '"' : '';
+            return '<article class="work-card clickable reveal in" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
+              (it.tag ? '<div class="work-tag">' + escH(it.tag) + '</div>' : '') +
+              '<h3>' + escH(it.title) + '</h3>' +
+              '<p>' + escH(it.description || '') + '</p>' +
+              (it.info ? '<div class="work-meta"><span>' + escH(it.info) + '</span></div>' : '') +
+            '</article>';
+          }).join('');
+          const cta =
+            '<article class="work-card work-cta reveal in">' +
+              '<h3>A te projekted lehet a következő</h3>' +
+              '<p>Beszéljük meg az ötletedet — pár órán belül kapsz tőlünk visszajelzést.</p>' +
+              '<a href="#contact" class="btn btn-primary btn-sm">Beszéljünk róla</a>' +
+            '</article>';
+          grid.innerHTML = cards + cta;
+          wireCards();
+        })
+        .catch(() => { /* nincs backend → marad a statikus */ });
+    }
   }
 
   /* ============================================================
@@ -241,6 +280,102 @@
       })
       .catch(() => { /* no backend → keep section hidden */ });
   }
+
+  /* ============================================================
+     Cookie consent (GDPR)
+     ============================================================ */
+  (function cookieConsent() {
+    if (document.body.classList.contains('admin-body')) return; // admin eszköz: kihagyjuk
+    const KEY = 'luiztech_cookie_consent_v1';
+    const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+    const apply = (c) => {
+      // Itt lehet később feltételesen betölteni statisztikai/marketing szkripteket:
+      // if (c.analytics) { /* pl. analytics betöltése */ }
+    };
+    const save = (c) => {
+      c.ts = new Date().toISOString();
+      try { localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {}
+      apply(c);
+    };
+
+    // DOM felépítése
+    const banner = document.createElement('div');
+    banner.className = 'cookie-banner';
+    banner.setAttribute('role', 'dialog');
+    banner.setAttribute('aria-label', 'Süti tájékoztató');
+    banner.innerHTML =
+      '<div class="cookie-text">' +
+        '<strong>🍪 Sütiket használunk</strong>' +
+        '<p>Az oldal a működéshez szükséges sütiket használ (pl. bejelentkezés, kosár). ' +
+        'Statisztikai és marketing sütiket csak a hozzájárulásoddal. ' +
+        '<a href="#" data-cookie-settings>Beállítások</a></p>' +
+      '</div>' +
+      '<div class="cookie-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-cookie="necessary">Csak a szükségesek</button>' +
+        '<button class="btn btn-primary btn-sm" data-cookie="all">Elfogadom</button>' +
+      '</div>';
+
+    const modal = document.createElement('div');
+    modal.className = 'cookie-modal-overlay';
+    modal.hidden = true;
+    modal.innerHTML =
+      '<div class="cookie-modal" role="dialog" aria-modal="true" aria-label="Süti beállítások">' +
+        '<h3>Süti beállítások</h3>' +
+        '<p>Kezeld, mely sütiket engedélyezed. A működéshez szükséges sütik mindig aktívak.</p>' +
+        '<label class="cookie-cat"><span><strong>Szükséges</strong><br>Bejelentkezés, kosár, alapműködés.</span>' +
+          '<input type="checkbox" checked disabled></label>' +
+        '<label class="cookie-cat"><span><strong>Statisztika</strong><br>Anonim látogatottsági mérés.</span>' +
+          '<input type="checkbox" data-cat="analytics"></label>' +
+        '<label class="cookie-cat"><span><strong>Marketing</strong><br>Személyre szabott tartalom/hirdetés.</span>' +
+          '<input type="checkbox" data-cat="marketing"></label>' +
+        '<div class="cookie-modal-actions">' +
+          '<button class="btn btn-ghost btn-sm" data-cookie="necessary">Elutasítom</button>' +
+          '<button class="btn btn-primary btn-sm" data-cookie-save>Beállítások mentése</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(banner);
+    document.body.appendChild(modal);
+
+    const showBanner = () => { requestAnimationFrame(() => banner.classList.add('show')); };
+    const hideBanner = () => banner.classList.remove('show');
+    const openModal = () => {
+      const c = read() || { analytics: false, marketing: false };
+      modal.querySelector('[data-cat="analytics"]').checked = !!c.analytics;
+      modal.querySelector('[data-cat="marketing"]').checked = !!c.marketing;
+      modal.hidden = false;
+    };
+    const closeModal = () => { modal.hidden = true; };
+
+    const accept = (mode) => {
+      const c = mode === 'all'
+        ? { necessary: true, analytics: true, marketing: true }
+        : { necessary: true, analytics: false, marketing: false };
+      save(c); hideBanner(); closeModal();
+    };
+
+    banner.querySelector('[data-cookie="all"]').addEventListener('click', () => accept('all'));
+    banner.querySelector('[data-cookie="necessary"]').addEventListener('click', () => accept('necessary'));
+    modal.querySelector('[data-cookie="necessary"]').addEventListener('click', () => accept('necessary'));
+    modal.querySelector('[data-cookie-save]').addEventListener('click', () => {
+      save({
+        necessary: true,
+        analytics: modal.querySelector('[data-cat="analytics"]').checked,
+        marketing: modal.querySelector('[data-cat="marketing"]').checked
+      });
+      hideBanner(); closeModal();
+    });
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+    // "Beállítások" linkek (bannerben + láblécben)
+    $$('[data-cookie-settings]').forEach((el) => {
+      el.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+    });
+
+    const existing = read();
+    if (existing) apply(existing); else showBanner();
+  })();
 
   /* ============================================================
      Particle network background canvas

@@ -181,6 +181,12 @@
   function updateNews(id, n) { return api('/api/admin/news/' + encodeURIComponent(id), { method: 'PUT', body: n }); }
   function deleteNews(id) { return api('/api/admin/news/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
+  /* ---------- References ---------- */
+  function getReferences() { return api('/api/references').catch(function () { return []; }); }
+  function addReference(r) { return api('/api/admin/references', { method: 'POST', body: r }); }
+  function updateReference(id, r) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'PUT', body: r }); }
+  function deleteReference(id) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
   /* ---------- Image upload (admin) ---------- */
   function uploadImage(dataUrl) {
     return api('/api/admin/upload', { method: 'POST', body: { data: dataUrl } })
@@ -230,6 +236,10 @@
     addNews: addNews,
     updateNews: updateNews,
     deleteNews: deleteNews,
+    getReferences: getReferences,
+    addReference: addReference,
+    updateReference: updateReference,
+    deleteReference: deleteReference,
     uploadImage: uploadImage,
     // sync helpers
     getCart: getCart,
