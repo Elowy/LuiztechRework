@@ -337,6 +337,8 @@
       if (label) label.textContent = 'Belépés';
       $('#account-btn').setAttribute('title', 'Belépés / Regisztráció');
     }
+    var adminLink = $('#nav-admin');
+    if (adminLink) adminLink.hidden = !(currentUser && currentUser.isAdmin);
   }
 
   function openAuth(tab) {
@@ -494,7 +496,12 @@
     $('#account-logout').addEventListener('click', logoutCustomer);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeAuth(); closeAccount(); } });
 
-    S.customerMe().then(function (user) { currentUser = user; refreshAuthUI(); });
+    S.customerMe().then(function (user) {
+      currentUser = user;
+      refreshAuthUI();
+      // ?login=1 (pl. a főoldal "Belépés" linkjéről): nyissuk a belépést, ha nincs bejelentkezve
+      if (!currentUser && /[?&]login=1\b/.test(location.search)) openAuth('login');
+    });
   }
 
   /* ---------- Init ---------- */

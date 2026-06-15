@@ -779,6 +779,14 @@ code { font-family: var(--mono); }
 .footer-built code { color: var(--accent); }
 
 /* ---------- Clickable references ---------- */
+/* arany szegélyes (kiemelt) referencia */
+.work-card.work-gold {
+  border: 1.5px solid #f5c451;
+  box-shadow: 0 0 0 1px rgba(245, 196, 81, .35), 0 22px 50px -26px rgba(245, 166, 35, .65);
+}
+.work-card.work-gold:hover { border-color: #ffd86b; box-shadow: 0 0 0 1px rgba(245, 196, 81, .5), 0 26px 56px -24px rgba(245, 166, 35, .8); }
+.work-card.work-gold .work-tag { color: #f5c451; border-color: rgba(245, 196, 81, .5); }
+
 .work-card.clickable { cursor: pointer; }
 .work-card.clickable::after {
   content: "Részletek →";

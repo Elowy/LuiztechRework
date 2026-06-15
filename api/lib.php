@@ -9,7 +9,11 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
+
+// Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
+// Mindenki más vásárló. (Egységes bejelentkezés.)
+const ADMIN_EMAIL = 'lollipopp23@gmail.com';
 
 const DEFAULT_FAQ = [
   ['id'=>'f1','question'=>'Mennyi idő alatt készül el egy weboldal?','answer'=>'Egyszerűbb oldalakat akár 8–24 óra alatt élesítünk; összetettebb projekteknél a pontos időt az ingyenes árajánlatban adjuk meg.'],
@@ -118,6 +122,9 @@ function migrate(PDO $pdo) {
         if ($r['id'] === 'bgyarmatpaint') { insert_reference($pdo, $r, $sort); break; }
       }
     }
+    // v5: arany szegély oszlop a referenciákhoz (ha még nincs)
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN gold TINYINT NOT NULL DEFAULT 0"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }
@@ -210,6 +217,7 @@ function create_schema(PDO $pdo) {
     details VARCHAR(2000) DEFAULT '',
     info VARCHAR(160) DEFAULT '',
     url VARCHAR(300) DEFAULT '',
+    gold TINYINT NOT NULL DEFAULT 0,
     sort INT NOT NULL DEFAULT 0
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
@@ -404,15 +412,22 @@ function start_app_session() {
   ]);
   session_start();
 }
-function require_admin() {
-  if (empty($_SESSION['is_admin'])) json_error('Bejelentkezés szükséges.', 401);
+function is_admin_email($email) {
+  return is_string($email) && mb_strtolower(trim($email)) === ADMIN_EMAIL;
+}
+function require_admin(PDO $pdo) {
+  $u = current_customer($pdo);
+  if (!$u) json_error('Bejelentkezés szükséges.', 401);
+  if (empty($u['isAdmin'])) json_error('Nincs admin jogosultság ehhez a fiókhoz.', 403);
 }
 function current_customer(PDO $pdo) {
   if (empty($_SESSION['uid'])) return null;
   $stmt = $pdo->prepare("SELECT id, name, email FROM users WHERE id = ?");
   $stmt->execute([$_SESSION['uid']]);
   $u = $stmt->fetch();
-  return $u ?: null;
+  if (!$u) return null;
+  $u['isAdmin'] = is_admin_email($u['email']);
+  return $u;
 }
 
 /* ---------- Rendelések ---------- */
@@ -528,7 +543,7 @@ function clean_url($u) {
 function insert_reference(PDO $pdo, array $r, $sort = 0) {
   $id = (string)($r['id'] ?? '');
   if ($id === '') $id = 'r' . uniqid();
-  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,sort) VALUES (?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,gold,sort) VALUES (?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($r['tag'] ?? ''), 0, 60),
@@ -537,6 +552,7 @@ function insert_reference(PDO $pdo, array $r, $sort = 0) {
     mb_substr((string)($r['details'] ?? ''), 0, 2000),
     mb_substr((string)($r['info'] ?? ''), 0, 160),
     clean_url($r['url'] ?? ''),
+    !empty($r['gold']) ? 1 : 0,
     (int)$sort,
   ]);
   return $id;
@@ -546,6 +562,7 @@ function map_reference($r) {
     'id' => $r['id'], 'tag' => $r['tag'], 'title' => $r['title'],
     'description' => $r['description'], 'details' => $r['details'],
     'info' => $r['info'], 'url' => $r['url'],
+    'gold' => !empty($r['gold']),
   ];
 }
 function get_references(PDO $pdo) {

@@ -53,67 +53,28 @@ if ($method === 'POST' && $route === '/orders') {
 }
 
 /* ============================================================
-   ADMIN AUTH
-   ============================================================ */
-if ($method === 'POST' && $route === '/auth/login') {
-  $b = body();
-  $row = $pdo->query("SELECT * FROM admin WHERE id = 1")->fetch();
-  if (!$row || ($b['user'] ?? '') !== $row['username'] || !password_verify((string)($b['pass'] ?? ''), $row['hash'])) {
-    json_error('Hibás felhasználónév vagy jelszó.', 401);
-  }
-  session_regenerate_id(true); // session fixation védelem
-  $_SESSION['is_admin'] = true;
-  $_SESSION['admin_user'] = $row['username'];
-  json_out(['ok' => true, 'user' => $row['username']]);
-}
-if ($method === 'POST' && $route === '/auth/logout') {
-  unset($_SESSION['is_admin'], $_SESSION['admin_user']);
-  json_out(['ok' => true]);
-}
-if ($method === 'GET' && $route === '/auth/me') {
-  if (empty($_SESSION['is_admin'])) json_out(['authenticated' => false], 401);
-  json_out(['authenticated' => true, 'user' => $_SESSION['admin_user'] ?? 'admin']);
-}
-
-/* ============================================================
-   ADMIN (védett)
+   ADMIN (védett) — admin = az ADMIN_EMAIL fiókkal bejelentkezett user
    ============================================================ */
 if ($method === 'GET' && $route === '/admin/config') {
-  require_admin();
+  require_admin($pdo);
   json_out(get_config_with_products($pdo));
 }
 if ($method === 'PUT' && $route === '/admin/config') {
-  require_admin();
+  require_admin($pdo);
   json_out(save_config($pdo, body()));
 }
 if ($method === 'POST' && $route === '/admin/reset') {
-  require_admin();
+  require_admin($pdo);
   json_out(reset_all($pdo));
 }
-if ($method === 'POST' && $route === '/admin/account') {
-  require_admin();
-  $b = body();
-  $user = trim((string)($b['user'] ?? ''));
-  if ($user === '') json_error('A felhasználónév kötelező.', 400);
-  $pass = (string)($b['pass'] ?? '');
-  if ($pass !== '') {
-    $stmt = $pdo->prepare("UPDATE admin SET username = ?, hash = ? WHERE id = 1");
-    $stmt->execute([mb_substr($user, 0, 60), password_hash($pass, PASSWORD_DEFAULT)]);
-  } else {
-    $stmt = $pdo->prepare("UPDATE admin SET username = ? WHERE id = 1");
-    $stmt->execute([mb_substr($user, 0, 60)]);
-  }
-  $_SESSION['admin_user'] = mb_substr($user, 0, 60);
-  json_out(['ok' => true, 'user' => $_SESSION['admin_user']]);
-}
 if ($method === 'GET' && $route === '/admin/orders') {
-  require_admin();
+  require_admin($pdo);
   $rows = $pdo->query("SELECT * FROM orders ORDER BY created_at DESC")->fetchAll();
   $orders = array_map(function ($r) use ($pdo) { return map_order($pdo, $r); }, $rows);
   json_out(['statuses' => ORDER_STATUSES, 'orders' => $orders]);
 }
 if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $status = (string)(body()['status'] ?? '');
   if (!in_array($status, ORDER_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
   $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
@@ -128,7 +89,7 @@ if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
 
 /* ---- hírek ---- */
 if ($method === 'POST' && $route === '/admin/news') {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   $title = trim((string)($b['title'] ?? ''));
   if ($title === '') json_error('A cím megadása kötelező.', 400);
@@ -142,7 +103,7 @@ if ($method === 'POST' && $route === '/admin/news') {
   json_out(map_news($row->fetch()), 201);
 }
 if ($method === 'PUT' && match_route('/admin/news/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   $title = trim((string)($b['title'] ?? ''));
   if ($title === '') json_error('A cím megadása kötelező.', 400);
@@ -154,14 +115,14 @@ if ($method === 'PUT' && match_route('/admin/news/{id}', $route, $params)) {
   json_out(map_news($row->fetch()));
 }
 if ($method === 'DELETE' && match_route('/admin/news/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $stmt = $pdo->prepare("DELETE FROM news WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 
 /* ---- referenciák ---- */
 if ($method === 'POST' && $route === '/admin/references') {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
   $id = insert_reference($pdo, $b, (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c']);
@@ -169,7 +130,7 @@ if ($method === 'POST' && $route === '/admin/references') {
   json_out(map_reference($row->fetch()), 201);
 }
 if ($method === 'PUT' && match_route('/admin/references/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
   $chk = $pdo->prepare("SELECT id FROM refs WHERE id = ?"); $chk->execute([$params[0]]);
@@ -188,32 +149,32 @@ if ($method === 'PUT' && match_route('/admin/references/{id}', $route, $params))
   json_out(map_reference($row->fetch()));
 }
 if ($method === 'DELETE' && match_route('/admin/references/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $stmt = $pdo->prepare("DELETE FROM refs WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 
 /* ---- üzenetek / leadek ---- */
 if ($method === 'GET' && $route === '/admin/messages') {
-  require_admin();
+  require_admin($pdo);
   json_out(['statuses' => MESSAGE_STATUSES, 'messages' => get_messages($pdo)]);
 }
 if ($method === 'PATCH' && match_route('/admin/messages/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $status = (string)(body()['status'] ?? '');
   if (!in_array($status, MESSAGE_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
   $stmt = $pdo->prepare("UPDATE messages SET status = ? WHERE id = ?"); $stmt->execute([$status, $params[0]]);
   json_out(['ok' => true]);
 }
 if ($method === 'DELETE' && match_route('/admin/messages/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $stmt = $pdo->prepare("DELETE FROM messages WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 
 /* ---- GYIK ---- */
 if ($method === 'POST' && $route === '/admin/faq') {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   if (trim((string)($b['question'] ?? '')) === '') json_error('A kérdés megadása kötelező.', 400);
   $id = insert_faq($pdo, $b, (int)$pdo->query("SELECT COUNT(*) c FROM faq")->fetch()['c']);
@@ -221,7 +182,7 @@ if ($method === 'POST' && $route === '/admin/faq') {
   json_out(map_faq($row->fetch()), 201);
 }
 if ($method === 'PUT' && match_route('/admin/faq/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   if (trim((string)($b['question'] ?? '')) === '') json_error('A kérdés megadása kötelező.', 400);
   $chk = $pdo->prepare("SELECT id FROM faq WHERE id = ?"); $chk->execute([$params[0]]);
@@ -232,19 +193,19 @@ if ($method === 'PUT' && match_route('/admin/faq/{id}', $route, $params)) {
   json_out(map_faq($row->fetch()));
 }
 if ($method === 'DELETE' && match_route('/admin/faq/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $stmt = $pdo->prepare("DELETE FROM faq WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 
 /* ---- support ticketek (admin) ---- */
 if ($method === 'GET' && $route === '/admin/tickets') {
-  require_admin();
+  require_admin($pdo);
   $rows = $pdo->query("SELECT * FROM tickets ORDER BY updated_at DESC")->fetchAll();
   json_out(['statuses' => TICKET_STATUSES, 'tickets' => array_map('map_ticket', $rows)]);
 }
 if ($method === 'GET' && match_route('/admin/tickets/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $row = $pdo->prepare("SELECT * FROM tickets WHERE id = ?"); $row->execute([$params[0]]);
   $t = $row->fetch();
   if (!$t) json_error('A ticket nem található.', 404);
@@ -252,7 +213,7 @@ if ($method === 'GET' && match_route('/admin/tickets/{id}', $route, $params)) {
   json_out($out);
 }
 if ($method === 'POST' && match_route('/admin/tickets/{id}/reply', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $b = body();
   $chk = $pdo->prepare("SELECT id FROM tickets WHERE id = ?"); $chk->execute([$params[0]]);
   if (!$chk->fetch()) json_error('A ticket nem található.', 404);
@@ -261,7 +222,7 @@ if ($method === 'POST' && match_route('/admin/tickets/{id}/reply', $route, $para
   json_out(['ok' => true]);
 }
 if ($method === 'PATCH' && match_route('/admin/tickets/{id}', $route, $params)) {
-  require_admin();
+  require_admin($pdo);
   $status = (string)(body()['status'] ?? '');
   if (!in_array($status, TICKET_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
   $stmt = $pdo->prepare("UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?");
@@ -271,7 +232,7 @@ if ($method === 'PATCH' && match_route('/admin/tickets/{id}', $route, $params)) 
 
 /* ---- képfeltöltés ---- */
 if ($method === 'POST' && $route === '/admin/upload') {
-  require_admin();
+  require_admin($pdo);
   $r = save_data_url(body()['data'] ?? null);
   if (isset($r['error'])) json_error($r['error'], 400);
   json_out(['ok' => true, 'url' => $r['url']], 201);
@@ -295,7 +256,8 @@ if ($method === 'POST' && $route === '/account/register') {
   $stmt->execute([$id, mb_substr($name, 0, 120), mb_strtolower(mb_substr($email, 0, 190)), password_hash($pass, PASSWORD_DEFAULT), date('Y-m-d H:i:s')]);
   session_regenerate_id(true); // session fixation védelem
   $_SESSION['uid'] = $id;
-  json_out(['ok' => true, 'user' => ['id' => $id, 'name' => $name, 'email' => mb_strtolower($email)]], 201);
+  $lemail = mb_strtolower($email);
+  json_out(['ok' => true, 'user' => ['id' => $id, 'name' => $name, 'email' => $lemail, 'isAdmin' => is_admin_email($lemail)]], 201);
 }
 if ($method === 'POST' && $route === '/account/login') {
   $b = body();
@@ -305,7 +267,7 @@ if ($method === 'POST' && $route === '/account/login') {
   if (!$u || !password_verify((string)($b['pass'] ?? ''), $u['hash'])) json_error('Hibás e-mail cím vagy jelszó.', 401);
   session_regenerate_id(true); // session fixation védelem
   $_SESSION['uid'] = $u['id'];
-  json_out(['ok' => true, 'user' => ['id' => $u['id'], 'name' => $u['name'], 'email' => $u['email']]]);
+  json_out(['ok' => true, 'user' => ['id' => $u['id'], 'name' => $u['name'], 'email' => $u['email'], 'isAdmin' => is_admin_email($u['email'])]]);
 }
 if ($method === 'POST' && $route === '/account/logout') {
   unset($_SESSION['uid']);

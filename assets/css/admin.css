@@ -354,6 +354,10 @@
 .status-badge.st-done { color: #00ffa3; background: rgba(0,255,163,.12); }
 .status-badge.st-cancelled { color: #ff7a7a; background: rgba(255,122,122,.12); }
 
+/* ---------- Checkbox row (modálokban) ---------- */
+.check-row { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .92rem; color: var(--text); margin-top: 4px; }
+.check-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex: 0 0 auto; }
+
 /* ---------- Dashboard ---------- */
 .kpi-grid {
   display: grid;

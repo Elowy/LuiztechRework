@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=12" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=12" />
+  <link rel="stylesheet" href="assets/css/style.css?v=13" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=13" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -29,13 +29,13 @@
         <a href="index.html" class="brand login-brand">
           <span class="brand-bracket">&lt;</span><span class="brand-name">Luiz<span class="brand-accent">-Tech</span></span><span class="brand-bracket">/&gt;</span>
         </a>
-        <h1 class="login-title">Belépés a testreszabáshoz</h1>
-        <p class="login-sub">Jelentkezz be a webshop beállításainak szerkesztéséhez.</p>
+        <h1 class="login-title">Admin belépés</h1>
+        <p class="login-sub">Lépj be az admin fiókkal (ugyanaz a bejelentkezés, mint a webshopon).</p>
 
         <form id="login-form" novalidate>
           <div class="field">
-            <label for="login-user">Felhasználónév</label>
-            <input type="text" id="login-user" autocomplete="username" placeholder="admin" required />
+            <label for="login-email">E-mail cím</label>
+            <input type="email" id="login-email" autocomplete="email" placeholder="te@example.hu" required />
           </div>
           <div class="field">
             <label for="login-pass">Jelszó</label>
@@ -46,8 +46,8 @@
         </form>
 
         <p class="login-hint">
-          <span class="login-hint-tag">demó hozzáférés</span>
-          felhasználó: <code>admin</code> · jelszó: <code>luiztech</code>
+          Nincs még fiókod? <a href="webshop.html?login=1" class="brand-accent">Regisztrálj a webshopon</a> —
+          az admin jogot a megfelelő fiók automatikusan megkapja.
         </p>
       </div>
     </div>
@@ -82,7 +82,6 @@
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
         <button class="admin-tab" data-tab="messages">📨 Üzenetek</button>
         <button class="admin-tab" data-tab="support">🎫 Support</button>
-        <button class="admin-tab" data-tab="account">🔐 Fiók</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
       </nav>
 
@@ -269,22 +268,6 @@
           </div>
         </section>
 
-        <!-- ACCOUNT -->
-        <section class="admin-panel" data-panel="account">
-          <h2 class="admin-h">Belépési adatok</h2>
-          <p class="admin-desc">Módosítsd az admin felhasználónevet és jelszót. (Csak ezen az eszközön tárolódik.)</p>
-          <div class="field">
-            <label for="f-acc-user">Felhasználónév</label>
-            <input type="text" id="f-acc-user" autocomplete="username" />
-          </div>
-          <div class="field">
-            <label for="f-acc-pass">Új jelszó</label>
-            <input type="password" id="f-acc-pass" autocomplete="new-password" placeholder="Hagyd üresen, ha nem változtatod" />
-          </div>
-          <button class="btn btn-primary btn-sm" id="save-account">Belépési adatok mentése</button>
-          <p class="admin-inline-note" id="account-note" role="status"></p>
-        </section>
-
         <!-- DANGER -->
         <section class="admin-panel" data-panel="danger">
           <h2 class="admin-h">Visszaállítás</h2>
@@ -435,6 +418,7 @@
             <input type="url" id="r-url" placeholder="https://pelda.hu" />
           </div>
         </div>
+        <label class="check-row"><input type="checkbox" id="r-gold" /> <span>✨ Arany szegély (kiemelt referencia)</span></label>
         <p class="modal-err" id="reference-modal-err"></p>
       </div>
       <div class="modal-foot">
@@ -472,8 +456,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=12"></script>
-  <script src="assets/js/admin.js?v=12" defer></script>
-  <script src="assets/js/main.js?v=12" defer></script>
+  <script src="assets/js/shop-config.js?v=13"></script>
+  <script src="assets/js/admin.js?v=13" defer></script>
+  <script src="assets/js/main.js?v=13" defer></script>
 </body>
 </html>

@@ -44,19 +44,27 @@
     return loadConfig().then(function () { loadDashboard(); });
   }
 
-  S.me().then(function (ok) { if (ok) showApp(); });
+  // Egységes belépés: ugyanaz a fiók-rendszer, mint a webshopon.
+  // Admin jogot az ADMIN_EMAIL fiók kap (a backend isAdmin jelzéssel).
+  S.customerMe().then(function (u) { if (u && u.isAdmin) showApp(); });
 
   $('#login-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    var u = $('#login-user').value.trim();
+    var email = $('#login-email').value.trim();
     var p = $('#login-pass').value;
     var btn = $('#login-form button[type="submit"]');
     btn.disabled = true;
     $('#login-error').textContent = '';
-    S.login(u, p).then(function (ok) {
+    S.loginCustomer(email, p).then(function (res) {
       btn.disabled = false;
-      if (ok) { showApp(); }
-      else { $('#login-error').textContent = 'Hibás felhasználónév vagy jelszó.'; $('#login-pass').value = ''; }
+      if (res.error) { $('#login-error').textContent = res.error; $('#login-pass').value = ''; return; }
+      if (!res.user || !res.user.isAdmin) {
+        $('#login-error').textContent = 'Ez a fiók nem rendelkezik admin jogosultsággal.';
+        $('#login-pass').value = '';
+        S.logoutCustomer();
+        return;
+      }
+      showApp();
     }).catch(function () {
       btn.disabled = false;
       $('#login-error').textContent = 'Nem sikerült bejelentkezni. Próbáld újra.';
@@ -66,7 +74,7 @@
   $('#logout-btn').addEventListener('click', function () {
     if (dirty && !confirm('Mentetlen módosításaid vannak. Biztosan kilépsz?')) return;
     dirty = false;
-    S.logout().then(function () { location.reload(); });
+    S.logoutCustomer().then(function () { location.reload(); });
   });
 
   /* ============================================================
@@ -97,7 +105,7 @@
       if (!Array.isArray(cfg.products)) cfg.products = [];
       hydrateForms();
     }).catch(function (e) {
-      if (e.status === 401) { S.logout(); location.reload(); }
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); }
     });
   }
 
@@ -311,19 +319,9 @@
       if (saved) { cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), saved); if (!Array.isArray(cfg.products)) cfg.products = []; }
       markClean();
     }).catch(function (e) {
-      if (e.status === 401) { S.logout(); location.reload(); return; }
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       setNote('#save-state', 'Mentés sikertelen.', false);
     }).then(function () { btn.disabled = false; });
-  });
-
-  $('#save-account').addEventListener('click', function () {
-    var u = $('#f-acc-user').value.trim();
-    var p = $('#f-acc-pass').value;
-    if (!u) { setNote('#account-note', 'A felhasználónév nem lehet üres.', false); return; }
-    S.setCredentials(u, p).then(function () {
-      $('#f-acc-pass').value = '';
-      setNote('#account-note', 'Belépési adatok mentve. ✓', true);
-    }).catch(function () { setNote('#account-note', 'Mentés sikertelen.', false); });
   });
 
   $('#reset-btn').addEventListener('click', function () {
@@ -368,7 +366,7 @@
       row.querySelector('[data-act="del"]').addEventListener('click', function () {
         if (!confirm('Biztosan törlöd: "' + n.title + '"?')) return;
         S.deleteNews(n.id).then(function () { newsItems = newsItems.filter(function (x) { return x.id !== n.id; }); renderNewsList(); })
-          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+          .catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
       });
       wrap.appendChild(row);
     });
@@ -401,7 +399,7 @@
       renderNewsList(); closeNewsModal();
     }).catch(function (e) {
       btn.disabled = false;
-      if (e.status === 401) { S.logout(); location.reload(); return; }
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       $('#news-modal-err').textContent = e.message || 'Mentés sikertelen.';
     });
   });
@@ -427,7 +425,7 @@
       row.className = 'news-admin-row';
       row.innerHTML =
         '<div class="news-admin-info">' +
-          '<span class="news-admin-title">' + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
+          '<span class="news-admin-title">' + (r.gold ? '✨ ' : '') + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
           '<span class="news-admin-date">' + escAttr(r.tag || '—') + (r.info ? ' · ' + escAttr(r.info) : '') + '</span>' +
         '</div>' +
         '<div class="pa-actions">' +
@@ -437,7 +435,7 @@
       row.querySelector('[data-act="del"]').addEventListener('click', function () {
         if (!confirm('Biztosan törlöd: "' + r.title + '"?')) return;
         S.deleteReference(r.id).then(function () { refItems = refItems.filter(function (x) { return x.id !== r.id; }); renderReferenceList(); })
-          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+          .catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
       });
       wrap.appendChild(row);
     });
@@ -451,6 +449,7 @@
     $('#r-details').value = r ? (r.details || '') : '';
     $('#r-info').value = r ? (r.info || '') : '';
     $('#r-url').value = r ? (r.url || '') : '';
+    $('#r-gold').checked = r ? !!r.gold : false;
     $('#reference-modal-err').textContent = '';
     $('#reference-modal').hidden = false;
     setTimeout(function () { $('#r-title').focus(); }, 30);
@@ -464,7 +463,8 @@
     if (!title) { $('#reference-modal-err').textContent = 'A cím kötelező.'; return; }
     var payload = {
       title: title, tag: $('#r-tag').value.trim(), description: $('#r-description').value.trim(),
-      details: $('#r-details').value.trim(), info: $('#r-info').value.trim(), url: $('#r-url').value.trim()
+      details: $('#r-details').value.trim(), info: $('#r-info').value.trim(), url: $('#r-url').value.trim(),
+      gold: $('#r-gold').checked
     };
     var id = $('#r-id').value;
     var btn = $('#reference-modal-save'); btn.disabled = true;
@@ -476,7 +476,7 @@
       renderReferenceList(); closeRefModal();
     }).catch(function (e) {
       btn.disabled = false;
-      if (e.status === 401) { S.logout(); location.reload(); return; }
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       $('#reference-modal-err').textContent = e.message || 'Mentés sikertelen.';
     });
   });
@@ -504,7 +504,7 @@
       row.querySelector('[data-act="del"]').addEventListener('click', function () {
         if (!confirm('Biztosan törlöd?')) return;
         S.deleteFaq(f.id).then(function () { faqItems = faqItems.filter(function (x) { return x.id !== f.id; }); renderFaqList(); })
-          .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+          .catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
       });
       wrap.appendChild(row);
     });
@@ -533,7 +533,7 @@
       if (id) faqItems = faqItems.map(function (x) { return x.id === id ? item : x; });
       else faqItems.push(item);
       renderFaqList(); $('#faq-modal').hidden = true;
-    }).catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logout(); location.reload(); return; } $('#faq-modal-err').textContent = e.message || 'Mentés sikertelen.'; });
+    }).catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } $('#faq-modal-err').textContent = e.message || 'Mentés sikertelen.'; });
   });
 
   /* ============================================================
@@ -565,7 +565,7 @@
         var badge = card.querySelector('[data-badge]');
         sel.addEventListener('change', function () {
           S.updateMessageStatus(m.id, sel.value).then(function () { badge.textContent = sel.value; badge.className = 'status-badge ' + statusClass(sel.value); })
-            .catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); } });
+            .catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
         });
         card.querySelector('[data-del]').addEventListener('click', function () {
           if (!confirm('Törlöd ezt az üzenetet?')) return;
@@ -573,7 +573,7 @@
         });
         wrap.appendChild(card);
       });
-    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+    }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
   }
   $('#refresh-messages').addEventListener('click', loadMessages);
 
@@ -602,7 +602,7 @@
         });
         wrap.appendChild(b);
       });
-    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+    }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
   }
   function openTicket(id) {
     var wrap = $('#ticket-detail');
@@ -630,9 +630,9 @@
         if (!body) { setNote('#ticket-reply-note', 'Az üzenet nem lehet üres.', false); return; }
         var btn = this; btn.disabled = true;
         S.replyTicket(id, body, $('#ticket-status').value).then(function () { btn.disabled = false; openTicket(id); loadTickets(); })
-          .catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logout(); location.reload(); return; } setNote('#ticket-reply-note', 'Hiba a küldéskor.', false); });
+          .catch(function (e) { btn.disabled = false; if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } setNote('#ticket-reply-note', 'Hiba a küldéskor.', false); });
       });
-    }).catch(function (e) { if (e.status === 401) { S.logout(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+    }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
   }
   $('#refresh-tickets').addEventListener('click', loadTickets);
 
@@ -762,7 +762,7 @@
             sel.disabled = false;
           }).catch(function (e) {
             sel.disabled = false;
-            if (e.status === 401) { S.logout(); location.reload(); return; }
+            if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
             sel.value = status;
             alert('Nem sikerült frissíteni a státuszt.');
           });
@@ -770,7 +770,7 @@
         wrap.appendChild(card);
       });
     }).catch(function (e) {
-      if (e.status === 401) { S.logout(); location.reload(); return; }
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a rendeléseket.</p>';
     });
   }
