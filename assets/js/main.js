@@ -149,41 +149,81 @@
       });
     }
 
-    // Üdvözlő szövegbuborék a robottól — betöltéskor, kb. 10 mp-ig (üzeneteket váltogatva)
+    // Üdvözlő szövegbuborék a robottól — betöltéskor, kb. 10 mp-ig (véletlen üzenetek)
     const BUBBLE_MSGS = [
-      'Beszélj velünk, gyorsan válaszolunk 😉',
-      'Szép napot ❤️',
-      'Jól nézel ma ki! ❤️',
-      'Weboldal gyorsan érdekel? 😉',
-      'Milyen gyorsan kell? Megoldjuk. 😉'
+      'Beszélj velünk, gyorsan válaszolunk 😉', 'Szép napot ❤️', 'Jól nézel ma ki! ❤️',
+      'Weboldal gyorsan érdekel? 😉', 'Milyen gyorsan kell? Megoldjuk. 😉',
+      'Szia! 👋', 'Üdv a Luiz-Tech-nél! 🚀', 'Örülök, hogy itt vagy! 😊', 'Jó látni téged! 😊',
+      'Csodás napot kívánok! ☀️', 'Hogy telik a napod? 😊', 'Üdvözöllek, barátom! 🤝',
+      'Új weboldal? Mi megoldjuk! 💻', 'Webshopot álmodtál? Megépítjük! 🛒',
+      'Lassú a régi oldalad? Felpörgetjük! ⚡', 'Mobilon is tökéletes lesz. 📱',
+      'Egyedi design, nulláról. 🎨', 'Pár nap és kész is. ⏱️', 'Ingyenes árajánlat 12 órán belül! 🎁',
+      'Kérdésed van? Itt vagyok! 💬', 'Segíthetek valamiben? 🙂', 'Beszéljük meg az ötleted! 💡',
+      'Van egy jó ötleted? Halljuk! 🎯', 'Álmodd meg, mi lekódoljuk. ✨',
+      'A kódolás a mi szupererőnk. 🦸', 'Bug? Nálunk az ritka vendég. 🐛', 'Tiszta kód, boldog ügyfél. 😌',
+      'Coffee + code = Luiz-Tech ☕', 'Mi nem alszunk, mi deployolunk. 🚀',
+      'Te kérdezel, mi fejlesztünk. 🔧', 'A jövő kódból épül. 🧱', 'Gyors. Biztonságos. Szép. ✅',
+      'SEO? Bízd ránk! 📈', 'Feltornázzuk a Google-ben. 🔝', 'Több látogató, több ügyfél. 📊',
+      'Biztonság elsőként. 🔒', 'Adatmentés? Megoldva. 💾', 'Hálózati gond? Mi rendbe tesszük. 📡',
+      'Otthonról is jó kezekben vagy. 🏠', 'Mosolyogj, szép a kódunk! 😄', 'Te vagy a kedvenc látogatónk! ⭐',
+      'Pszt… van egy titkunk: imádjuk a munkánk. 🤫', 'Ne félj, nem harapunk. 🤖',
+      'Csak egy kattintásra a jövőd. 🖱️', 'Kávézz egyet, mi addig kódolunk. ☕',
+      'A pixelek is minket szeretnek. 🎨', 'Reszponzív, mint egy macska. 🐱',
+      'Villámgyors betöltés garantálva. ⚡', '100% kézzel készült kód. 👐',
+      'Nincs sablon, csak egyedi. 🧩', 'A weboldalad legyen sztár! 🌟', 'Beszéljünk a projektedről! 🗣️',
+      'Mi a következő nagy ötleted? 💭', 'Készen állsz a fejlődésre? 🌱', 'Tedd online a vállalkozásod! 🌐',
+      'Online jelenlét = több bevétel. 💰', 'A versenytársaid már online vannak. 👀',
+      'Ne maradj le, lépj előre! 🏃', 'Egy jó oldal aranyat ér. 🥇', 'A részletekben rejlik a szépség. 🔍',
+      'Figyelünk minden pixelre. ✨', 'Te álmodsz, mi valósítunk. 🌈', 'Kódból szövünk varázslatot. 🪄',
+      'Hibátlan élmény a célunk. 🎯', 'Letisztult, modern, gyors. 💎', 'A te sikered a mi sikerünk. 🏆',
+      'Mindig naprakész technológia. 🆕', 'A trendek nálunk otthon vannak. 📐',
+      'Sötét mód? Persze, van! 🌙', 'Világos mód? Az is megy! ☀️', 'Animációk, amik élnek. 🎬',
+      'Olyan sima, mint a vaj. 🧈', 'Gyorsabb, mint gondolnád. 💨', 'Egy klikk és elindulunk. 🚦',
+      'Készíts velünk valami nagyot! 🏗️', 'A kódunk olyan tiszta, hogy ragyog. ✨',
+      'Hűséges ügyfeleink imádnak. 💖', 'Próbáld ki, nem fogod megbánni. 😉', 'Velünk könnyű. 😎',
+      'Hagyd ránk a technikát! 🛠️', 'Nincs olyan, hogy lehetetlen. 💪', 'Mi a stresszt is debuggoljuk. 🧘',
+      'Kreativitás + kód = mágia. 🎩', 'A jövőd egy üzenetre van. ✉️', 'Szólj, és intézzük! 📞',
+      'Te is megérdemled a profi oldalt. 👑', 'A weboldalad, csúcsformában. 🏋️',
+      'Minden eszközön gyönyörű. 🖥️', 'Töltsd fel a márkád energiával! ⚡', 'Készen állunk rád! 🙌',
+      'Egy mosoly, és máris jobb a napod. 😊', 'Te vagy a mai fénypontunk! 🌞',
+      'Kódolunk, hogy te pihenhess. 😴', 'A nehéz részt mi visszük. 🏋️', 'Nyugi, mi megoldjuk. 👍',
+      'A digitális jövőd itt kezdődik. 🚪', 'Lépjünk szintet együtt! 🎮', 'Adj egy esélyt a wow-élménynek! 🤩',
+      'Tudtad? Imádjuk a kihívásokat. 🧗', 'Akár ma is elkezdhetjük. 📅', 'A te oldalad, a mi szívügyünk. ❤️',
+      'Pörgessük fel a vállalkozásod! 🌀', 'Egy jó kávé és bármi megoldható. ☕',
+      'Profi munka, baráti hangulat. 🤗', 'Ne csak létezz online — ragyogj! 🌟',
+      'Indítsuk be a sikered! 🔥', 'Mindig itt vagyok, ha kellek. 🤖'
     ];
-    const bubble = document.createElement('div');
-    bubble.className = 'robot-bubble';
-    bubble.setAttribute('role', 'status');
-    wrap.appendChild(bubble);
-    let bi = 0, bIv = null, bDone = false;
-    const renderBubble = () => { bubble.textContent = BUBBLE_MSGS[bi]; bubble.classList.add('show'); };
-    const dismissBubble = () => {
-      if (bDone) return;
-      bDone = true;
-      if (bIv) clearInterval(bIv);
-      bubble.classList.remove('show');
-      setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 400);
-    };
-    setTimeout(() => {
-      if (bDone) return;
-      renderBubble();
-      bIv = setInterval(() => {
-        bi++;
-        if (bi >= BUBBLE_MSGS.length) { dismissBubble(); return; }
-        bubble.classList.remove('show');           // rövid pislogás üzenetváltáskor
-        setTimeout(() => { if (!bDone) renderBubble(); }, 170);
-      }, 2000);
-    }, 800);
-    // interakcióra azonnal eltűnik
-    fab.addEventListener('click', dismissBubble, { once: true });
-    const rb = $('.chat-robot', wrap);
-    if (rb) rb.addEventListener('click', dismissBubble, { once: true });
+    const GOLD_MSG = 'Kattints rám! ✨';
+
+    // Sessionönként CSAK EGYSZER, egyetlen véletlen üzenet, ~10 mp-ig, a robot fölött.
+    const robotEl = $('.chat-robot', wrap);
+    let bubbleSeen = false;
+    try { bubbleSeen = sessionStorage.getItem('lt_robot_bubble') === '1'; } catch (e) { /* ignore */ }
+    if (robotEl && !bubbleSeen) {
+      try { sessionStorage.setItem('lt_robot_bubble', '1'); } catch (e) { /* ignore */ }
+
+      const gold = Math.random() < 0.22;   // időnként az arany "Kattints rám!"
+      const msg = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
+
+      const bubble = document.createElement('div');
+      bubble.className = 'robot-bubble' + (gold ? ' gold' : '');
+      bubble.setAttribute('role', 'status');
+      bubble.textContent = msg;
+      robotEl.appendChild(bubble);       // a robot gyermeke → vele együtt mozog, fölötte jelenik meg
+
+      let bDone = false, hideT = null;
+      const dismissBubble = () => {
+        if (bDone) return;
+        bDone = true;
+        if (hideT) clearTimeout(hideT);
+        bubble.classList.remove('show');
+        setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 400);
+      };
+      setTimeout(() => { if (!bDone) bubble.classList.add('show'); }, 800);
+      hideT = setTimeout(dismissBubble, 10800);   // ~10 mp-ig látható
+      fab.addEventListener('click', dismissBubble, { once: true });
+      robotEl.addEventListener('click', dismissBubble, { once: true });
+    }
   }
 
   function robotSVG() {

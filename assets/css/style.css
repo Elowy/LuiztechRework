@@ -1275,11 +1275,11 @@ code { font-family: var(--mono); }
 .chat-robot.exploding .robot-arm,
 .chat-robot.reassembling .robot-arm { animation: none; }
 
-/* üdvözlő szövegbuborék a robottól (betöltéskor, ~10 mp) */
+/* üdvözlő szövegbuborék a robot FÖLÖTT (a .chat-robot gyermeke, vele mozog) */
 .robot-bubble {
   position: absolute;
-  right: 6px; bottom: 118px;
-  max-width: min(230px, calc(100vw - 40px));
+  bottom: calc(100% + 12px); right: -6px;
+  width: max-content; max-width: min(230px, calc(100vw - 40px));
   padding: 11px 14px;
   background: #fff; color: #0d1320;
   font-size: .9rem; font-weight: 600; line-height: 1.35;
@@ -1292,13 +1292,17 @@ code { font-family: var(--mono); }
 }
 .robot-bubble.show { opacity: 1; transform: translateY(0) scale(1); }
 .robot-bubble::after {
-  content: ''; position: absolute; right: 24px; bottom: -6px;
-  width: 14px; height: 14px; background: inherit;
+  content: ''; position: absolute; right: 20px; bottom: -6px;
+  width: 14px; height: 14px; background: #fff;
   transform: rotate(45deg); border-radius: 0 0 3px 0;
 }
-@media (max-width: 480px) {
-  .robot-bubble { bottom: 104px; right: 4px; }
+/* arany "Kattints rám!" variáns */
+.robot-bubble.gold {
+  background: linear-gradient(135deg, #ffd86b, #f5a623);
+  color: #2a1c00;
+  box-shadow: 0 0 0 1px rgba(245, 196, 81, .6), 0 16px 36px -10px rgba(245, 166, 35, .8);
 }
+.robot-bubble.gold::after { background: #f6ab26; }
 @keyframes robotfly {
   0%   { transform: translate(0, 0) rotate(0deg); }
   20%  { transform: translate(-42px, -16px) rotate(-8deg); }
