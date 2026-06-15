@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=19" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=19" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=20" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -128,6 +128,15 @@
           <div class="field">
             <label for="f-notifyEmail">Értesítési e-mail (új üzenet / rendelés / ticket ide jön)</label>
             <input type="email" id="f-notifyEmail" placeholder="info@luiz-tech.hu" />
+          </div>
+          <div class="field">
+            <label for="f-szamlazz">Számlázz.hu Agent kulcs</label>
+            <input type="password" id="f-szamlazz" autocomplete="off" placeholder="Add meg az Agent kulcsot…" />
+            <p class="admin-inline-note" id="szamlazz-note" role="status"></p>
+            <p class="admin-desc" style="margin-top:6px">
+              Ha megadod, minden új rendeléshez automatikusan e-számla készül (AAM, alanyi adómentes).
+              Biztonsági okból a mentett kulcsot nem jelenítjük meg újra — hagyd üresen, ha nem változtatod.
+            </p>
           </div>
         </section>
 
@@ -456,8 +465,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=19"></script>
-  <script src="assets/js/admin.js?v=19" defer></script>
-  <script src="assets/js/main.js?v=19" defer></script>
+  <script src="assets/js/shop-config.js?v=20"></script>
+  <script src="assets/js/admin.js?v=20" defer></script>
+  <script src="assets/js/main.js?v=20" defer></script>
 </body>
 </html>

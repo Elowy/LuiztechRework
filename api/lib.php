@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -33,6 +33,7 @@ const DEFAULT_CONFIG = [
   'heroText' => 'Válogass kézzel összeállított kínálatunkból — azonnali hozzáférés, megbízható minőség.',
   'freeShippingOver' => 25000,
   'notifyEmail' => 'info@luiz-tech.hu',
+  'szamlazzAgentKey' => '',
 ];
 
 const DEFAULT_PRODUCTS = [
@@ -53,7 +54,10 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','szamlazzAgentKey'];
+// Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
+// és üres értékkel nem írjuk felül a meglévőt.
+const SECRET_CONFIG = ['szamlazzAgentKey'];
 
 /* ---------- Útvonalak ---------- */
 function config_path() { return __DIR__ . '/../config.php'; }
@@ -125,6 +129,9 @@ function migrate(PDO $pdo) {
     // v5: arany szegély oszlop a referenciákhoz (ha még nincs)
     try { $pdo->exec("ALTER TABLE refs ADD COLUMN gold TINYINT NOT NULL DEFAULT 0"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
+    try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }
@@ -187,6 +194,7 @@ function create_schema(PDO $pdo) {
     cust_note VARCHAR(500) DEFAULT '',
     total INT NOT NULL DEFAULT 0,
     status VARCHAR(40) NOT NULL DEFAULT 'Új',
+    invoice_no VARCHAR(40) DEFAULT '',
     created_at DATETIME NOT NULL,
     KEY user_id_idx (user_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -291,7 +299,7 @@ function seed_defaults(PDO $pdo) {
 }
 
 /* ---------- Config ---------- */
-function get_config(PDO $pdo) {
+function get_config(PDO $pdo, $includeSecrets = false) {
   $rows = $pdo->query("SELECT k, v FROM settings")->fetchAll();
   $map = [];
   foreach ($rows as $r) $map[$r['k']] = $r['v'];
@@ -299,6 +307,13 @@ function get_config(PDO $pdo) {
   foreach (DEFAULT_CONFIG as $k => $dv) $out[$k] = array_key_exists($k, $map) ? $map[$k] : $dv;
   $out['freeShippingOver'] = (int)$out['freeShippingOver'];
   $out['theme'] = ($out['theme'] === 'light') ? 'light' : 'dark';
+  if (!$includeSecrets) {
+    // titkos kulcsokat soha nem küldünk ki — csak azt jelezzük, be van-e állítva
+    foreach (SECRET_CONFIG as $sk) {
+      $out[$sk . 'Set'] = isset($out[$sk]) && trim((string)$out[$sk]) !== '';
+      unset($out[$sk]);
+    }
+  }
   return $out;
 }
 
@@ -307,6 +322,12 @@ function save_config(PDO $pdo, array $in) {
   foreach (ALLOWED_CONFIG as $k) {
     if (array_key_exists($k, $in) && $in[$k] !== null) {
       $v = $in[$k];
+      if (in_array($k, SECRET_CONFIG, true)) {
+        $v = trim((string)$v);
+        if ($v === '') continue;                 // üres → megtartjuk a meglévő titkot
+        $up->execute([$k, mb_substr($v, 0, 255)]);
+        continue;
+      }
       if ($k === 'freeShippingOver') $v = max(0, (int)$v);
       if ($k === 'theme') $v = ($v === 'light') ? 'light' : 'dark';
       if ($k === 'currency') $v = mb_substr((string)$v, 0, 6);
@@ -447,6 +468,7 @@ function map_order(PDO $pdo, $row) {
       'phone' => $row['cust_phone'], 'address' => $row['cust_address'], 'note' => $row['cust_note'],
     ],
     'status' => $row['status'],
+    'invoiceNo' => $row['invoice_no'] ?? '',
     'createdAt' => str_replace(' ', 'T', $row['created_at']),
   ];
 }
@@ -516,14 +538,124 @@ function create_order(PDO $pdo, array $payload, $user) {
     $pdo->rollBack();
     return ['error' => 'A rendelés mentése sikertelen.'];
   }
+  // Számla kiállítása Számlázz.hu-n keresztül (ha be van állítva az Agent kulcs).
+  // Nem blokkoló: ha hibázik, a rendelés akkor is létrejön, a hiba naplóba kerül.
+  $invoiceNo = '';
+  try {
+    $cfgFull = get_config($pdo, true);
+    if (trim((string)($cfgFull['szamlazzAgentKey'] ?? '')) !== '') {
+      $res = szamlazz_create_invoice($cfgFull, [
+        'id' => $oid, 'name' => $name, 'email' => $email,
+        'address' => (string)($c['address'] ?? ''),
+      ], $items);
+      if (!empty($res['ok'])) {
+        $invoiceNo = (string)$res['invoice'];
+        $pdo->prepare("UPDATE orders SET invoice_no = ? WHERE id = ?")->execute([$invoiceNo, $oid]);
+      } elseif (!empty($res['error'])) {
+        error_log('Szamlazz.hu: ' . $res['error']);
+      }
+    }
+  } catch (Throwable $e) {
+    error_log('Szamlazz.hu kivétel: ' . $e->getMessage());
+  }
+
   notify_admin($pdo, 'Új rendelés – ' . $oid,
     "Új rendelés érkezett a webshopban.\n\nAzonosító: $oid\nÖsszeg: $total\n" .
-    "Vevő: {$customer['name']} <{$customer['email']}>\n" .
-    ($customer['phone'] ? "Telefon: {$customer['phone']}\n" : '') .
-    ($customer['address'] ? "Cím: {$customer['address']}\n" : '') .
+    "Vevő: {$name} <{$email}>\n" .
+    (!empty($c['phone']) ? "Telefon: {$c['phone']}\n" : '') .
+    (!empty($c['address']) ? "Cím: {$c['address']}\n" : '') .
+    ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : '') .
     "\nTételek:\n" . implode("\n", array_map(function ($it) { return "- {$it['name']} x{$it['qty']}"; }, $items)) . "\n");
 
-  return ['order' => ['id' => $oid, 'total' => $total, 'status' => 'Új']];
+  return ['order' => ['id' => $oid, 'total' => $total, 'status' => 'Új', 'invoiceNo' => $invoiceNo]];
+}
+
+/* ---------- Számlázz.hu (Számla Agent) ---------- */
+function szamlazz_create_invoice(array $cfg, array $order, array $items) {
+  $key = trim((string)($cfg['szamlazzAgentKey'] ?? ''));
+  if ($key === '') return ['skipped' => true];
+  if (!function_exists('curl_init')) return ['error' => 'cURL nem elérhető a szerveren.'];
+
+  $esc = function ($s) { return htmlspecialchars((string)$s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); };
+  $today = date('Y-m-d');
+  $due = date('Y-m-d', strtotime('+8 days'));
+
+  $tetelek = '';
+  foreach ($items as $it) {
+    $net = (int)$it['price'] * (int)$it['qty'];
+    $tetelek .=
+      '<tetel>' .
+        '<megnevezes>' . $esc($it['name']) . '</megnevezes>' .
+        '<mennyiseg>' . (int)$it['qty'] . '</mennyiseg>' .
+        '<mennyisegiEgyseg>db</mennyisegiEgyseg>' .
+        '<nettoEgysegar>' . (int)$it['price'] . '</nettoEgysegar>' .
+        '<afakulcs>AAM</afakulcs>' .
+        '<nettoErtek>' . $net . '</nettoErtek>' .
+        '<afaErtek>0</afaErtek>' .
+        '<bruttoErtek>' . $net . '</bruttoErtek>' .
+      '</tetel>';
+  }
+
+  $xml =
+    '<?xml version="1.0" encoding="UTF-8"?>' .
+    '<xmlszamla xmlns="http://www.szamlazz.hu/xmlszamla" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' .
+    'xsi:schemaLocation="http://www.szamlazz.hu/xmlszamla https://www.szamlazz.hu/szamla/docs/xsds/agent/xmlszamla.xsd">' .
+      '<beallitasok>' .
+        '<szamlaagentkulcs>' . $esc($key) . '</szamlaagentkulcs>' .
+        '<eszamla>true</eszamla>' .
+        '<szamlaLetoltes>false</szamlaLetoltes>' .
+      '</beallitasok>' .
+      '<fejlec>' .
+        '<keltDatum>' . $today . '</keltDatum>' .
+        '<teljesitesDatum>' . $today . '</teljesitesDatum>' .
+        '<fizetesiHataridoDatum>' . $due . '</fizetesiHataridoDatum>' .
+        '<fizmod>bankkártya</fizmod>' .
+        '<penznem>HUF</penznem>' .
+        '<szamlaNyelve>hu</szamlaNyelve>' .
+        '<megjegyzes>' . $esc('Webshop rendelés: ' . $order['id']) . '</megjegyzes>' .
+        '<rendelesSzam>' . $esc($order['id']) . '</rendelesSzam>' .
+      '</fejlec>' .
+      '<elado></elado>' .
+      '<vevo>' .
+        '<nev>' . $esc($order['name']) . '</nev>' .
+        '<cim>' . $esc(trim((string)$order['address']) !== '' ? $order['address'] : '-') . '</cim>' .
+        '<email>' . $esc($order['email']) . '</email>' .
+        '<sendEmail>true</sendEmail>' .
+      '</vevo>' .
+      '<tetelek>' . $tetelek . '</tetelek>' .
+    '</xmlszamla>';
+
+  $tmp = tempnam(sys_get_temp_dir(), 'szla');
+  if ($tmp === false) return ['error' => 'Ideiglenes fájl hiba.'];
+  file_put_contents($tmp, $xml);
+
+  $ch = curl_init('https://www.szamlazz.hu/szamla/');
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HEADER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => ['action-xmlagentxmlfile' => new CURLFile($tmp, 'text/xml', 'szamla.xml')],
+    CURLOPT_TIMEOUT => 25,
+    CURLOPT_CONNECTTIMEOUT => 10,
+  ]);
+  $resp = curl_exec($ch);
+  $hsize = (int)curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+  $cerr = curl_error($ch);
+  curl_close($ch);
+  @unlink($tmp);
+
+  if ($resp === false) return ['error' => 'Kapcsolódási hiba: ' . $cerr];
+
+  $headers = substr($resp, 0, $hsize);
+  $invoice = ''; $errcode = ''; $errmsg = '';
+  foreach (preg_split('/\r?\n/', $headers) as $line) {
+    if (stripos($line, 'szlahu_szamlaszam:') === 0) $invoice = trim(substr($line, 18));
+    elseif (stripos($line, 'szlahu_error_code:') === 0) $errcode = trim(substr($line, 18));
+    elseif (stripos($line, 'szlahu_error:') === 0) $errmsg = trim(substr($line, 13));
+  }
+  if ($errcode !== '' && $errcode !== '0') return ['error' => "Számlázz.hu hiba ($errcode): " . urldecode($errmsg)];
+  if ($invoice === '') return ['error' => 'Nem érkezett számlaszám a Számlázz.hu-tól.'];
+  return ['ok' => true, 'invoice' => $invoice];
 }
 
 /* ---------- Hírek ---------- */

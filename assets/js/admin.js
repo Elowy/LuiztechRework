@@ -117,10 +117,19 @@
     setVal('#f-accent', cfg.accent); setVal('#f-accent-hex', cfg.accent);
     setVal('#f-accent2', cfg.accent2); setVal('#f-accent2-hex', cfg.accent2);
     setTheme(cfg.theme);
+    setVal('#f-szamlazz', '');          // titkos kulcsot soha nem töltünk vissza
+    updateSzamlazzNote();
     buildSwatches();
     renderProductList();
     updatePreview();
     S.applyTheme(cfg);
+  }
+
+  function updateSzamlazzNote() {
+    var note = $('#szamlazz-note'); if (!note) return;
+    var set = !!cfg.szamlazzAgentKeySet;
+    note.textContent = set ? '✓ Be van állítva' : 'Nincs beállítva';
+    note.className = 'admin-inline-note ' + (set ? 'ok' : '');
   }
 
   function markDirty() {
@@ -314,9 +323,12 @@
     cfg.heroText = $('#f-heroText').value;
     cfg.currency = $('#f-currency').value || 'Ft';
     cfg.notifyEmail = $('#f-notifyEmail').value.trim();
+    var szk = $('#f-szamlazz').value.trim();
+    if (szk) cfg.szamlazzAgentKey = szk; else delete cfg.szamlazzAgentKey;  // üres → ne írjuk felül
     var btn = $('#save-btn'); btn.disabled = true;
     S.saveConfig(cfg).then(function (saved) {
       if (saved) { cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), saved); if (!Array.isArray(cfg.products)) cfg.products = []; }
+      setVal('#f-szamlazz', ''); updateSzamlazzNote();
       markClean();
     }).catch(function (e) {
       if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
@@ -746,6 +758,7 @@
           '<div class="order-items">' + items + '</div>' +
           (contact ? '<div class="order-contact">👤 ' + contact + '</div>' : '') +
           (c.address ? '<div class="order-contact">📍 ' + escAttr(c.address) + '</div>' : '') +
+          (o.invoiceNo ? '<div class="order-contact">🧾 Számla: ' + escAttr(o.invoiceNo) + '</div>' : '') +
           (c.note ? '<div class="order-contact">📝 ' + escAttr(c.note) + '</div>' : '') +
           '<div class="order-meta">' + when + '</div>' +
           '<div class="order-status-row"><label>Státusz:</label>' +
