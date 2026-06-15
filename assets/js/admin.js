@@ -104,7 +104,7 @@
   function hydrateForms() {
     setVal('#f-name', cfg.name); setVal('#f-tagline', cfg.tagline);
     setVal('#f-heroTitle', cfg.heroTitle); setVal('#f-heroText', cfg.heroText);
-    setVal('#f-currency', cfg.currency); setVal('#f-freeShippingOver', cfg.freeShippingOver);
+    setVal('#f-currency', cfg.currency);
     setVal('#f-notifyEmail', cfg.notifyEmail);
     setVal('#f-accent', cfg.accent); setVal('#f-accent-hex', cfg.accent);
     setVal('#f-accent2', cfg.accent2); setVal('#f-accent2-hex', cfg.accent2);
@@ -130,7 +130,6 @@
     var el = $(sel); if (!el) return;
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
-  $('#f-freeShippingOver').addEventListener('input', function () { cfg.freeShippingOver = parseInt(this.value, 10) || 0; markDirty(); });
 
   /* ---------- Colors ---------- */
   function bindColor(colorSel, hexSel, key) {
@@ -306,7 +305,6 @@
     cfg.heroTitle = $('#f-heroTitle').value;
     cfg.heroText = $('#f-heroText').value;
     cfg.currency = $('#f-currency').value || 'Ft';
-    cfg.freeShippingOver = parseInt($('#f-freeShippingOver').value, 10) || 0;
     cfg.notifyEmail = $('#f-notifyEmail').value.trim();
     var btn = $('#save-btn'); btn.disabled = true;
     S.saveConfig(cfg).then(function (saved) {

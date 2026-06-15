@@ -20,8 +20,8 @@
     theme: 'dark',
     currency: 'Ft',
     heroTitle: 'Technológia, ami magáért beszél',
-    heroText: 'Válogass kézzel összeállított kínálatunkból — gyors kiszállítás, megbízható minőség.',
-    freeShippingOver: 25000,
+    heroText: 'Válogass kézzel összeállított kínálatunkból — azonnali hozzáférés, megbízható minőség.',
+    freeShippingOver: 0,
     products: [
       { id: 'p1', name: 'Webfejlesztői csomag', desc: 'Egyedi weboldal a koncepciótól az élesítésig.', price: 149000, category: 'Szolgáltatás', emoji: '🌐' },
       { id: 'p2', name: 'Webshop indító csomag', desc: 'Teljes e-commerce megoldás fizetési integrációval.', price: 249000, category: 'Szolgáltatás', emoji: '🛒' },

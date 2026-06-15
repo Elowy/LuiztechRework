@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const DEFAULT_FAQ = [
   ['id'=>'f1','question'=>'Mennyi idő alatt készül el egy weboldal?','answer'=>'Egyszerűbb oldalakat akár 8–24 óra alatt élesítünk; összetettebb projekteknél a pontos időt az ingyenes árajánlatban adjuk meg.'],
@@ -26,7 +26,7 @@ const DEFAULT_CONFIG = [
   'theme' => 'dark',
   'currency' => 'Ft',
   'heroTitle' => 'Technológia, ami magáért beszél',
-  'heroText' => 'Válogass kézzel összeállított kínálatunkból — gyors kiszállítás, megbízható minőség.',
+  'heroText' => 'Válogass kézzel összeállított kínálatunkból — azonnali hozzáférés, megbízható minőség.',
   'freeShippingOver' => 25000,
   'notifyEmail' => 'info@luiz-tech.hu',
 ];
@@ -46,6 +46,7 @@ const DEFAULT_REFERENCES = [
   ['id'=>'r3','tag'=>'Webshop','title'=>'Net-Trade Hungary','description'=>'Egyedi webshop fejlesztése a koncepciótól az élesítésig, teljesen testreszabva.','details'=>'Teljesen egyedi webshopot építettünk: a koncepciótól a tervezésen át az élesítésig. Az áruház 2023. április 17-én indult, testreszabott funkciókkal.','info'=>'Indulás: 2023.04.17. · 🛒 E-commerce','url'=>''],
   ['id'=>'r4','tag'=>'Platform','title'=>'Home and Confidence','description'=>'Komplex ingatlanhirdetési platform egy ingatlaniroda számára, egyedi funkciókkal.','details'=>'Egy ingatlaniroda számára komplex hirdetési platformot fejlesztettünk: ingatlanok feltöltése és kezelése, keresés és szűrés, egyedi funkciókkal.','info'=>'2023 · 🏠 Ingatlan platform','url'=>''],
   ['id'=>'r5','tag'=>'Weboldal','title'=>'Vendégház bemutatkozó oldal','description'=>'Hangulatos, foglalásra ösztönző weboldal egy vendégház számára.','details'=>'Hangulatos bemutatkozó weboldal egy vendégház számára, amely a foglalásra ösztönöz: szép képi világ, áttekinthető információk és gyors elérhetőség.','info'=>'2023. november · 🏡 Turizmus','url'=>''],
+  ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
 const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail'];
@@ -108,6 +109,15 @@ function migrate(PDO $pdo) {
     // v3: akciós ár oszlop a meglévő products táblához (ha még nincs)
     try { $pdo->exec("ALTER TABLE products ADD COLUMN sale_price INT NULL AFTER stock"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v4: bgyarmatpaint referencia pótlása (csak ha még nincs — törölt elemeket nem hoz vissza)
+    $chk = $pdo->prepare("SELECT id FROM refs WHERE id = ?");
+    $chk->execute(['bgyarmatpaint']);
+    if (!$chk->fetch()) {
+      $sort = (int)$pdo->query("SELECT COALESCE(MAX(sort),0)+1 s FROM refs")->fetch()['s'];
+      foreach (DEFAULT_REFERENCES as $r) {
+        if ($r['id'] === 'bgyarmatpaint') { insert_reference($pdo, $r, $sort); break; }
+      }
+    }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }

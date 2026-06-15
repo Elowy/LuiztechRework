@@ -36,12 +36,6 @@
     setText('#shop-hero-text', cfg.heroText);
     setText('#footer-shop-name', cfg.name);
     document.title = cfg.name + ' — Webshop';
-    var ship = $('#shop-shipping-note');
-    if (ship) {
-      ship.textContent = cfg.freeShippingOver > 0
-        ? '🚚 Ingyenes szállítás ' + S.formatPrice(cfg.freeShippingOver, cfg) + ' felett'
-        : '';
-    }
   }
 
   /* ---------- Filters ---------- */
