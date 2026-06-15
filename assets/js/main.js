@@ -12,6 +12,31 @@
   const yearEl = $('#year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* ---------- Apply the shop's chosen accent colours site-wide ----------
+     A "színválasztó" (admin → Megjelenés) az accent színeket menti; itt
+     a főoldal (és minden nem-admin oldal) átveszi ugyanazokat. */
+  function hexToRgba(hex, a) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+    if (!m) return 'rgba(56,225,255,' + a + ')';
+    const n = parseInt(m[1], 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  if (!document.body.classList.contains('admin-body') && typeof fetch === 'function') {
+    fetch('/api/shop', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (!cfg || !cfg.accent) return;
+        const a = cfg.accent, b = cfg.accent2 || cfg.accent;
+        const s = document.documentElement.style;
+        s.setProperty('--accent', a);
+        s.setProperty('--accent-2', b);
+        s.setProperty('--accent-glow', hexToRgba(a, 0.35));
+        s.setProperty('--grad', 'linear-gradient(135deg, ' + a + ' 0%, ' + b + ' 55%, ' + b + ' 100%)');
+        s.setProperty('--grad-soft', 'linear-gradient(135deg, ' + hexToRgba(a, 0.14) + ', ' + hexToRgba(b, 0.14) + ')');
+      })
+      .catch(() => { /* nincs backend → marad az alap színséma */ });
+  }
+
   /* ---------- Header scroll state + progress bar ---------- */
   const header = $('#site-header');
   const progress = $('#scroll-progress');
