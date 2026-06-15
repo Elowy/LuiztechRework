@@ -1342,6 +1342,15 @@ code { font-family: var(--mono); }
 .consent-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
 .consent-row a { color: var(--accent); }
 .placeholder { color: #ffb86c; background: rgba(255,184,108,.12); padding: 0 4px; border-radius: 4px; }
+
+/* nyelvváltó (HU/EN) */
+.lang-toggle {
+  margin-left: 10px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text);
+  font: 600 .8rem/1 'JetBrains Mono', ui-monospace, monospace; cursor: pointer;
+  transition: border-color .2s ease, color .2s ease, background .2s ease;
+}
+.lang-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--surface-2); }
 @keyframes robotfly {
   0%   { transform: translate(0, 0) rotate(0deg); }
   20%  { transform: translate(-42px, -16px) rotate(-8deg); }
