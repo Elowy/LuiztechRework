@@ -1488,3 +1488,19 @@ code { font-family: var(--mono); }
   .reveal { opacity: 1; transform: none; }
   #bg-canvas { display: none; }
 }
+
+/* ============================================================
+   Webshop menüsáv mobilon — nincs hamburger, maradjon látható
+   ============================================================ */
+@media (max-width: 680px) {
+  .shop-nav {
+    position: static; inset: auto; transform: none; transition: none;
+    flex-direction: row; align-items: center; flex-wrap: wrap; justify-content: flex-end;
+    gap: 4px; padding: 0; background: none; backdrop-filter: none; border: 0;
+  }
+  .shop-nav a { padding: 8px 10px; }
+}
+@media (max-width: 430px) {
+  /* nagyon kis kijelzőn csak a 👤 (fiók) és 🛒 (kosár) ikonok maradnak */
+  .shop-nav a:not(.nav-admin) { display: none; }
+}
