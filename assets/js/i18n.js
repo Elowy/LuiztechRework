@@ -192,6 +192,8 @@
 
     // ---- Élő betekintő ----
     'Pillants be egy élő projektbe': 'Take a peek at a live project',
+    'Egy kis ablak a': 'A little window into',
+    '-ra — kattints rá, és megnyílik teljes méretben.': ' — click it to open at full size.',
     'hunthorde.com — élő előnézet': 'hunthorde.com — live preview',
     'Megnyitás új lapon ↗': 'Open in new tab ↗',
 
@@ -202,6 +204,13 @@
 
     // ---- Rólunk ----
     'Megbízható IT partner, emberi hangon': 'A reliable IT partner, with a human voice',
+    'professzionális informatikai szolgáltatásokkal biztosítja a vállalkozásod zavartalan működését. Tapasztalt csapatunk a rendszerkarbantartástól a hálózatépítésen át a biztonsági megoldásokig magas színvonalú támogatást nyújt.':
+      'provides professional IT services to keep your business running smoothly. Our experienced team delivers high-quality support from system maintenance through networking to security solutions.',
+    'Hiszünk a gyorsaságban és az átláthatóságban: bármilyen platformról kényelmesen elérsz minket, és':
+      'We believe in speed and transparency: you can reach us conveniently from any platform, and',
+    '12 órán belül ingyenes árajánlatot': 'we give a free quote within 12 hours',
+    'adunk. A munkáinkat a precizitás, a modern technológia és a hosszú távú együttműködés jellemzi.':
+      '. Our work is defined by precision, modern technology and long-term cooperation.',
     'Gyors, kiszámítható átfutás': 'Fast, predictable delivery',
     'Modern technológiák': 'Modern technologies',
     'Hosszú távú támogatás': 'Long-term support',
@@ -293,22 +302,118 @@
     'Legalább 6 karakter': 'At least 6 characters',
     'fiók': 'account',
 
+    // ---- Webshop: fiók-fiók / ticketek / űrlapok ----
+    'Fiók létrehozása': 'Create account',
+    'Fiókom': 'My account',
+    'Rendeléseim': 'My orders',
+    'Support ticketek': 'Support tickets',
+    'Támogatás': 'Support',
+    '+ Új': '+ New',
+    'Kilépés': 'Sign out',
+    'Tárgy': 'Subject',
+    'Leírás': 'Description',
+    'Ticket létrehozása': 'Create ticket',
+    'Válasz küldése': 'Send reply',
+    'Új support ticket': 'New support ticket',
+    'Termék részletei': 'Product details',
+    'termék': 'product',
+    'ticket': 'ticket',
+    'új support ticket': 'new support ticket',
+    'Több': 'More',
+    'Kevesebb': 'Fewer',
+
+    // ---- Webshop: hozzájárulás (pénztár) ----
+    'Elolvastam és elfogadom az': 'I have read and accept the',
+    'ÁSZF-et': 'Terms',
+    'és az': 'and the',
+    'adatkezelési tájékoztatót': 'Privacy Policy',
+
+    // ---- Webshop: helykitöltők ----
+    'te@example.hu': 'you@example.com',
+    'pl. anna@example.hu': 'e.g. jane@example.com',
+    'Pl. Kovács Anna': 'E.g. Jane Doe',
+    'Mesélj a projektedről...': 'Tell us about your project...',
+    'Pl. nem működik az e-mail': 'E.g. email is not working',
+    'Írd le a problémát részletesen...': 'Describe the problem in detail...',
+    'Válasz írása...': 'Write a reply...',
+    'Pl. csengő nem működik...': 'E.g. doorbell not working...',
+
+    // ---- Webshop: dinamikus üzenetek (JS) ----
+    'Kosárba': 'Add to cart',
+    '✓ Hozzáadva': '✓ Added',
+    'Összes': 'All',
+    'A kosarad még üres.': 'Your cart is empty.',
+    'Böngészd a termékeket! 🛍️': 'Browse the products! 🛍️',
+    'Add meg a neved és egy érvényes e-mail címet.': 'Please enter your name and a valid email address.',
+    'A rendeléshez fogadd el az ÁSZF-et és az adatkezelési tájékoztatót.': 'To place an order, please accept the Terms and the Privacy Policy.',
+    'Rendelés feldolgozása...': 'Processing order...',
+    'Hiba történt a rendelés során. Próbáld újra.': 'An error occurred while ordering. Please try again.',
+    'Add meg az e-mail címed és a jelszavad.': 'Enter your email and password.',
+    'Tölts ki minden mezőt (jelszó min. 6 karakter).': 'Fill in all fields (password min. 6 characters).',
+    'Betöltés...': 'Loading...',
+    'Még nincs ticketed.': 'You have no tickets yet.',
+    'Még nincs rendelésed.': 'You have no orders yet.',
+    'Nem sikerült betölteni.': 'Failed to load.',
+    'Tárgy és leírás megadása kötelező.': 'Subject and description are required.',
+    'Az üzenet nem lehet üres.': 'The message cannot be empty.',
+    'Hiba történt.': 'An error occurred.',
+    ' (helyi demó)': ' (local demo)',
+    '. Hamarosan felvesszük veled a kapcsolatot.': '. We will contact you soon.',
+
+    // ---- Rendelés- és ticket-státuszok ----
+    'Új': 'New',
+    'Feldolgozás alatt': 'Processing',
+    'Teljesítve': 'Completed',
+    'Törölve': 'Cancelled',
+    'Válaszra vár': 'Awaiting reply',
+    'Lezárt': 'Closed',
+    'Elfogyott': 'Sold out',
+
     // ---- Süti sáv (ha megjelenik) ----
     'Sütiket használunk': 'We use cookies',
     'Elfogadom': 'Accept',
     'Elutasítom': 'Decline'
   };
 
+  // Dinamikus, értékkel összefűzött szövegek eleje (prefix) → angol
+  var PREFIX = [
+    ['Készleten:', 'In stock:'],
+    ['Utolsó', 'Only'],
+    ['Köszönjük a rendelést! Azonosító:', 'Thank you for your order! ID:'],
+    ['Üdv,', 'Hi,'],
+    ['Fiókom —', 'My account —'],
+    ['Fiókom – ', 'My account – ']
+  ];
+
   var lang = 'hu';
   try { lang = localStorage.getItem('lt_lang') === 'en' ? 'en' : 'hu'; } catch (e) { lang = 'hu'; }
 
+  // Mintázatos (számot tartalmazó) szövegek
+  var REGEX = [
+    [/^Utolsó\s+(\d+)\s+db$/, 'Only $1 left'],
+    [/^Készleten:\s*(\d+)\s+db$/, 'In stock: $1 pcs']
+  ];
+
+  function translateString(s) {
+    // belső szóközök/sortörések normalizálása, hogy a többsoros bekezdések is illeszkedjenek
+    var norm = s.replace(/\s+/g, ' ').trim();
+    if (!norm) return null;
+    var lead = (s.match(/^\s*/) || [''])[0];
+    var trail = (s.match(/\s*$/) || [''])[0];
+    var rep = DICT[norm];
+    if (rep != null) return lead + rep + trail;
+    for (var r = 0; r < REGEX.length; r++) {
+      if (REGEX[r][0].test(norm)) return lead + norm.replace(REGEX[r][0], REGEX[r][1]) + trail;
+    }
+    for (var i = 0; i < PREFIX.length; i++) {
+      if (norm.indexOf(PREFIX[i][0]) === 0) return lead + norm.replace(PREFIX[i][0], PREFIX[i][1]) + trail;
+    }
+    return null;
+  }
   function translateText(node) {
-    var t = node.nodeValue;
-    if (!t) return;
-    var trimmed = t.trim();
-    if (!trimmed) return;
-    var rep = DICT[trimmed];
-    if (rep != null) node.nodeValue = t.replace(trimmed, rep);
+    if (!node.nodeValue) return;
+    var out = translateString(node.nodeValue);
+    if (out != null) node.nodeValue = out;
   }
   function walk(root) {
     if (!root) return;
@@ -327,8 +432,8 @@
       var els = (root || document).querySelectorAll('[' + a + ']');
       Array.prototype.forEach.call(els, function (el) {
         var v = el.getAttribute(a); if (!v) return;
-        var tr = v.trim(); var rep = DICT[tr];
-        if (rep != null) el.setAttribute(a, v.replace(tr, rep));
+        var out = translateString(v);
+        if (out != null) el.setAttribute(a, out);
       });
     });
   }
