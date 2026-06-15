@@ -194,7 +194,7 @@
     'Pillants be egy élő projektbe': 'Take a peek at a live project',
     'Egy kis ablak a': 'A little window into',
     '-ra — kattints rá, és megnyílik teljes méretben.': ' — click it to open at full size.',
-    'hunthorde.com — élő előnézet': 'hunthorde.com — live preview',
+    'vadmester.hu — élő előnézet': 'vadmester.hu — live preview',
     'Megnyitás új lapon ↗': 'Open in new tab ↗',
 
     // ---- Hírek ----
