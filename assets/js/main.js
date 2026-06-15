@@ -148,6 +148,42 @@
         }, 520);
       });
     }
+
+    // Üdvözlő szövegbuborék a robottól — betöltéskor, kb. 10 mp-ig (üzeneteket váltogatva)
+    const BUBBLE_MSGS = [
+      'Beszélj velünk, gyorsan válaszolunk 😉',
+      'Szép napot ❤️',
+      'Jól nézel ma ki! ❤️',
+      'Weboldal gyorsan érdekel? 😉',
+      'Milyen gyorsan kell? Megoldjuk. 😉'
+    ];
+    const bubble = document.createElement('div');
+    bubble.className = 'robot-bubble';
+    bubble.setAttribute('role', 'status');
+    wrap.appendChild(bubble);
+    let bi = 0, bIv = null, bDone = false;
+    const renderBubble = () => { bubble.textContent = BUBBLE_MSGS[bi]; bubble.classList.add('show'); };
+    const dismissBubble = () => {
+      if (bDone) return;
+      bDone = true;
+      if (bIv) clearInterval(bIv);
+      bubble.classList.remove('show');
+      setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 400);
+    };
+    setTimeout(() => {
+      if (bDone) return;
+      renderBubble();
+      bIv = setInterval(() => {
+        bi++;
+        if (bi >= BUBBLE_MSGS.length) { dismissBubble(); return; }
+        bubble.classList.remove('show');           // rövid pislogás üzenetváltáskor
+        setTimeout(() => { if (!bDone) renderBubble(); }, 170);
+      }, 2000);
+    }, 800);
+    // interakcióra azonnal eltűnik
+    fab.addEventListener('click', dismissBubble, { once: true });
+    const rb = $('.chat-robot', wrap);
+    if (rb) rb.addEventListener('click', dismissBubble, { once: true });
   }
 
   function robotSVG() {
