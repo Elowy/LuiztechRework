@@ -435,3 +435,11 @@
   .shop-search { width: 100%; }
   .brand-sub { display: none; }
 }
+@media (max-width: 480px) {
+  .shop-hero { padding: 54px 0 22px; }
+  .shop-hero-text { font-size: 1rem; }
+  /* a kosár és a fiók fiók töltse ki a kis kijelzőt */
+  .cart-drawer { width: 100%; }
+  .cart-head { padding: 18px 18px; }
+  .account-tickets-head { flex-wrap: wrap; }
+}
