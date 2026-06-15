@@ -233,8 +233,18 @@
   function discountPct(p) { return isOnSale(p) ? Math.round((1 - p.salePrice / p.price) * 100) : 0; }
   function applyTheme(cfg, root) {
     root = root || document.documentElement;
-    root.style.setProperty('--shop-accent', cfg.accent || '#38e1ff');
-    root.style.setProperty('--shop-accent-2', cfg.accent2 || cfg.accent || '#6c7bff');
+    var a = cfg.accent || '#38e1ff', b = cfg.accent2 || cfg.accent || '#6c7bff';
+    // Élő oldalon (nem admin) a munkamenetenként választott véletlen színt használjuk
+    if (!document.body.classList.contains('admin-body')) {
+      try {
+        var P = [['#38e1ff', '#6c7bff'], ['#00ffa3', '#38e1ff'], ['#ff7edb', '#6c7bff'],
+                 ['#ffb86c', '#ff5f57'], ['#b46bff', '#38e1ff'], ['#28c840', '#00ffa3']];
+        var i = Number(sessionStorage.getItem('lt_palette'));
+        if (i >= 0 && i < P.length) { a = P[i][0]; b = P[i][1]; }
+      } catch (e) { /* ignore */ }
+    }
+    root.style.setProperty('--shop-accent', a);
+    root.style.setProperty('--shop-accent-2', b);
     root.setAttribute('data-shop-theme', cfg.theme || 'dark');
   }
   function uid() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }

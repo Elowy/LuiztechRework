@@ -12,29 +12,39 @@
   const yearEl = $('#year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  /* ---------- Apply the shop's chosen accent colours site-wide ----------
-     A "színválasztó" (admin → Megjelenés) az accent színeket menti; itt
-     a főoldal (és minden nem-admin oldal) átveszi ugyanazokat. */
+  /* ---------- Véletlen kiemelő szín munkamenetenként ----------
+     Minden új böngésző-munkamenetben más színsémát kap az élő oldal
+     (a választás a sessionön belül stabil). Az admin felületet nem érinti. */
   function hexToRgba(hex, a) {
     const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
     if (!m) return 'rgba(56,225,255,' + a + ')';
     const n = parseInt(m[1], 16);
     return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
   }
-  if (!document.body.classList.contains('admin-body') && typeof fetch === 'function') {
-    fetch('/api/shop', { credentials: 'same-origin' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((cfg) => {
-        if (!cfg || !cfg.accent) return;
-        const a = cfg.accent, b = cfg.accent2 || cfg.accent;
-        const s = document.documentElement.style;
-        s.setProperty('--accent', a);
-        s.setProperty('--accent-2', b);
-        s.setProperty('--accent-glow', hexToRgba(a, 0.35));
-        s.setProperty('--grad', 'linear-gradient(135deg, ' + a + ' 0%, ' + b + ' 55%, ' + b + ' 100%)');
-        s.setProperty('--grad-soft', 'linear-gradient(135deg, ' + hexToRgba(a, 0.14) + ', ' + hexToRgba(b, 0.14) + ')');
-      })
-      .catch(() => { /* nincs backend → marad az alap színséma */ });
+  const SITE_PALETTES = [
+    { a: '#38e1ff', b: '#6c7bff' }, { a: '#00ffa3', b: '#38e1ff' },
+    { a: '#ff7edb', b: '#6c7bff' }, { a: '#ffb86c', b: '#ff5f57' },
+    { a: '#b46bff', b: '#38e1ff' }, { a: '#28c840', b: '#00ffa3' }
+  ];
+  function sessionPalette() {
+    let i;
+    try { i = Number(sessionStorage.getItem('lt_palette')); } catch (e) { i = NaN; }
+    if (!(i >= 0 && i < SITE_PALETTES.length)) {
+      i = Math.floor(Math.random() * SITE_PALETTES.length);
+      try { sessionStorage.setItem('lt_palette', String(i)); } catch (e) { /* ignore */ }
+    }
+    return SITE_PALETTES[i];
+  }
+  if (!document.body.classList.contains('admin-body')) {
+    const pal = sessionPalette();
+    const a = pal.a, b = pal.b, s = document.documentElement.style;
+    s.setProperty('--accent', a);
+    s.setProperty('--accent-2', b);
+    s.setProperty('--accent-glow', hexToRgba(a, 0.35));
+    s.setProperty('--grad', 'linear-gradient(135deg, ' + a + ' 0%, ' + b + ' 55%, ' + b + ' 100%)');
+    s.setProperty('--grad-soft', 'linear-gradient(135deg, ' + hexToRgba(a, 0.14) + ', ' + hexToRgba(b, 0.14) + ')');
+    s.setProperty('--shop-accent', a);
+    s.setProperty('--shop-accent-2', b);
   }
 
   /* ---------- Header scroll state + progress bar ---------- */
