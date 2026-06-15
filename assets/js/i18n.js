@@ -204,6 +204,7 @@
 
     // ---- Rólunk ----
     'Megbízható IT partner, emberi hangon': 'A reliable IT partner, with a human voice',
+    'alapító · fejlesztő': 'founder · developer',
     'professzionális informatikai szolgáltatásokkal biztosítja a vállalkozásod zavartalan működését. Tapasztalt csapatunk a rendszerkarbantartástól a hálózatépítésen át a biztonsági megoldásokig magas színvonalú támogatást nyújt.':
       'provides professional IT services to keep your business running smoothly. Our experienced team delivers high-quality support from system maintenance through networking to security solutions.',
     'Hiszünk a gyorsaságban és az átláthatóságban: bármilyen platformról kényelmesen elérsz minket, és':
