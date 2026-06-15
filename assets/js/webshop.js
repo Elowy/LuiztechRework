@@ -293,6 +293,12 @@
       note.className = 'cart-note err';
       return;
     }
+    var consent = $('#co-consent');
+    if (consent && !consent.checked) {
+      note.textContent = 'A rendeléshez fogadd el az ÁSZF-et és az adatkezelési tájékoztatót.';
+      note.className = 'cart-note err';
+      return;
+    }
     var payload = {
       items: ids.map(function (id) { return { id: id, qty: cart[id] }; }),
       customer: {
@@ -337,8 +343,11 @@
       if (label) label.textContent = 'Belépés';
       $('#account-btn').setAttribute('title', 'Belépés / Regisztráció');
     }
+    var isAdmin = !!(currentUser && currentUser.isAdmin);
     var adminLink = $('#nav-admin');
-    if (adminLink) adminLink.hidden = !(currentUser && currentUser.isAdmin);
+    if (adminLink) adminLink.hidden = !isAdmin;
+    var adminFoot = $('#footer-admin-link');
+    if (adminFoot) adminFoot.hidden = !isAdmin;
   }
 
   function openAuth(tab) {

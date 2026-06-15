@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=18" />
-  <link rel="stylesheet" href="assets/css/webshop.css?v=18" />
+  <link rel="stylesheet" href="assets/css/style.css?v=19" />
+  <link rel="stylesheet" href="assets/css/webshop.css?v=19" />
 </head>
 <body class="shop-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -99,6 +99,12 @@
         <label for="co-note">Megjegyzés</label>
         <textarea id="co-note" rows="2" placeholder="Pl. csengő nem működik..."></textarea>
       </div>
+      <label class="consent-row">
+        <input type="checkbox" id="co-consent" />
+        <span>Elolvastam és elfogadom az
+          <a href="aszf.html" target="_blank" rel="noopener">ÁSZF-et</a> és az
+          <a href="adatkezeles.html" target="_blank" rel="noopener">adatkezelési tájékoztatót</a>.</span>
+      </label>
     </form>
 
     <div class="cart-foot">
@@ -240,14 +246,19 @@
 
   <!-- ===================== FOOTER ===================== -->
   <footer class="site-footer">
-    <div class="container footer-bottom" style="border-top:0;">
-      <span>© <span id="year"></span> <span id="footer-shop-name">Luiz-Tech Shop</span></span>
-      <span class="footer-built"><a href="#" data-cookie-settings>Süti beállítások</a> · <a href="admin.html" style="color:var(--accent)">⚙︎ Webshop testreszabása</a></span>
+    <div class="container footer-bottom" style="border-top:0; flex-wrap:wrap; gap:10px;">
+      <span>© <span id="year"></span> <span id="footer-shop-name">Luiz-Tech Shop</span> · Tóth Levente István e.v.</span>
+      <span class="footer-built">
+        <a href="impresszum.html">Impresszum</a> · <a href="aszf.html">ÁSZF</a> ·
+        <a href="adatkezeles.html">Adatkezelés</a> ·
+        <a href="#" data-cookie-settings>Süti beállítások</a> ·
+        <a href="admin.html" id="footer-admin-link" style="color:var(--accent)" hidden>⚙︎ Admin</a>
+      </span>
     </div>
   </footer>
 
-  <script src="assets/js/shop-config.js?v=18"></script>
-  <script src="assets/js/webshop.js?v=18" defer></script>
-  <script src="assets/js/main.js?v=18" defer></script>
+  <script src="assets/js/shop-config.js?v=19"></script>
+  <script src="assets/js/webshop.js?v=19" defer></script>
+  <script src="assets/js/main.js?v=19" defer></script>
 </body>
 </html>
