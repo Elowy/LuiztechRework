@@ -253,7 +253,8 @@
       const showBubble = () => {
         if (wrap.classList.contains('open')) return;   // ha nyitva a chat, kihagyjuk
         const gold = Math.random() < 0.07;             // ritkán az arany "Kattints rám!"
-        bubble.textContent = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
+        var raw = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
+        bubble.textContent = (window.LT_translate ? window.LT_translate(raw) : raw);
         bubble.classList.toggle('gold', gold);
         bubble.classList.add('show');
         if (hideT) clearTimeout(hideT);
@@ -391,6 +392,7 @@
     }
     const pick = SNIPPETS[pickIdx];
     const lines = pick.lines;
+    if (window.LT_translate) lines.forEach(function (seg) { seg.t = window.LT_translate(seg.t); });
     if (heroTermTitle) heroTermTitle.textContent = 'luiz-tech ~ ' + pick.title;
 
     if (prefersReduced) {
