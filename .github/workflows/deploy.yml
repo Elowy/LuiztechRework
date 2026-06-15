@@ -16,6 +16,26 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      # Közös kizárási lista mindhárom feltöltési kísérlethez.
+      FTP_EXCLUDE: |
+        **/.git*
+        **/.git*/**
+        .github/**
+        node_modules/**
+        server/**
+        data/**
+        app.js
+        package.json
+        package-lock.json
+        Dockerfile
+        Procfile
+        .dockerignore
+        **/*.md
+        config.php
+        config.sample.php
+        uploads/**
+        .gitignore
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,36 +62,61 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy via FTP(S)
+      # A tárhely FTP-je időnként nem fogad kapcsolatot ("Timeout (control socket)").
+      # Ezért egy futáson belül akár 3-szor is megpróbáljuk: az első két kísérlet
+      # "continue-on-error", csak a harmadik bukása jelent valódi hibát.
+      - name: Deploy via FTP(S) — 1. kísérlet
+        id: deploy1
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
-          protocol: ftps          # ha a tárhely nem támogatja: állítsd "ftp"-re
+          protocol: ftps
           port: 21
-          timeout: 60000          # nagyobb türelmi idő a lassú FTP control sockethez
-          # A dokumentumgyökér az FTP-belépéshez képest. public_html-be való
-          # feltöltéshez (ha az FTP ott landol) hagyd "./"-n.
+          timeout: 120000
           server-dir: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || './' }}
           local-dir: ./
           dangerous-clean-slate: false
-          # Ezeket NEM töltjük fel és NEM is töröljük a szerverről:
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .github/**
-            node_modules/**
-            server/**
-            data/**
-            app.js
-            package.json
-            package-lock.json
-            Dockerfile
-            Procfile
-            .dockerignore
-            **/*.md
-            config.php
-            config.sample.php
-            uploads/**
-            .gitignore
+          exclude: ${{ env.FTP_EXCLUDE }}
+
+      - name: Várakozás újrapróba előtt (1)
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 20
+
+      - name: Deploy via FTP(S) — 2. kísérlet
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          timeout: 120000
+          server-dir: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || './' }}
+          local-dir: ./
+          dangerous-clean-slate: false
+          exclude: ${{ env.FTP_EXCLUDE }}
+
+      - name: Várakozás újrapróba előtt (2)
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 40
+
+      - name: Deploy via FTP(S) — 3. (utolsó) kísérlet
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST || vars.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          timeout: 120000
+          server-dir: ${{ vars.FTP_SERVER_DIR || secrets.FTP_SERVER_DIR || './' }}
+          local-dir: ./
+          dangerous-clean-slate: false
+          exclude: ${{ env.FTP_EXCLUDE }}
