@@ -82,6 +82,32 @@
       .catch(() => { grid.innerHTML = '<p class="shop-empty" style="grid-column:1/-1"><a href="webshop.html">' + T('Tovább a webshopba →') + '</a></p>'; });
   })();
 
+  /* ---------- Tóth Levente kép — glitch easter-egg ---------- */
+  (function ownerGlitch() {
+    const img = document.querySelector('.owner-photo');
+    if (!img) return;
+    const orig = img.getAttribute('src');
+    const alt = 'assets/img/owner-alt.png?v=31';
+    let ready = false, showingAlt = false, busy = false;
+    const pre = new Image();
+    pre.onload = function () { ready = true; img.style.cursor = 'pointer'; img.setAttribute('title', '👁'); };
+    pre.src = alt;   // csak akkor aktív az easter-egg, ha a kép létezik
+    img.addEventListener('click', function () {
+      if (!ready || busy) return;
+      busy = true;
+      img.classList.add('glitching');
+      const card = img.closest('.owner-card');
+      const ov = document.createElement('div');
+      ov.className = 'glitch-code';
+      const chars = '01<>/{}=;()[]#$%&|!?+*ABCDEF0x9af3λΣ¤';
+      let s = ''; for (let i = 0; i < 280; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      ov.textContent = s;
+      if (card) card.appendChild(ov);
+      setTimeout(function () { showingAlt = !showingAlt; img.src = showingAlt ? alt : orig; }, 280);
+      setTimeout(function () { img.classList.remove('glitching'); if (ov.parentNode) ov.remove(); busy = false; }, 680);
+    });
+  })();
+
   /* ---------- Header scroll state + progress bar ---------- */
   const header = $('#site-header');
   const progress = $('#scroll-progress');

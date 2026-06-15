@@ -1423,6 +1423,31 @@ code { font-family: var(--mono); }
 .feat-emoji { font-size: 2.6rem; line-height: 1; margin-bottom: 10px; }
 .feat-img { width: 100%; height: 150px; border-radius: 12px; background: var(--surface-2) center / cover no-repeat; margin-bottom: 12px; }
 .price-old { text-decoration: line-through; color: var(--text-dim); font-size: .62em; margin-right: 6px; }
+
+/* Tóth Levente kép — glitch easter-egg */
+.owner-photo.glitching { animation: ownerGlitch .66s steps(2) both; will-change: clip-path, transform, filter; }
+@keyframes ownerGlitch {
+  0%   { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: none; }
+  10%  { clip-path: inset(8% 0 72% 0); transform: translate(-7px, 0); filter: hue-rotate(90deg) saturate(2.5); }
+  22%  { clip-path: inset(62% 0 12% 0); transform: translate(7px, 0); filter: invert(1); }
+  34%  { clip-path: inset(30% 0 42% 0); transform: translate(-4px, 2px); filter: hue-rotate(200deg) saturate(3); }
+  46%  { clip-path: inset(0 0 0 0); transform: translate(4px, -2px); filter: contrast(2.4); }
+  60%  { clip-path: inset(48% 0 26% 0); transform: translate(-9px, 0); filter: hue-rotate(300deg); }
+  74%  { clip-path: inset(16% 0 60% 0); transform: translate(6px, 1px); filter: invert(1) saturate(2); }
+  100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); filter: none; }
+}
+.glitch-code {
+  position: absolute; inset: 0; overflow: hidden; z-index: 3; pointer-events: none;
+  color: var(--accent); font: 700 12px/1.15 'JetBrains Mono', ui-monospace, monospace;
+  word-break: break-all; padding: 8px; border-radius: 12px;
+  text-shadow: 0 0 6px var(--accent); background: rgba(5, 8, 16, .55);
+  mix-blend-mode: screen; animation: glitchFlick .66s steps(3) both;
+}
+@keyframes glitchFlick { 0%, 100% { opacity: 0; } 18%, 82% { opacity: .92; } }
+@media (prefers-reduced-motion: reduce) {
+  .owner-photo.glitching { animation: none; }
+  .glitch-code { animation: none; opacity: 0; }
+}
 @keyframes robotfly {
   0%   { transform: translate(0, 0) rotate(0deg); }
   20%  { transform: translate(-42px, -16px) rotate(-8deg); }
