@@ -88,11 +88,12 @@
     if (!img) return;
     const orig = img.getAttribute('src');
     const alt = 'assets/img/owner-alt.png?v=31';
-    let ready = false, showingAlt = false, busy = false;
+    let ready = false, showingAlt = false, busy = false, autoDone = false, timer = null;
     const pre = new Image();
-    pre.onload = function () { ready = true; img.style.cursor = 'pointer'; img.setAttribute('title', '👁'); };
+    pre.onload = function () { ready = true; img.style.cursor = 'pointer'; img.setAttribute('title', '👁'); armAuto(); };
     pre.src = alt;   // csak akkor aktív az easter-egg, ha a kép létezik
-    img.addEventListener('click', function () {
+
+    function runGlitch() {
       if (!ready || busy) return;
       busy = true;
       img.classList.add('glitching');
@@ -105,7 +106,27 @@
       if (card) card.appendChild(ov);
       setTimeout(function () { showingAlt = !showingAlt; img.src = showingAlt ? alt : orig; }, 280);
       setTimeout(function () { img.classList.remove('glitching'); if (ov.parentNode) ov.remove(); busy = false; }, 680);
-    });
+    }
+    img.addEventListener('click', runGlitch);
+
+    // Automatikus váltás: ha a fotó látszik, 10 mp után egyszer átvált.
+    function armAuto() {
+      if (autoDone || prefersReduced || !('IntersectionObserver' in window)) return;
+      const io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            if (timer) return;
+            timer = setTimeout(function () {
+              timer = null;
+              if (!autoDone && !showingAlt) { autoDone = true; runGlitch(); io.disconnect(); }
+            }, 10000);
+          } else if (timer) {
+            clearTimeout(timer); timer = null;   // elgörgetett → újraindul, ha visszajön
+          }
+        });
+      }, { threshold: 0.5 });
+      io.observe(img);
+    }
   })();
 
   /* ---------- Header scroll state + progress bar ---------- */
