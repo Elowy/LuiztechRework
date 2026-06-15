@@ -1013,6 +1013,10 @@ code { font-family: var(--mono); }
   box-shadow: 0 10px 24px -10px var(--accent-glow);
 }
 .peek-window:hover .peek-open::after { opacity: 1; transform: none; }
+/* érintőképernyőn nincs hover → a "Megnyitás" gomb mindig látszódjon */
+@media (hover: none) {
+  .peek-open::after { opacity: 1; transform: none; }
+}
 .peek-cta { margin-top: 18px; }
 @media (max-width: 600px) { .peek-viewport { height: 360px; } }
 
