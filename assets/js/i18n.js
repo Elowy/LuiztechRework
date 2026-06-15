@@ -310,6 +310,7 @@
     'Név': 'Name',
     'Teljes neved': 'Your full name',
     'Legalább 6 karakter': 'At least 6 characters',
+    'Maradjak bejelentkezve': 'Keep me signed in',
     'fiók': 'account',
 
     // ---- Webshop: fiók-fiók / ticketek / űrlapok ----

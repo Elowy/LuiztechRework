@@ -52,10 +52,11 @@
     e.preventDefault();
     var email = $('#login-email').value.trim();
     var p = $('#login-pass').value;
+    var remember = !!($('#login-remember') && $('#login-remember').checked);
     var btn = $('#login-form button[type="submit"]');
     btn.disabled = true;
     $('#login-error').textContent = '';
-    S.loginCustomer(email, p).then(function (res) {
+    S.loginCustomer(email, p, remember).then(function (res) {
       btn.disabled = false;
       if (res.error) { $('#login-error').textContent = res.error; $('#login-pass').value = ''; return; }
       if (!res.user || !res.user.isAdmin) {

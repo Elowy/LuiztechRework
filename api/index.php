@@ -267,10 +267,12 @@ if ($method === 'POST' && $route === '/account/login') {
   if (!$u || !password_verify((string)($b['pass'] ?? ''), $u['hash'])) json_error('Hibás e-mail cím vagy jelszó.', 401);
   session_regenerate_id(true); // session fixation védelem
   $_SESSION['uid'] = $u['id'];
+  set_remember(!empty($b['remember']));   // "Maradjak bejelentkezve"
   json_out(['ok' => true, 'user' => ['id' => $u['id'], 'name' => $u['name'], 'email' => $u['email'], 'isAdmin' => is_admin_email($u['email'])]]);
 }
 if ($method === 'POST' && $route === '/account/logout') {
   unset($_SESSION['uid']);
+  set_remember(false);
   json_out(['ok' => true]);
 }
 if ($method === 'GET' && $route === '/account/me') {

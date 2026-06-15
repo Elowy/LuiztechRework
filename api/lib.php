@@ -427,13 +427,27 @@ function start_app_session() {
   if (session_status() === PHP_SESSION_ACTIVE) return;
   $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-  $lifetime = 60 * 60 * 24 * 30;   // 30 nap — böngészőbezárás után is bejelentkezve marad
-  @ini_set('session.gc_maxlifetime', (string)$lifetime);
+  // 30 napos tartós session csak akkor, ha a felhasználó a "Maradjak bejelentkezve"-t kérte
+  $lifetime = isset($_COOKIE['lt_remember']) ? 60 * 60 * 24 * 30 : 0;
+  @ini_set('session.gc_maxlifetime', (string)(60 * 60 * 24 * 30));
   session_set_cookie_params([
     'lifetime' => $lifetime, 'path' => '/', 'httponly' => true,
     'samesite' => 'Lax', 'secure' => $secure,
   ]);
   session_start();
+}
+// "Maradjak bejelentkezve" beállítása: tartóssá teszi (vagy törli) a session-sütit.
+function set_remember($on) {
+  $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+  if ($on) {
+    $exp = time() + 60 * 60 * 24 * 30;
+    $opt = ['expires' => $exp, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => $secure];
+    setcookie('lt_remember', '1', $opt);
+    setcookie(session_name(), session_id(), $opt);   // a session-süti is tartós lesz
+  } else {
+    setcookie('lt_remember', '', ['expires' => time() - 3600, 'path' => '/']);
+  }
 }
 function is_admin_email($email) {
   return is_string($email) && mb_strtolower(trim($email)) === ADMIN_EMAIL;

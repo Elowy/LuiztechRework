@@ -374,8 +374,9 @@
     var pass = $('#login-password').value;
     var err = $('#login-err');
     if (!email || !pass) { err.textContent = 'Add meg az e-mail címed és a jelszavad.'; return; }
+    var remember = !!($('#login-remember') && $('#login-remember').checked);
     var btn = e.target.querySelector('button[type="submit"]'); btn.disabled = true;
-    S.loginCustomer(email, pass).then(function (res) {
+    S.loginCustomer(email, pass, remember).then(function (res) {
       btn.disabled = false;
       if (res.error) { err.textContent = res.error; return; }
       onLoggedIn(res.user);

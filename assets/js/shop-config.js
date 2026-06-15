@@ -157,8 +157,8 @@
         return { error: 'A regisztrációhoz fut a háttérkiszolgáló szükséges (indítsd: npm start).' };
       });
   }
-  function loginCustomer(email, pass) {
-    return api('/api/account/login', { method: 'POST', body: { email: email, pass: pass } })
+  function loginCustomer(email, pass, remember) {
+    return api('/api/account/login', { method: 'POST', body: { email: email, pass: pass, remember: !!remember } })
       .then(function (d) { return { user: d.user }; })
       .catch(function (e) {
         if (e.status) return { error: e.message };
