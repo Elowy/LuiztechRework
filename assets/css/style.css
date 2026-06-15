@@ -1056,6 +1056,13 @@ code { font-family: var(--mono); }
 .cookie-text a { color: var(--accent); text-decoration: underline; }
 .cookie-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* sötét "kódköd" overlay — amíg a cookie-banner él */
+.cookie-fog {
+  position: fixed; inset: 0; z-index: 290; display: block;
+  background: #05080c; opacity: 0; transition: opacity .45s ease;
+}
+.cookie-fog.show { opacity: .97; }
+
 .cookie-modal-overlay {
   position: fixed; inset: 0;
   z-index: 320;

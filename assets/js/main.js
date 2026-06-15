@@ -735,8 +735,48 @@
     document.body.appendChild(banner);
     document.body.appendChild(modal);
 
-    const showBanner = () => { requestAnimationFrame(() => banner.classList.add('show')); };
-    const hideBanner = () => banner.classList.remove('show');
+    // Sötét "kódköd" overlay — amíg a banner aktív (matrix-szerű kódeső)
+    const fog = document.createElement('canvas');
+    fog.className = 'cookie-fog';
+    fog.setAttribute('aria-hidden', 'true');
+    const FCH = '01<>/{}=;()[]#$%&|!?+*абвГΣλ░▒▓01ABCDEF';
+    let fctx = null, fcols = [], fsize = 16, fw = 0, fh = 0, fraf = null, fresize = null;
+    const fogStep = () => {
+      fctx.fillStyle = 'rgba(5,8,12,0.20)';
+      fctx.fillRect(0, 0, fw, fh);
+      fctx.font = fsize + 'px JetBrains Mono, monospace';
+      for (let i = 0; i < fcols.length; i++) {
+        const x = i * fsize, y = fcols[i] * fsize;
+        fctx.fillStyle = Math.random() > 0.96 ? 'rgba(0,255,163,0.9)' : 'rgba(56,225,255,0.85)';
+        fctx.fillText(FCH[Math.floor(Math.random() * FCH.length)], x, y);
+        if (y > fh && Math.random() > 0.975) fcols[i] = 0;
+        fcols[i]++;
+      }
+      fraf = requestAnimationFrame(fogStep);
+    };
+    const startFog = () => {
+      if (fog.parentNode) return;
+      document.body.appendChild(fog);
+      fctx = fog.getContext('2d');
+      fresize = () => {
+        fw = fog.width = window.innerWidth; fh = fog.height = window.innerHeight;
+        fcols = Array.from({ length: Math.ceil(fw / fsize) }, () => Math.random() * fh / fsize);
+        fctx.fillStyle = '#05080c'; fctx.fillRect(0, 0, fw, fh);
+      };
+      fresize();
+      window.addEventListener('resize', fresize);
+      requestAnimationFrame(() => fog.classList.add('show'));
+      if (!prefersReduced) fraf = requestAnimationFrame(fogStep);   // reduced motion → statikus sötét
+    };
+    const stopFog = () => {
+      if (fraf) { cancelAnimationFrame(fraf); fraf = null; }
+      if (fresize) { window.removeEventListener('resize', fresize); fresize = null; }
+      fog.classList.remove('show');
+      setTimeout(() => { if (fog.parentNode) fog.remove(); }, 450);
+    };
+
+    const showBanner = () => { startFog(); requestAnimationFrame(() => banner.classList.add('show')); };
+    const hideBanner = () => { banner.classList.remove('show'); stopFog(); };
     const openModal = () => {
       const c = read() || { analytics: false, marketing: false };
       modal.querySelector('[data-cat="analytics"]').checked = !!c.analytics;
