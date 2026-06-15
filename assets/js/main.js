@@ -304,23 +304,58 @@
   /* ---------- Terminal typing animation ---------- */
   const codeEl = $('#terminal-code');
   const caret = $('#terminal-caret');
+  const heroTermTitle = $('#hero-terminal-title');
   if (codeEl) {
-    const lines = [
-      { t: '$ ', cls: 't-prompt', wait: 0 },
-      { t: 'git clone luiz-tech/projekt.git', cls: 't-cmd', nl: true },
-      { t: '→ Klónozás... kész ✓', cls: 't-out', nl: true },
-      { t: '', nl: true },
-      { t: '$ ', cls: 't-prompt' },
-      { t: 'npm run build', cls: 't-cmd', nl: true },
-      { t: '✓ Webfejlesztés', cls: 't-ok', nl: true },
-      { t: '✓ Kiberbiztonság', cls: 't-ok', nl: true },
-      { t: '✓ Üzemeltetés', cls: 't-ok', nl: true },
-      { t: '', nl: true },
-      { t: '$ ', cls: 't-prompt' },
-      { t: 'deploy --to production', cls: 't-cmd', nl: true },
-      { t: '🚀 Élesítve 12 órán belül!', cls: 't-ok', nl: true },
-      { t: '# Beszéljünk a projektedről', cls: 't-comment', nl: true },
+    // Több nyelvi változat — sessionönként véletlenszerűen más kód jelenik meg.
+    var K = 't-key', STR = 't-str', FN = 't-fn', O = 't-out', CM = 't-comment';
+    const SNIPPETS = [
+      { title: 'App.jsx', lines: [
+        { t: '// Luiz-Tech — React komponens', cls: CM, nl: true },
+        { t: 'import ', cls: K }, { t: 'React', cls: FN }, { t: ' from ', cls: K }, { t: "'react'", cls: STR }, { t: ';', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'export default function ', cls: K }, { t: 'App', cls: FN }, { t: '() {', cls: O, nl: true },
+        { t: '  return ', cls: K }, { t: '<h1>', cls: FN }, { t: 'Üdv a Luiz-Tech-nél! 🚀', cls: O }, { t: '</h1>', cls: FN }, { t: ';', cls: O, nl: true },
+        { t: '}', cls: O, nl: true }
+      ] },
+      { title: 'Program.cs', lines: [
+        { t: '// Luiz-Tech — C# szolgáltatás', cls: CM, nl: true },
+        { t: 'using ', cls: K }, { t: 'System', cls: FN }, { t: ';', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'class ', cls: K }, { t: 'Program', cls: FN }, { t: ' {', cls: O, nl: true },
+        { t: '  static void ', cls: K }, { t: 'Main', cls: FN }, { t: '() {', cls: O, nl: true },
+        { t: '    Console', cls: FN }, { t: '.WriteLine(', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ');', cls: O, nl: true },
+        { t: '  }', cls: O, nl: true },
+        { t: '}', cls: O, nl: true }
+      ] },
+      { title: 'index.php', lines: [
+        { t: '<?php', cls: K, nl: true },
+        { t: '// Luiz-Tech — PHP backend', cls: CM, nl: true },
+        { t: 'function ', cls: K }, { t: 'udvozlet', cls: FN }, { t: '(', cls: O }, { t: 'string ', cls: K }, { t: '$nev', cls: O }, { t: ') {', cls: O, nl: true },
+        { t: '  return ', cls: K }, { t: '"Üdv, {$nev}! 🚀"', cls: STR }, { t: ';', cls: O, nl: true },
+        { t: '}', cls: O, nl: true },
+        { t: 'echo ', cls: K }, { t: 'udvozlet', cls: FN }, { t: '(', cls: O }, { t: '"Luiz-Tech"', cls: STR }, { t: ');', cls: O, nl: true }
+      ] },
+      { title: 'main.cpp', lines: [
+        { t: '// Luiz-Tech — C++ program', cls: CM, nl: true },
+        { t: '#include ', cls: K }, { t: '<iostream>', cls: STR, nl: true },
+        { t: '', nl: true },
+        { t: 'int ', cls: K }, { t: 'main', cls: FN }, { t: '() {', cls: O, nl: true },
+        { t: '  std::cout << ', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ';', cls: O, nl: true },
+        { t: '  return ', cls: K }, { t: '0', cls: STR }, { t: ';', cls: O, nl: true },
+        { t: '}', cls: O, nl: true }
+      ] }
     ];
+
+    // sessionönként rögzített választás (munkameneten belül ugyanaz, új sessionben más)
+    var pickIdx;
+    try { pickIdx = Number(sessionStorage.getItem('lt_hero_lang')); } catch (e) { pickIdx = NaN; }
+    if (!(pickIdx >= 0 && pickIdx < SNIPPETS.length)) {
+      pickIdx = Math.floor(Math.random() * SNIPPETS.length);
+      try { sessionStorage.setItem('lt_hero_lang', String(pickIdx)); } catch (e) { /* ignore */ }
+    }
+    const pick = SNIPPETS[pickIdx];
+    const lines = pick.lines;
+    if (heroTermTitle) heroTermTitle.textContent = 'luiz-tech ~ ' + pick.title;
 
     if (prefersReduced) {
       // render statically

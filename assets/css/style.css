@@ -344,6 +344,9 @@ code { font-family: var(--mono); }
 .t-out { color: var(--text-muted); }
 .t-ok { color: var(--accent-3); }
 .t-comment { color: var(--text-dim); font-style: italic; }
+.t-key { color: var(--accent-2); }
+.t-str { color: var(--accent-3); }
+.t-fn  { color: var(--accent); }
 .caret {
   display: inline-block;
   color: var(--accent);
