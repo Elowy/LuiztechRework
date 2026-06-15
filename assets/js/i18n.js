@@ -120,6 +120,15 @@
     '100+ ügyfél tapasztalatával gyors és megbízható hibaelhárítás bármilyen problémára.':
       'With 100+ clients of experience, fast and reliable troubleshooting for any issue.',
 
+    // ---- Kiemelt termékek (Népszerű a webshopból) ----
+    '// webshop': '// webshop',
+    'Népszerű a webshopból': 'Popular from the shop',
+    'Válogatott termékeink a boltból — a teljes kínálat a webshopban vár.':
+      'A selection of our products — the full range awaits in the webshop.',
+    'Termékek betöltése…': 'Loading products…',
+    'Megnézem a boltban': 'View in the shop',
+    'Tovább a webshopba →': 'Go to the webshop →',
+
     // ---- Árazás ----
     'Átlátható árazás': 'Transparent pricing',
     'Válaszd a hozzád illő csomagot — az árak tájékoztató jellegűek, a végleges ajánlatot 12 órán belül küldjük.':

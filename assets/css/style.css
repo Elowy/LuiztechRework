@@ -1418,6 +1418,11 @@ code { font-family: var(--mono); }
 .owner-caption { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
 .owner-caption strong { font-size: 1.1rem; letter-spacing: -.2px; }
 .owner-caption span { color: var(--text-muted); font-size: .9rem; }
+
+/* kiemelt termékek a webshopból (Népszerű szekció) */
+.feat-emoji { font-size: 2.6rem; line-height: 1; margin-bottom: 10px; }
+.feat-img { width: 100%; height: 150px; border-radius: 12px; background: var(--surface-2) center / cover no-repeat; margin-bottom: 12px; }
+.price-old { text-decoration: line-through; color: var(--text-dim); font-size: .62em; margin-right: 6px; }
 @keyframes robotfly {
   0%   { transform: translate(0, 0) rotate(0deg); }
   20%  { transform: translate(-42px, -16px) rotate(-8deg); }

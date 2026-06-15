@@ -47,6 +47,41 @@
     s.setProperty('--shop-accent-2', b);
   }
 
+  /* ---------- Kiemelt termékek a webshopból (mindig véletlen) ---------- */
+  (function featuredProducts() {
+    const grid = document.getElementById('featured-products');
+    if (!grid || typeof fetch !== 'function') return;
+    const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const fmt = (v, cur) => Number(v).toLocaleString('hu-HU') + ' ' + cur;
+    const T = (s) => (window.LT_translate ? window.LT_translate(s) : s);
+    fetch('/api/shop', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        const prods = cfg && Array.isArray(cfg.products) ? cfg.products.slice() : [];
+        if (!prods.length) { grid.innerHTML = '<p class="shop-empty" style="grid-column:1/-1"><a href="webshop.html">' + T('Tovább a webshopba →') + '</a></p>'; return; }
+        for (let i = prods.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = prods[i]; prods[i] = prods[j]; prods[j] = t; }
+        const cur = (cfg.currency || 'Ft');
+        grid.innerHTML = prods.slice(0, 3).map((p) => {
+          const onSale = p.salePrice != null && p.salePrice > 0 && p.salePrice < p.price;
+          const eff = onSale ? p.salePrice : p.price;
+          const priceHtml = onSale
+            ? '<span class="price-old">' + fmt(p.price, cur) + '</span> ' + fmt(eff, cur)
+            : fmt(eff, cur);
+          const media = p.image
+            ? '<div class="feat-img" style="background-image:url(\'' + esc(p.image) + '\')"></div>'
+            : '<div class="feat-emoji">' + esc(p.emoji || '📦') + '</div>';
+          return '<article class="price-card reveal in">' +
+            media +
+            '<h3>' + esc(p.name) + '</h3>' +
+            (p.desc ? '<p class="price-sub">' + esc(p.desc) + '</p>' : '') +
+            '<div class="price">' + priceHtml + '</div>' +
+            '<a href="webshop.html" class="btn btn-primary btn-block">' + T('Megnézem a boltban') + '</a>' +
+          '</article>';
+        }).join('');
+      })
+      .catch(() => { grid.innerHTML = '<p class="shop-empty" style="grid-column:1/-1"><a href="webshop.html">' + T('Tovább a webshopba →') + '</a></p>'; });
+  })();
+
   /* ---------- Header scroll state + progress bar ---------- */
   const header = $('#site-header');
   const progress = $('#scroll-progress');
