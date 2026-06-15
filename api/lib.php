@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const DEFAULT_FAQ = [
   ['id'=>'f1','question'=>'Mennyi idő alatt készül el egy weboldal?','answer'=>'Egyszerűbb oldalakat akár 8–24 óra alatt élesítünk; összetettebb projekteknél a pontos időt az ingyenes árajánlatban adjuk meg.'],
@@ -37,7 +37,7 @@ const DEFAULT_PRODUCTS = [
   ['id'=>'p3','name'=>'Kiberbiztonsági audit','desc'=>'Sérülékenység-vizsgálat és biztonsági jelentés.','price'=>89000,'category'=>'Biztonság','emoji'=>'🛡️','image'=>'','stock'=>null],
   ['id'=>'p4','name'=>'Adatmentési megoldás','desc'=>'Automatikus, ütemezett biztonsági mentés beüzemelve.','price'=>59000,'category'=>'Üzemeltetés','emoji'=>'💾','image'=>'','stock'=>null],
   ['id'=>'p5','name'=>'Hálózat optimalizálás','desc'=>'Wi-Fi és vezetékes hálózat felmérése és hangolása.','price'=>69000,'category'=>'Üzemeltetés','emoji'=>'📡','image'=>'','stock'=>null],
-  ['id'=>'p6','name'=>'SEO indító csomag','desc'=>'Keresőoptimalizálás, technikai audit és kulcsszókutatás.','price'=>79000,'category'=>'Marketing','emoji'=>'📈','image'=>'','stock'=>null],
+  ['id'=>'p6','name'=>'SEO indító csomag','desc'=>'Keresőoptimalizálás, technikai audit és kulcsszókutatás.','price'=>79000,'category'=>'Marketing','emoji'=>'📈','image'=>'','stock'=>null,'salePrice'=>59000],
 ];
 
 const DEFAULT_REFERENCES = [
@@ -105,6 +105,9 @@ function migrate(PDO $pdo) {
   if ($ver >= SCHEMA_VERSION) return;
   try {
     create_schema($pdo);
+    // v3: akciós ár oszlop a meglévő products táblához (ha még nincs)
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN sale_price INT NULL AFTER stock"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }
@@ -145,6 +148,7 @@ function create_schema(PDO $pdo) {
     emoji VARCHAR(16) DEFAULT '📦',
     image VARCHAR(300) DEFAULT '',
     stock INT NULL,
+    sale_price INT NULL,
     sort INT NOT NULL DEFAULT 0
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
@@ -319,6 +323,19 @@ function parse_stock($v) {
   if (!is_numeric($v)) return null;
   return max(0, (int)round((float)$v));
 }
+/* akciós ár: null, ha nincs / érvénytelen / nem kisebb a normál árnál */
+function parse_sale($v, $price) {
+  if ($v === '' || $v === null || !is_numeric($v)) return null;
+  $s = max(0, (int)round((float)$v));
+  if ($s <= 0 || $s >= (int)$price) return null;
+  return $s;
+}
+/* a ténylegesen fizetendő ár (akciós, ha érvényes) */
+function effective_price($row) {
+  $price = (int)$row['price'];
+  $sale = isset($row['sale_price']) && $row['sale_price'] !== null ? (int)$row['sale_price'] : null;
+  return ($sale !== null && $sale > 0 && $sale < $price) ? $sale : $price;
+}
 function clean_image($img) {
   $img = mb_substr((string)$img, 0, 300);
   if ($img !== '' && !preg_match('#^(/uploads/|https?://)#', $img)) return '';
@@ -327,17 +344,19 @@ function clean_image($img) {
 function insert_product(PDO $pdo, array $p, $sort = 0) {
   $id = (string)($p['id'] ?? '');
   if ($id === '') $id = 'p' . uniqid();
-  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,price,category,emoji,image,stock,sort)
-    VALUES (?,?,?,?,?,?,?,?,?)");
+  $price = max(0, (int)($p['price'] ?? 0));
+  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,price,category,emoji,image,stock,sale_price,sort)
+    VALUES (?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($p['name'] ?? ''), 0, 160),
     mb_substr((string)($p['desc'] ?? ''), 0, 600),
-    max(0, (int)($p['price'] ?? 0)),
+    $price,
     mb_substr((string)($p['category'] ?? ''), 0, 60),
     mb_substr((string)($p['emoji'] ?? '📦'), 0, 16),
     clean_image($p['image'] ?? ''),
     parse_stock($p['stock'] ?? null),
+    parse_sale($p['salePrice'] ?? null, $price),
     (int)$sort,
   ]);
 }
@@ -351,6 +370,7 @@ function map_product($r) {
     'emoji' => $r['emoji'],
     'image' => $r['image'],
     'stock' => is_null($r['stock']) ? null : (int)$r['stock'],
+    'salePrice' => (!isset($r['sale_price']) || is_null($r['sale_price'])) ? null : (int)$r['sale_price'],
   ];
 }
 function get_products(PDO $pdo) {
@@ -424,7 +444,7 @@ function create_order(PDO $pdo, array $payload, $user) {
     $pid = (string)($it['id'] ?? '');
     if (!isset($byId[$pid])) continue;
     $qty = max(1, (int)round((float)($it['qty'] ?? 1)));
-    $items[] = ['id' => $pid, 'name' => $byId[$pid]['name'], 'price' => (int)$byId[$pid]['price'], 'qty' => $qty];
+    $items[] = ['id' => $pid, 'name' => $byId[$pid]['name'], 'price' => effective_price($byId[$pid]), 'qty' => $qty];
   }
   if (!count($items)) return ['error' => 'A kosár üres vagy érvénytelen.'];
 

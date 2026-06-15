@@ -1134,6 +1134,9 @@ code { font-family: var(--mono); }
   .terminal-body { min-height: 260px; font-size: .82rem; }
 }
 
+/* ---------- Akciós ár (áthúzott eredeti ár) ---------- */
+.price-old { text-decoration: line-through; color: var(--text-dim); font-weight: 400; font-size: .85em; }
+
 /* ---------- Small phones (≤480px) ---------- */
 @media (max-width: 480px) {
   .container { padding-inline: 16px; }

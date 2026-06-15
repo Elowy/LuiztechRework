@@ -186,7 +186,10 @@
       row.innerHTML =
         '<span class="pa-emoji">' + (p.image ? '<img src="' + escAttr(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
         '<div class="pa-info"><span class="pa-name">' + escAttr(p.name) + '</span>' +
-        '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' + S.formatPrice(p.price, cfg) +
+        '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' +
+          (S.isOnSale(p)
+            ? '<span class="price-old">' + S.formatPrice(p.price, cfg) + '</span> ' + S.formatPrice(p.salePrice, cfg) + ' 🏷-' + S.discountPct(p) + '%'
+            : S.formatPrice(p.price, cfg)) +
           ' · ' + (p.stock == null ? 'korlátlan' : (p.stock === 0 ? '⚠ elfogyott' : p.stock + ' db')) + '</span></div>' +
         '<div class="pa-actions">' +
         '<button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
@@ -222,6 +225,7 @@
     $('#m-price').value = p ? p.price : '';
     $('#m-category').value = p ? (p.category || '') : '';
     $('#m-stock').value = (p && p.stock != null) ? p.stock : '';
+    $('#m-saleprice').value = (p && p.salePrice != null) ? p.salePrice : '';
     $('#m-image').value = p ? (p.image || '') : '';
     $('#modal-err').textContent = '';
     $('#image-err').textContent = '';
@@ -281,7 +285,10 @@
     if (isNaN(price) || price < 0) { $('#modal-err').textContent = 'Adj meg érvényes árat.'; return; }
     var stockRaw = $('#m-stock').value.trim();
     var stock = stockRaw === '' ? null : Math.max(0, parseInt(stockRaw, 10) || 0);
-    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
+    var saleRaw = $('#m-saleprice').value.trim();
+    var salePrice = saleRaw === '' ? null : Math.max(0, parseInt(saleRaw, 10) || 0);
+    if (salePrice != null && salePrice >= price) { $('#modal-err').textContent = 'Az akciós árnak kisebbnek kell lennie a normál árnál.'; return; }
+    var data = { name: name, desc: $('#m-desc').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, salePrice: salePrice, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
     if (editingId) {
       cfg.products = cfg.products.map(function (p) { return p.id === editingId ? Object.assign(p, data) : p; });
     } else {

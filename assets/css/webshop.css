@@ -200,6 +200,24 @@
 .shop-product-stock.sold { color: #ff7a7a; background: rgba(255,122,122,.18); border: 1px solid rgba(255,122,122,.4); }
 .shop-product-media.is-sold .shop-product-emoji,
 .shop-product-media.is-sold .shop-product-img { opacity: .45; filter: grayscale(.6); }
+.shop-product-sale {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  font-family: var(--mono);
+  font-size: .74rem;
+  font-weight: 700;
+  color: #2a0a06;
+  background: linear-gradient(135deg, #ff5f57, #ffb86c);
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px -8px rgba(255,95,87,.7);
+}
+.price-now { color: var(--accent-3); }
+.qv-saldo {
+  font-family: var(--mono); font-size: .8rem; font-weight: 700;
+  color: #2a0a06; background: linear-gradient(135deg, #ff5f57, #ffb86c);
+  padding: 2px 9px; border-radius: 999px; margin-left: 4px;
+}
 
 .shop-product-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
 .shop-product-body h3 { font-size: 1.15rem; margin-bottom: 8px; letter-spacing: -.3px; }

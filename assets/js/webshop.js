@@ -93,8 +93,14 @@
         : '<span class="shop-product-emoji">' + (p.emoji || '📦') + '</span>';
       var soldOut = p.stock === 0;
       var lowStock = p.stock != null && p.stock > 0 && p.stock <= 5;
+      var onSale = S.isOnSale(p);
       var stockTag = soldOut ? '<span class="shop-product-stock sold">Elfogyott</span>'
         : (lowStock ? '<span class="shop-product-stock low">Utolsó ' + p.stock + ' db</span>' : '');
+      var saleTag = onSale ? '<span class="shop-product-sale">-' + S.discountPct(p) + '%</span>' : '';
+      var priceHtml = onSale
+        ? '<span class="shop-product-price"><span class="price-old">' + S.formatPrice(p.price, cfg) + '</span> ' +
+          '<span class="price-now">' + S.formatPrice(p.salePrice, cfg) + '</span></span>'
+        : '<span class="shop-product-price">' + S.formatPrice(p.price, cfg) + '</span>';
       var btn = soldOut
         ? '<button class="btn btn-ghost btn-sm" disabled>Elfogyott</button>'
         : '<button class="btn btn-primary btn-sm add-to-cart" data-id="' + esc(p.id) + '">Kosárba</button>';
@@ -102,13 +108,14 @@
         '<div class="shop-product-media' + (soldOut ? ' is-sold' : '') + '">' +
           media +
           (p.category ? '<span class="shop-product-cat">' + esc(p.category) + '</span>' : '') +
+          saleTag +
           stockTag +
         '</div>' +
         '<div class="shop-product-body">' +
           '<h3>' + esc(p.name) + '</h3>' +
           '<p>' + esc(p.desc || '') + '</p>' +
           '<div class="shop-product-foot">' +
-            '<span class="shop-product-price">' + S.formatPrice(p.price, cfg) + '</span>' +
+            priceHtml +
             btn +
           '</div>' +
         '</div>';
@@ -138,6 +145,11 @@
     var stockNote = p.stock == null ? ''
       : (soldOut ? '<span class="qv-stock sold">Elfogyott</span>'
                  : '<span class="qv-stock">Készleten: ' + p.stock + ' db</span>');
+    var onSale = S.isOnSale(p);
+    var priceHtml = onSale
+      ? '<div class="qv-price"><span class="price-old">' + S.formatPrice(p.price, cfg) + '</span> ' +
+        S.formatPrice(p.salePrice, cfg) + ' <span class="qv-saldo">-' + S.discountPct(p) + '%</span></div>'
+      : '<div class="qv-price">' + S.formatPrice(p.price, cfg) + '</div>';
     var actions = soldOut
       ? '<button class="btn btn-ghost btn-block" disabled>Elfogyott</button>'
       : '<div class="qv-qty"><button type="button" class="qv-step" id="qv-minus" aria-label="Kevesebb">−</button>' +
@@ -150,7 +162,7 @@
         '<h3 class="qv-title">' + esc(p.name) + '</h3>' +
         '<p class="qv-desc">' + esc(p.desc || '') + '</p>' +
         stockNote +
-        '<div class="qv-price">' + S.formatPrice(p.price, cfg) + '</div>' +
+        priceHtml +
         actions +
       '</div>';
     $('#quickview-modal').hidden = false;
@@ -221,7 +233,9 @@
         '<span class="cart-row-emoji">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
         '<div class="cart-row-info">' +
           '<span class="cart-row-name">' + esc(p.name) + '</span>' +
-          '<span class="cart-row-price">' + S.formatPrice(p.price, cfg) + '</span>' +
+          '<span class="cart-row-price">' + (S.isOnSale(p)
+            ? '<span class="price-old">' + S.formatPrice(p.price, cfg) + '</span> ' + S.formatPrice(p.salePrice, cfg)
+            : S.formatPrice(p.price, cfg)) + '</span>' +
         '</div>' +
         '<div class="cart-qty">' +
           '<button class="qty-btn" data-act="dec" data-id="' + esc(id) + '" aria-label="Kevesebb">−</button>' +

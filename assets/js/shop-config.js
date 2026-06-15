@@ -86,7 +86,7 @@
     c = c || getCart();
     var byId = {};
     (cfg && cfg.products ? cfg.products : []).forEach(function (p) { byId[p.id] = p; });
-    return Object.keys(c).reduce(function (s, id) { return s + (byId[id] ? byId[id].price * c[id] : 0); }, 0);
+    return Object.keys(c).reduce(function (s, id) { return s + (byId[id] ? effectivePrice(byId[id]) * c[id] : 0); }, 0);
   }
 
   /* ============================================================
@@ -228,6 +228,9 @@
     var n = Math.round(value || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     return n + ' ' + cur;
   }
+  function isOnSale(p) { return !!(p && p.salePrice != null && p.salePrice > 0 && p.salePrice < (p.price || 0)); }
+  function effectivePrice(p) { return isOnSale(p) ? p.salePrice : ((p && p.price) || 0); }
+  function discountPct(p) { return isOnSale(p) ? Math.round((1 - p.salePrice / p.price) * 100) : 0; }
   function applyTheme(cfg, root) {
     root = root || document.documentElement;
     root.style.setProperty('--shop-accent', cfg.accent || '#38e1ff');
@@ -285,6 +288,9 @@
     cartCount: cartCount,
     cartTotal: cartTotal,
     formatPrice: formatPrice,
+    isOnSale: isOnSale,
+    effectivePrice: effectivePrice,
+    discountPct: discountPct,
     applyTheme: applyTheme,
     uid: uid,
     clone: clone,
