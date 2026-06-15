@@ -46,6 +46,79 @@
     nav.addEventListener('click', (e) => { if (e.target.tagName === 'A') close(); });
   }
 
+  /* ---------- Floating chat widget + robot mascot ---------- */
+  if (!document.body.classList.contains('admin-body')) buildChatWidget();
+
+  function buildChatWidget() {
+    // Kapcsolati csatornák — töltsd ki a sajátoddal. Üres mező = nem jelenik meg.
+    const CHAT = {
+      whatsapp: '',            // pl. '36301234567' (ország+körzet, + és szóköz nélkül)
+      viber: '',               // pl. '36301234567'
+      messenger: '',           // Facebook-oldal felhasználóneve → m.me/<ez>
+      phone: '',               // pl. '+36301234567' (SMS)
+      email: 'info@luiz-tech.hu'
+    };
+    const channels = [];
+    if (CHAT.whatsapp) channels.push({ label: 'WhatsApp', icon: '🟢', href: 'https://wa.me/' + CHAT.whatsapp, ext: true });
+    if (CHAT.messenger) channels.push({ label: 'Messenger', icon: '💬', href: 'https://m.me/' + CHAT.messenger, ext: true });
+    if (CHAT.viber) channels.push({ label: 'Viber', icon: '🟣', href: 'viber://chat?number=%2B' + CHAT.viber, ext: false });
+    if (CHAT.phone) channels.push({ label: 'SMS küldése', icon: '✉️', href: 'sms:' + CHAT.phone, ext: false });
+    if (CHAT.email) channels.push({ label: 'E-mail', icon: '📧', href: 'mailto:' + CHAT.email, ext: false });
+    if ($('#contact')) channels.push({ label: 'Írj üzenetet', icon: '📝', href: '#contact', ext: false, form: true });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-widget';
+    wrap.innerHTML =
+      '<div class="chat-robot" aria-hidden="true">' + robotSVG() + '</div>' +
+      '<div class="chat-popup" id="chat-popup" role="dialog" aria-label="Kapcsolat" hidden>' +
+        '<div class="chat-popup-head">Hogyan segíthetünk? 👋</div>' +
+        '<div class="chat-popup-body">' +
+          channels.map((c) =>
+            '<a class="chat-channel' + (c.form ? ' is-form' : '') + '" href="' + c.href + '"' +
+            (c.ext ? ' target="_blank" rel="noopener"' : '') + '>' +
+            '<span class="chat-channel-ic">' + c.icon + '</span>' + c.label + '</a>'
+          ).join('') +
+        '</div>' +
+      '</div>' +
+      '<button class="chat-fab" id="chat-fab" aria-label="Kapcsolat megnyitása" aria-expanded="false">' +
+        '<span class="chat-fab-ic chat-fab-open">💬</span>' +
+        '<span class="chat-fab-ic chat-fab-close">✕</span>' +
+      '</button>';
+    document.body.appendChild(wrap);
+
+    const fab = $('#chat-fab');
+    const pop = $('#chat-popup');
+    const setOpen = (open) => {
+      pop.hidden = !open;
+      wrap.classList.toggle('open', open);
+      fab.setAttribute('aria-expanded', String(open));
+      fab.setAttribute('aria-label', open ? 'Kapcsolat bezárása' : 'Kapcsolat megnyitása');
+    };
+    fab.addEventListener('click', (e) => { e.stopPropagation(); setOpen(pop.hidden); });
+    document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+    $$('.chat-channel.is-form', wrap).forEach((a) => a.addEventListener('click', () => setOpen(false)));
+  }
+
+  function robotSVG() {
+    return '' +
+      '<svg viewBox="0 0 64 64" width="56" height="56" class="robot-svg" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs><linearGradient id="rgrad" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#38e1ff"/><stop offset="1" stop-color="#6c7bff"/>' +
+        '</linearGradient></defs>' +
+        '<line x1="32" y1="7" x2="32" y2="15" stroke="#6c7bff" stroke-width="2"/>' +
+        '<circle cx="32" cy="6" r="3" fill="#00ffa3"/>' +
+        '<rect x="16" y="14" width="32" height="24" rx="9" fill="url(#rgrad)"/>' +
+        '<circle cx="25" cy="26" r="3.4" fill="#04121a"/><circle cx="39" cy="26" r="3.4" fill="#04121a"/>' +
+        '<circle cx="26.2" cy="24.8" r="1" fill="#fff"/><circle cx="40.2" cy="24.8" r="1" fill="#fff"/>' +
+        '<rect x="27" y="31.5" width="10" height="2.6" rx="1.3" fill="#04121a" opacity=".55"/>' +
+        '<rect x="20" y="40" width="24" height="16" rx="6" fill="#0d1320" stroke="url(#rgrad)" stroke-width="2"/>' +
+        '<circle cx="32" cy="48" r="2.6" fill="#00ffa3"/>' +
+        '<rect x="9" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/>' +
+        '<g class="robot-arm"><rect x="47" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/></g>' +
+      '</svg>';
+  }
+
   /* ---------- Scroll reveal (with stagger) ---------- */
   const revealEls = $$('[data-reveal]');
   if ('IntersectionObserver' in window && !prefersReduced) {
