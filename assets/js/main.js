@@ -123,6 +123,31 @@
     document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) setOpen(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
     $$('.chat-channel.is-form', wrap).forEach((a) => a.addEventListener('click', () => setOpen(false)));
+
+    // Robot easter-egg: kattintásra szétrobban, majd lassan újraépül
+    const robot = $('.chat-robot', wrap);
+    if (robot && !prefersReduced) {
+      let busy = false;
+      robot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (busy || wrap.classList.contains('open')) return;
+        busy = true;
+        $$('.rpiece', robot).forEach((p) => {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = 24 + Math.random() * 30;
+          p.style.setProperty('--tx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+          p.style.setProperty('--ty', (Math.sin(ang) * dist).toFixed(1) + 'px');
+          p.style.setProperty('--rot', Math.round((Math.random() * 2 - 1) * 260) + 'deg');
+        });
+        robot.classList.remove('reassembling');
+        robot.classList.add('exploding');
+        setTimeout(() => {
+          robot.classList.remove('exploding');
+          robot.classList.add('reassembling');
+          setTimeout(() => { robot.classList.remove('reassembling'); busy = false; }, 1900);
+        }, 520);
+      });
+    }
   }
 
   function robotSVG() {
@@ -131,16 +156,16 @@
         '<defs><linearGradient id="rgrad" x1="0" y1="0" x2="1" y2="1">' +
           '<stop offset="0" stop-color="#38e1ff"/><stop offset="1" stop-color="#6c7bff"/>' +
         '</linearGradient></defs>' +
-        '<line x1="32" y1="7" x2="32" y2="15" stroke="#6c7bff" stroke-width="2"/>' +
-        '<circle cx="32" cy="6" r="3" fill="#00ffa3"/>' +
-        '<rect x="16" y="14" width="32" height="24" rx="9" fill="url(#rgrad)"/>' +
-        '<circle cx="25" cy="26" r="3.4" fill="#04121a"/><circle cx="39" cy="26" r="3.4" fill="#04121a"/>' +
-        '<circle cx="26.2" cy="24.8" r="1" fill="#fff"/><circle cx="40.2" cy="24.8" r="1" fill="#fff"/>' +
-        '<rect x="27" y="31.5" width="10" height="2.6" rx="1.3" fill="#04121a" opacity=".55"/>' +
-        '<rect x="20" y="40" width="24" height="16" rx="6" fill="#0d1320" stroke="url(#rgrad)" stroke-width="2"/>' +
-        '<circle cx="32" cy="48" r="2.6" fill="#00ffa3"/>' +
-        '<rect x="9" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/>' +
-        '<g class="robot-arm"><rect x="47" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/></g>' +
+        '<line class="rpiece" x1="32" y1="7" x2="32" y2="15" stroke="#6c7bff" stroke-width="2"/>' +
+        '<circle class="rpiece" cx="32" cy="6" r="3" fill="#00ffa3"/>' +
+        '<rect class="rpiece" x="16" y="14" width="32" height="24" rx="9" fill="url(#rgrad)"/>' +
+        '<circle class="rpiece" cx="25" cy="26" r="3.4" fill="#04121a"/><circle class="rpiece" cx="39" cy="26" r="3.4" fill="#04121a"/>' +
+        '<circle class="rpiece" cx="26.2" cy="24.8" r="1" fill="#fff"/><circle class="rpiece" cx="40.2" cy="24.8" r="1" fill="#fff"/>' +
+        '<rect class="rpiece" x="27" y="31.5" width="10" height="2.6" rx="1.3" fill="#04121a" opacity=".55"/>' +
+        '<rect class="rpiece" x="20" y="40" width="24" height="16" rx="6" fill="#0d1320" stroke="url(#rgrad)" stroke-width="2"/>' +
+        '<circle class="rpiece" cx="32" cy="48" r="2.6" fill="#00ffa3"/>' +
+        '<rect class="rpiece" x="9" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/>' +
+        '<g class="robot-arm rpiece"><rect x="47" y="42" width="8" height="3" rx="1.5" fill="#6c7bff"/></g>' +
       '</svg>';
   }
 

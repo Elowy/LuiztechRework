@@ -611,6 +611,11 @@ code { font-family: var(--mono); }
   font-size: .78rem;
 }
 .work-cta {
+  grid-column: 1 / -1;          /* mindig új, teljes szélességű sorba */
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;          /* a kártya középre igazítva */
+  align-items: center;
   background: var(--grad-soft);
   border-color: var(--border-strong);
   justify-content: center;
@@ -1247,12 +1252,28 @@ code { font-family: var(--mono); }
 .chat-robot {
   position: absolute; right: 56px; bottom: 58px;
   width: 56px; height: 56px;
-  pointer-events: none;
+  pointer-events: auto; cursor: pointer;
   animation: robotfly 9s ease-in-out infinite;
 }
 .robot-svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
 .robot-arm { transform-origin: 48px 43px; animation: robotwave 1.6s ease-in-out infinite; }
-.chat-widget.open .chat-robot { opacity: 0; transition: opacity .2s ease; }
+.chat-widget.open .chat-robot { opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+
+/* kattintásra: szétrobban, majd lassan újraépül */
+.robot-svg .rpiece {
+  transform-box: fill-box; transform-origin: center;
+  transition: transform .5s cubic-bezier(.36, 0, .66, -.4), opacity .5s ease;
+}
+.chat-robot.exploding .robot-svg .rpiece {
+  transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0)) scale(.25);
+  opacity: 0;
+}
+.chat-robot.reassembling .robot-svg .rpiece {
+  transition: transform 1.8s cubic-bezier(.16, 1, .3, 1), opacity 1.2s ease;
+  transform: none; opacity: 1;
+}
+.chat-robot.exploding .robot-arm,
+.chat-robot.reassembling .robot-arm { animation: none; }
 @keyframes robotfly {
   0%   { transform: translate(0, 0) rotate(0deg); }
   20%  { transform: translate(-42px, -16px) rotate(-8deg); }
