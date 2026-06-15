@@ -53,7 +53,7 @@
     // Kapcsolati csatornák — töltsd ki a sajátoddal. Üres mező = nem jelenik meg.
     const CHAT = {
       whatsapp: '',            // pl. '36301234567' (ország+körzet, + és szóköz nélkül)
-      viber: '',               // pl. '36301234567'
+      viber: '36301954944',    // +36 30 195 4944
       messenger: '',           // Facebook-oldal felhasználóneve → m.me/<ez>
       phone: '',               // pl. '+36301234567' (SMS)
       email: 'info@luiz-tech.hu'
