@@ -20,5 +20,14 @@ DirectoryIndex index.html index.php
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+  # A HTML mindig friss legyen (ne ragadjon be régi tartalom a böngészőben/proxy-ban)
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+  # A verziózott (?v=) statikus fájlok hosszan gyorsítótárazhatók
+  <FilesMatch "\.(css|js|svg|png|jpe?g|gif|webp|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
 </IfModule>
 # (A PHP futtatás tiltása az uploads mappában az uploads/.htaccess-ben van.)
