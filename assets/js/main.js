@@ -125,6 +125,7 @@
     $$('.chat-channel.is-form', wrap).forEach((a) => a.addEventListener('click', () => setOpen(false)));
 
     // Robot easter-egg: kattintásra szétrobban, majd lassan újraépül
+    let robotSay = null;   // a buborék-megjelenítőt a buborék-blokk állítja be
     const robot = $('.chat-robot', wrap);
     if (robot && !prefersReduced) {
       let busy = false;
@@ -144,7 +145,11 @@
         setTimeout(() => {
           robot.classList.remove('exploding');
           robot.classList.add('reassembling');
-          setTimeout(() => { robot.classList.remove('reassembling'); busy = false; }, 1900);
+          setTimeout(() => {
+            robot.classList.remove('reassembling');
+            busy = false;
+            if (robotSay) setTimeout(robotSay, 500);   // újraépülés után írjon új üzenetet
+          }, 1900);
         }, 520);
       });
     }
@@ -195,34 +200,35 @@
     ];
     const GOLD_MSG = 'Kattints rám! ✨';
 
-    // Sessionönként CSAK EGYSZER, egyetlen véletlen üzenet, ~10 mp-ig, a robot fölött.
+    // A robot fölötti buborék: betöltés után, majd kb. PERCENKÉNT újra felbukkan.
+    // Egy megjelenés = egy fix véletlen üzenet, ~10 mp-ig (futás közben nem változik).
     const robotEl = $('.chat-robot', wrap);
-    let bubbleSeen = false;
-    try { bubbleSeen = sessionStorage.getItem('lt_robot_bubble') === '1'; } catch (e) { /* ignore */ }
-    if (robotEl && !bubbleSeen) {
-      try { sessionStorage.setItem('lt_robot_bubble', '1'); } catch (e) { /* ignore */ }
-
-      const gold = Math.random() < 0.22;   // időnként az arany "Kattints rám!"
-      const msg = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
-
+    if (robotEl) {
       const bubble = document.createElement('div');
-      bubble.className = 'robot-bubble' + (gold ? ' gold' : '');
+      bubble.className = 'robot-bubble';
       bubble.setAttribute('role', 'status');
-      bubble.textContent = msg;
-      robotEl.appendChild(bubble);       // a robot gyermeke → vele együtt mozog, fölötte jelenik meg
+      robotEl.appendChild(bubble);     // a robot gyermeke → fölötte jelenik meg, vele mozog
 
-      let bDone = false, hideT = null;
-      const dismissBubble = () => {
-        if (bDone) return;
-        bDone = true;
-        if (hideT) clearTimeout(hideT);
+      let hideT = null;
+      const hideBubble = () => {
+        if (hideT) { clearTimeout(hideT); hideT = null; }
         bubble.classList.remove('show');
-        setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 400);
       };
-      setTimeout(() => { if (!bDone) bubble.classList.add('show'); }, 800);
-      hideT = setTimeout(dismissBubble, 10800);   // ~10 mp-ig látható
-      fab.addEventListener('click', dismissBubble, { once: true });
-      robotEl.addEventListener('click', dismissBubble, { once: true });
+      const showBubble = () => {
+        if (wrap.classList.contains('open')) return;   // ha nyitva a chat, kihagyjuk
+        const gold = Math.random() < 0.07;             // ritkán az arany "Kattints rám!"
+        bubble.textContent = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
+        bubble.classList.toggle('gold', gold);
+        bubble.classList.add('show');
+        if (hideT) clearTimeout(hideT);
+        hideT = setTimeout(() => bubble.classList.remove('show'), 10000);  // ~10 mp-ig látható
+      };
+      robotSay = showBubble;              // a robbanás utáni új üzenethez
+
+      setTimeout(showBubble, 800);        // első megjelenés betöltés után
+      setInterval(showBubble, 60000);     // utána percenként
+      fab.addEventListener('click', hideBubble);
+      robotEl.addEventListener('click', hideBubble);
     }
   }
 
