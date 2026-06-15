@@ -485,6 +485,7 @@
     '// Luiz-Tech — PHP backend': '// Luiz-Tech — PHP backend',
     '// Luiz-Tech — C++ program': '// Luiz-Tech — C++ program',
     'Üdv a Luiz-Tech-nél! 🚀': 'Welcome to Luiz-Tech! 🚀',
+    '"Üdv a Luiz-Tech-nél! 🚀"': '"Welcome to Luiz-Tech! 🚀"',
     '"Üdv, {$nev}! 🚀"': '"Hi, {$nev}! 🚀"',
 
     // ---- Süti sáv (ha megjelenik) ----

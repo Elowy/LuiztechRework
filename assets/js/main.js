@@ -380,17 +380,16 @@
         { t: '  std::cout << ', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ';', cls: O, nl: true },
         { t: '  return ', cls: K }, { t: '0', cls: STR }, { t: ';', cls: O, nl: true },
         { t: '}', cls: O, nl: true }
+      ] },
+      { title: 'app.js', lines: [
+        { t: '// Luiz-Tech — JavaScript', cls: CM, nl: true },
+        { t: 'const ', cls: K }, { t: 'app', cls: FN }, { t: ' = ', cls: O }, { t: 'document', cls: FN }, { t: '.querySelector(', cls: O }, { t: "'#app'", cls: STR }, { t: ');', cls: O, nl: true },
+        { t: 'app', cls: FN }, { t: '.textContent = ', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ';', cls: O, nl: true }
       ] }
     ];
 
-    // sessionönként rögzített választás (munkameneten belül ugyanaz, új sessionben más)
-    var pickIdx;
-    try { pickIdx = Number(sessionStorage.getItem('lt_hero_lang')); } catch (e) { pickIdx = NaN; }
-    if (!(pickIdx >= 0 && pickIdx < SNIPPETS.length)) {
-      pickIdx = Math.floor(Math.random() * SNIPPETS.length);
-      try { sessionStorage.setItem('lt_hero_lang', String(pickIdx)); } catch (e) { /* ignore */ }
-    }
-    const pick = SNIPPETS[pickIdx];
+    // betöltésenként véletlen nyelv (minden frissítésnél másik lehet)
+    const pick = SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)];
     const lines = pick.lines;
     if (window.LT_translate) lines.forEach(function (seg) { seg.t = window.LT_translate(seg.t); });
     if (heroTermTitle) heroTermTitle.textContent = 'luiz-tech ~ ' + pick.title;
