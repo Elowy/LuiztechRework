@@ -427,8 +427,10 @@ function start_app_session() {
   if (session_status() === PHP_SESSION_ACTIVE) return;
   $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+  $lifetime = 60 * 60 * 24 * 30;   // 30 nap — böngészőbezárás után is bejelentkezve marad
+  @ini_set('session.gc_maxlifetime', (string)$lifetime);
   session_set_cookie_params([
-    'lifetime' => 0, 'path' => '/', 'httponly' => true,
+    'lifetime' => $lifetime, 'path' => '/', 'httponly' => true,
     'samesite' => 'Lax', 'secure' => $secure,
   ]);
   session_start();
