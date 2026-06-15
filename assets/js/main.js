@@ -84,6 +84,32 @@
   /* ---------- Floating chat widget + robot mascot ---------- */
   if (!document.body.classList.contains('admin-body')) buildChatWidget();
 
+  /* ---------- Robot logó a fejlécben + véletlen trükkök ---------- */
+  buildLogoRobot();
+  function buildLogoRobot() {
+    const brand = document.querySelector('.site-header .brand');
+    if (!brand || brand.querySelector('.logo-robot')) return;
+    const span = document.createElement('span');
+    span.className = 'logo-robot';
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = robotSVG();
+    brand.insertBefore(span, brand.firstChild);
+    if (prefersReduced) return;
+
+    // wink gyakoribb, a látványos trükkök ritkábbak
+    const TRICKS = ['wink', 'wink', 'wink', 'flip', 'jump', 'wormhole'];
+    const DUR = { wink: 700, flip: 1300, jump: 1100, wormhole: 1900 };
+    let busy = false;
+    const play = (trick) => {
+      if (busy) return;
+      busy = true;
+      span.classList.add(trick);
+      setTimeout(() => { span.classList.remove(trick); busy = false; }, DUR[trick] || 1200);
+    };
+    setInterval(() => play(TRICKS[Math.floor(Math.random() * TRICKS.length)]), 5500);
+    brand.addEventListener('mouseenter', () => play('jump'));   // hover → trambulin (a logó linkje így is működik)
+  }
+
   function buildChatWidget() {
     // Kapcsolati csatornák — töltsd ki a sajátoddal. Üres mező = nem jelenik meg.
     const CHAT = {
@@ -251,7 +277,7 @@
         '<line class="rpiece" x1="32" y1="7" x2="32" y2="15" stroke="#6c7bff" stroke-width="2"/>' +
         '<circle class="rpiece" cx="32" cy="6" r="3" fill="#00ffa3"/>' +
         '<rect class="rpiece" x="16" y="14" width="32" height="24" rx="9" fill="url(#rgrad)"/>' +
-        '<circle class="rpiece" cx="25" cy="26" r="3.4" fill="#04121a"/><circle class="rpiece" cx="39" cy="26" r="3.4" fill="#04121a"/>' +
+        '<circle class="rpiece r-eye r-eye-l" cx="25" cy="26" r="3.4" fill="#04121a"/><circle class="rpiece r-eye r-eye-r" cx="39" cy="26" r="3.4" fill="#04121a"/>' +
         '<circle class="rpiece" cx="26.2" cy="24.8" r="1" fill="#fff"/><circle class="rpiece" cx="40.2" cy="24.8" r="1" fill="#fff"/>' +
         '<rect class="rpiece" x="27" y="31.5" width="10" height="2.6" rx="1.3" fill="#04121a" opacity=".55"/>' +
         '<rect class="rpiece" x="20" y="40" width="24" height="16" rx="6" fill="#0d1320" stroke="url(#rgrad)" stroke-width="2"/>' +

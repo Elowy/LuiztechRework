@@ -1307,6 +1307,60 @@ code { font-family: var(--mono); }
 }
 .robot-bubble.gold::after { background: #f6ab26; }
 
+/* ---------- Robot logó a fejlécben + trükkök ---------- */
+.logo-robot {
+  display: inline-flex; width: 34px; height: 34px; margin-right: 9px;
+  vertical-align: middle; position: relative; flex: 0 0 auto;
+  transform-origin: center bottom; cursor: pointer;
+}
+.logo-robot .robot-svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 6px rgba(0,0,0,.4)); }
+.logo-robot .r-eye { transform-box: fill-box; transform-origin: center; }
+
+/* kacsintás (jobb szem) */
+.logo-robot.wink .r-eye-r { animation: logoWink .6s ease; }
+@keyframes logoWink { 0%, 100% { transform: scaleY(1); } 40%, 60% { transform: scaleY(.12); } }
+
+/* hátra-előre szaltó */
+.logo-robot.flip { animation: logoFlip 1.3s ease-in-out; }
+@keyframes logoFlip {
+  0% { transform: rotate(0); }
+  50% { transform: rotate(-360deg); }   /* hátra szaltó */
+  100% { transform: rotate(0); }        /* előre vissza */
+}
+
+/* trambulin */
+.logo-robot.jump { animation: logoJump 1.1s cubic-bezier(.3, .7, .4, 1); }
+@keyframes logoJump {
+  0% { transform: translateY(0) scale(1, 1); }
+  14% { transform: translateY(0) scale(1.12, .82); }
+  40% { transform: translateY(-20px) scale(.94, 1.12); }
+  60% { transform: translateY(0) scale(1.1, .86); }
+  78% { transform: translateY(-7px) scale(.98, 1.05); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* féreglyuk: beugrik és kijön a másik oldalon */
+.logo-robot.wormhole { animation: logoWorm 1.9s ease-in-out; }
+@keyframes logoWorm {
+  0% { transform: scale(1) rotate(0); opacity: 1; }
+  32% { transform: scale(0) rotate(540deg); opacity: 0; }
+  58% { transform: scale(0) rotate(540deg); opacity: 0; }
+  76% { transform: scale(0) rotate(-160deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.logo-robot.wormhole::before {
+  content: ''; position: absolute; inset: -7px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, transparent 28%, var(--accent) 52%, var(--accent-2) 74%, transparent 100%);
+  opacity: 0; animation: logoPortal 1.9s ease-in-out;
+}
+@keyframes logoPortal {
+  0%, 100% { opacity: 0; transform: scale(.2) rotate(0); }
+  32%, 76% { opacity: .9; transform: scale(1.15) rotate(240deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-robot, .logo-robot * { animation: none !important; }
+}
+
 /* ---------- Jogi oldalak (impresszum / ÁSZF / adatkezelés) ---------- */
 .legal-main { padding: 120px 0 80px; }
 .legal-card {
