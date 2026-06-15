@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=6" />
-  <link rel="stylesheet" href="assets/css/webshop.css?v=6" />
+  <link rel="stylesheet" href="assets/css/style.css?v=7" />
+  <link rel="stylesheet" href="assets/css/webshop.css?v=7" />
 </head>
 <body class="shop-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -55,6 +55,12 @@
           <div class="shop-search">
             <input type="search" id="shop-search" placeholder="Keresés a termékek között..." aria-label="Keresés" />
           </div>
+          <select id="shop-sort" class="shop-sort" aria-label="Rendezés">
+            <option value="default">Kiemelt</option>
+            <option value="price-asc">Ár: növekvő</option>
+            <option value="price-desc">Ár: csökkenő</option>
+            <option value="name">Név (A–Z)</option>
+          </select>
         </div>
 
         <div class="products-shop-grid" id="products-grid"></div>
@@ -221,6 +227,18 @@
     </div>
   </div>
 
+  <!-- ===================== QUICK VIEW MODAL ===================== -->
+  <div class="modal-overlay" id="quickview-modal" hidden>
+    <div class="modal qv-modal" role="dialog" aria-modal="true" aria-label="Termék részletei">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span>
+        <span class="terminal-title">termék</span>
+        <button class="modal-x" id="qv-close" aria-label="Bezárás">✕</button>
+      </div>
+      <div class="modal-body qv-body" id="qv-body"></div>
+    </div>
+  </div>
+
   <!-- ===================== FOOTER ===================== -->
   <footer class="site-footer">
     <div class="container footer-bottom" style="border-top:0;">
@@ -229,8 +247,8 @@
     </div>
   </footer>
 
-  <script src="assets/js/shop-config.js?v=6"></script>
-  <script src="assets/js/webshop.js?v=6" defer></script>
-  <script src="assets/js/main.js?v=6" defer></script>
+  <script src="assets/js/shop-config.js?v=7"></script>
+  <script src="assets/js/webshop.js?v=7" defer></script>
+  <script src="assets/js/main.js?v=7" defer></script>
 </body>
 </html>

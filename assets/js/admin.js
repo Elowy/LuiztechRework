@@ -41,7 +41,7 @@
   function showApp() {
     $('#login-screen').hidden = true;
     $('#admin-shell').hidden = false;
-    return loadConfig();
+    return loadConfig().then(function () { loadDashboard(); });
   }
 
   S.me().then(function (ok) { if (ok) showApp(); });
@@ -78,6 +78,7 @@
       $$('.admin-tab').forEach(function (t) { t.classList.remove('active'); });
       tab.classList.add('active');
       $$('.admin-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === name); });
+      if (name === 'dashboard') loadDashboard();
       if (name === 'orders' && !ordersLoaded) loadOrders();
       if (name === 'news' && !newsLoaded) loadNews();
       if (name === 'references' && !refsLoaded) loadReferences();
@@ -641,6 +642,73 @@
       'Nyitott': 'st-new', 'Válaszra vár': 'st-progress', 'Megoldva': 'st-done'
     }[s] || 'st-new';
   }
+
+  /* ============================================================
+     DASHBOARD
+     ============================================================ */
+  function gotoTab(name) {
+    var tab = $('.admin-tab[data-tab="' + name + '"]');
+    if (tab) tab.click();
+  }
+  function loadDashboard() {
+    var grid = $('#kpi-grid');
+    var recent = $('#dash-recent');
+    if (!grid) return;
+    grid.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    recent.innerHTML = '';
+    Promise.all([
+      S.getOrders().catch(function () { return { orders: [] }; }),
+      S.getMessages().catch(function () { return { messages: [] }; }),
+      S.getTickets().catch(function () { return { tickets: [] }; })
+    ]).then(function (res) {
+      var orders = (res[0] && res[0].orders) || [];
+      var messages = (res[1] && res[1].messages) || [];
+      var tickets = (res[2] && res[2].tickets) || [];
+
+      var revenue = 0, newOrders = 0;
+      orders.forEach(function (o) {
+        if (o.status === 'Teljesítve') revenue += (o.total || 0);
+        if (o.status === 'Új') newOrders++;
+      });
+      var newMsgs = messages.filter(function (m) { return m.status === 'Új'; }).length;
+      var openTickets = tickets.filter(function (t) { return t.status === 'Nyitott' || t.status === 'Válaszra vár'; }).length;
+
+      var cards = [
+        { label: 'Rendelés összesen', value: orders.length, sub: newOrders + ' új', icon: '📥', tab: 'orders' },
+        { label: 'Teljesített bevétel', value: S.formatPrice(revenue, cfg), sub: '', icon: '💰', tab: 'orders' },
+        { label: 'Új üzenet', value: newMsgs, sub: messages.length + ' összesen', icon: '📨', tab: 'messages' },
+        { label: 'Nyitott ticket', value: openTickets, sub: tickets.length + ' összesen', icon: '🎫', tab: 'support' },
+        { label: 'Termék', value: (cfg.products || []).length, sub: '', icon: '📦', tab: 'products' }
+      ];
+      grid.innerHTML = '';
+      cards.forEach(function (c) {
+        var el = document.createElement('button');
+        el.className = 'kpi-card';
+        el.innerHTML = '<span class="kpi-icon">' + c.icon + '</span>' +
+          '<span class="kpi-value">' + escAttr(String(c.value)) + '</span>' +
+          '<span class="kpi-label">' + escAttr(c.label) + '</span>' +
+          (c.sub ? '<span class="kpi-sub">' + escAttr(c.sub) + '</span>' : '');
+        el.addEventListener('click', function () { gotoTab(c.tab); });
+        grid.appendChild(el);
+      });
+
+      if (!orders.length) { recent.innerHTML = '<p class="admin-desc">Még nincs rendelés.</p>'; return; }
+      recent.innerHTML = '';
+      orders.slice(0, 5).forEach(function (o) {
+        var when = ''; try { when = new Date(o.createdAt).toLocaleDateString('hu-HU'); } catch (e) {}
+        var c = o.customer || {};
+        var row = document.createElement('div');
+        row.className = 'dash-order';
+        row.innerHTML = '<span class="dash-order-id">' + escAttr(o.id) + '</span>' +
+          '<span class="dash-order-cust">' + escAttr(c.name || '—') + '</span>' +
+          '<span class="status-badge ' + statusClass(o.status || 'Új') + '">' + escAttr(o.status || 'Új') + '</span>' +
+          '<span class="dash-order-total">' + S.formatPrice(o.total || 0, cfg) + '</span>' +
+          '<span class="dash-order-when">' + when + '</span>';
+        recent.appendChild(row);
+      });
+    });
+  }
+  $('#refresh-dashboard').addEventListener('click', loadDashboard);
 
   function loadOrders() {
     var wrap = $('#orders-list');

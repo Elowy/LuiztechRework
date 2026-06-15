@@ -13,6 +13,7 @@
   var cart = S.getCart();
   var activeCat = 'all';
   var query = '';
+  var sortBy = 'default';
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -66,12 +67,16 @@
 
   /* ---------- Products ---------- */
   function visibleProducts() {
-    return (cfg.products || []).filter(function (p) {
+    var list = (cfg.products || []).filter(function (p) {
       var catOk = activeCat === 'all' || p.category === activeCat;
       var q = query.trim().toLowerCase();
       var qOk = !q || (p.name + ' ' + (p.desc || '')).toLowerCase().indexOf(q) > -1;
       return catOk && qOk;
     });
+    if (sortBy === 'price-asc') list.sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+    else if (sortBy === 'price-desc') list.sort(function (a, b) { return (b.price || 0) - (a.price || 0); });
+    else if (sortBy === 'name') list.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'hu'); });
+    return list;
   }
 
   function renderProducts() {
@@ -107,17 +112,64 @@
             btn +
           '</div>' +
         '</div>';
+      card.addEventListener('click', function () { openQuickView(p.id); });
       grid.appendChild(card);
     });
 
     $$('.add-to-cart', grid).forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
         addToCart(btn.getAttribute('data-id'));
         btn.textContent = '✓ Hozzáadva';
         btn.classList.add('added');
         setTimeout(function () { btn.textContent = 'Kosárba'; btn.classList.remove('added'); }, 1100);
       });
     });
+  }
+
+  /* ---------- Quick view ---------- */
+  function openQuickView(id) {
+    var p = productById(id);
+    if (!p) return;
+    var media = p.image
+      ? '<img class="qv-img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '">'
+      : '<span class="qv-emoji">' + (p.emoji || '📦') + '</span>';
+    var soldOut = p.stock === 0;
+    var stockNote = p.stock == null ? ''
+      : (soldOut ? '<span class="qv-stock sold">Elfogyott</span>'
+                 : '<span class="qv-stock">Készleten: ' + p.stock + ' db</span>');
+    var actions = soldOut
+      ? '<button class="btn btn-ghost btn-block" disabled>Elfogyott</button>'
+      : '<div class="qv-qty"><button type="button" class="qv-step" id="qv-minus" aria-label="Kevesebb">−</button>' +
+        '<span class="qv-qnum" id="qv-qnum">1</span>' +
+        '<button type="button" class="qv-step" id="qv-plus" aria-label="Több">+</button></div>' +
+        '<button class="btn btn-primary btn-block" id="qv-add">Kosárba</button>';
+    $('#qv-body').innerHTML =
+      '<div class="qv-media">' + media + (p.category ? '<span class="shop-product-cat">' + esc(p.category) + '</span>' : '') + '</div>' +
+      '<div class="qv-info">' +
+        '<h3 class="qv-title">' + esc(p.name) + '</h3>' +
+        '<p class="qv-desc">' + esc(p.desc || '') + '</p>' +
+        stockNote +
+        '<div class="qv-price">' + S.formatPrice(p.price, cfg) + '</div>' +
+        actions +
+      '</div>';
+    $('#quickview-modal').hidden = false;
+    if (soldOut) return;
+    var qty = 1;
+    var limit = (p.stock != null) ? p.stock : Infinity;
+    var qnum = $('#qv-qnum');
+    $('#qv-minus').addEventListener('click', function () { qty = Math.max(1, qty - 1); qnum.textContent = qty; });
+    $('#qv-plus').addEventListener('click', function () { qty = Math.min(limit, qty + 1); qnum.textContent = qty; });
+    $('#qv-add').addEventListener('click', function () {
+      cart[id] = Math.min((cart[id] || 0) + qty, limit);
+      S.saveCart(cart); updateCartUI();
+      $('#quickview-modal').hidden = true;
+      openCart();
+    });
+  }
+  function initQuickView() {
+    $('#qv-close').addEventListener('click', function () { $('#quickview-modal').hidden = true; });
+    $('#quickview-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
   }
 
   /* ---------- Cart ---------- */
@@ -441,10 +493,13 @@
   function init() {
     initAuth();
     initTickets();
+    initQuickView();
+    var sortSel = $('#shop-sort');
+    if (sortSel) sortSel.addEventListener('change', function () { sortBy = sortSel.value; renderProducts(); });
     $('#cart-btn').addEventListener('click', openCart);
     $('#cart-close').addEventListener('click', closeCart);
     $('#cart-overlay').addEventListener('click', closeCart);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeCart(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeCart(); $('#quickview-modal').hidden = true; } });
     var search = $('#shop-search');
     if (search) search.addEventListener('input', function () { query = search.value; renderProducts(); });
     $('#cart-checkout').addEventListener('click', enterCheckout);

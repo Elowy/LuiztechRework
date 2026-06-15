@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=6" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=6" />
+  <link rel="stylesheet" href="assets/css/style.css?v=7" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=7" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -72,7 +72,8 @@
     <div class="admin-layout">
       <!-- Sidebar -->
       <nav class="admin-sidebar" aria-label="Admin szekciók">
-        <button class="admin-tab active" data-tab="general">🏪 Általános</button>
+        <button class="admin-tab active" data-tab="dashboard">📊 Áttekintés</button>
+        <button class="admin-tab" data-tab="general">🏪 Általános</button>
         <button class="admin-tab" data-tab="appearance">🎨 Megjelenés</button>
         <button class="admin-tab" data-tab="products">📦 Termékek</button>
         <button class="admin-tab" data-tab="news">📰 Hírek</button>
@@ -87,8 +88,22 @@
 
       <!-- Content -->
       <div class="admin-content">
+        <!-- DASHBOARD -->
+        <section class="admin-panel active" data-panel="dashboard">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Áttekintés</h2>
+              <p class="admin-desc">A bolt és a megkeresések pillanatképe.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refresh-dashboard">⟳ Frissítés</button>
+          </div>
+          <div class="kpi-grid" id="kpi-grid"></div>
+          <h3 class="admin-subhead">Legutóbbi rendelések</h3>
+          <div class="dash-recent" id="dash-recent"></div>
+        </section>
+
         <!-- GENERAL -->
-        <section class="admin-panel active" data-panel="general">
+        <section class="admin-panel" data-panel="general">
           <h2 class="admin-h">Általános beállítások</h2>
           <p class="admin-desc">A bolt alapadatai és a kezdőoldal szövegei.</p>
           <div class="field">
@@ -459,8 +474,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=6"></script>
-  <script src="assets/js/admin.js?v=6" defer></script>
-  <script src="assets/js/main.js?v=6" defer></script>
+  <script src="assets/js/shop-config.js?v=7"></script>
+  <script src="assets/js/admin.js?v=7" defer></script>
+  <script src="assets/js/main.js?v=7" defer></script>
 </body>
 </html>

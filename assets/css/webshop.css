@@ -425,6 +425,60 @@
 .status-badge.st-done { color: #00ffa3; background: rgba(0,255,163,.12); }
 .status-badge.st-cancelled { color: #ff7a7a; background: rgba(255,122,122,.12); }
 
+/* ---------- Sort select ---------- */
+.shop-sort {
+  padding: 10px 14px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .9rem;
+  cursor: pointer;
+}
+.shop-sort:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+/* clickable product cards */
+.shop-product { cursor: pointer; }
+
+/* ---------- Quick view ---------- */
+.qv-modal { max-width: min(720px, 100%); }
+.qv-body { display: grid; grid-template-columns: 1fr 1.1fr; gap: 0; padding: 0; }
+.qv-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--grad-soft);
+  min-height: 240px;
+  padding: 24px;
+}
+.qv-emoji { font-size: 5rem; }
+.qv-img { width: 100%; height: 100%; object-fit: cover; }
+.qv-media .shop-product-cat { position: absolute; top: 14px; left: 14px; }
+.qv-info { padding: 26px; display: flex; flex-direction: column; gap: 12px; }
+.qv-title { font-size: 1.4rem; font-weight: 700; }
+.qv-desc { color: var(--text-muted); font-size: .95rem; line-height: 1.65; }
+.qv-stock { font-family: var(--mono); font-size: .8rem; color: var(--accent-3); }
+.qv-stock.sold { color: #ff7a7a; }
+.qv-price { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; }
+.qv-qty { display: flex; align-items: center; gap: 14px; }
+.qv-step {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.qv-step:hover { background: var(--surface-2); }
+.qv-qnum { font-family: var(--mono); font-size: 1.1rem; min-width: 28px; text-align: center; }
+@media (max-width: 560px) {
+  .qv-body { grid-template-columns: 1fr; }
+  .qv-media { min-height: 170px; }
+  .qv-emoji { font-size: 4rem; }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
   .products-shop-grid { grid-template-columns: repeat(2, 1fr); }
