@@ -1317,6 +1317,18 @@ code { font-family: var(--mono); }
   box-shadow: 0 0 0 1px rgba(245, 196, 81, .6), 0 16px 36px -10px rgba(245, 166, 35, .8);
 }
 .robot-bubble.gold::after { background: #f6ab26; }
+/* bezáró X a buborék jobb felső sarkában */
+.robot-bubble .rb-close {
+  position: absolute; top: -9px; right: -9px;
+  width: 22px; height: 22px; border-radius: 50%; border: none;
+  background: #0d1320; color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: auto; box-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+  opacity: 0; transition: opacity .2s ease;
+}
+.robot-bubble.show .rb-close { opacity: 1; }
+.robot-bubble .rb-close:hover { background: #1b2740; }
+.robot-bubble.gold .rb-close { background: #7a4d00; color: #fff; }
 
 /* ---------- Robot logó a fejlécben + trükkök ---------- */
 .logo-robot {

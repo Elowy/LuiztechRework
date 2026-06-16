@@ -325,18 +325,21 @@
       const bubble = document.createElement('div');
       bubble.className = 'robot-bubble';
       bubble.setAttribute('role', 'status');
+      bubble.innerHTML = '<span class="rb-text"></span><button type="button" class="rb-close" aria-label="Bezárás">✕</button>';
       robotEl.appendChild(bubble);     // a robot gyermeke → fölötte jelenik meg, vele mozog
+      const bubbleText = bubble.querySelector('.rb-text');
 
-      let hideT = null;
+      let hideT = null, bIv = null, closed = false;
+      try { closed = sessionStorage.getItem('lt_bubble_off') === '1'; } catch (e) { /* ignore */ }
       const hideBubble = () => {
         if (hideT) { clearTimeout(hideT); hideT = null; }
         bubble.classList.remove('show');
       };
       const showBubble = () => {
-        if (wrap.classList.contains('open')) return;   // ha nyitva a chat, kihagyjuk
+        if (closed || wrap.classList.contains('open')) return;
         const gold = Math.random() < 0.07;             // ritkán az arany "Kattints rám!"
         var raw = gold ? GOLD_MSG : BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
-        bubble.textContent = (window.LT_translate ? window.LT_translate(raw) : raw);
+        bubbleText.textContent = (window.LT_translate ? window.LT_translate(raw) : raw);
         bubble.classList.toggle('gold', gold);
         bubble.classList.add('show');
         if (hideT) clearTimeout(hideT);
@@ -344,8 +347,19 @@
       };
       robotSay = showBubble;              // a robbanás utáni új üzenethez
 
-      setTimeout(showBubble, 800);        // első megjelenés betöltés után
-      setInterval(showBubble, 60000);     // utána percenként
+      // X → bezárás, és a munkamenetben többé nem jelenik meg
+      bubble.querySelector('.rb-close').addEventListener('click', (e) => {
+        e.stopPropagation();
+        closed = true;
+        try { sessionStorage.setItem('lt_bubble_off', '1'); } catch (er) { /* ignore */ }
+        hideBubble();
+        if (bIv) { clearInterval(bIv); bIv = null; }
+      });
+
+      if (!closed) {
+        setTimeout(showBubble, 800);          // első megjelenés betöltés után
+        bIv = setInterval(showBubble, 60000); // utána percenként
+      }
       fab.addEventListener('click', hideBubble);
       robotEl.addEventListener('click', hideBubble);
     }
