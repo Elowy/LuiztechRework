@@ -442,45 +442,83 @@
     // Több nyelvi változat — sessionönként véletlenszerűen más kód jelenik meg.
     var K = 't-key', STR = 't-str', FN = 't-fn', O = 't-out', CM = 't-comment';
     const SNIPPETS = [
-      { title: 'App.jsx', lines: [
-        { t: '// Luiz-Tech — React komponens', cls: CM, nl: true },
-        { t: 'import ', cls: K }, { t: 'React', cls: FN }, { t: ' from ', cls: K }, { t: "'react'", cls: STR }, { t: ';', cls: O, nl: true },
+      { title: 'Products.jsx', lines: [
+        { t: '// Luiz-Tech — terméklista React hookkal', cls: CM, nl: true },
+        { t: 'import ', cls: K }, { t: '{ useEffect, useState }', cls: O }, { t: ' from ', cls: K }, { t: "'react'", cls: STR }, { t: ';', cls: O, nl: true },
         { t: '', nl: true },
-        { t: 'export default function ', cls: K }, { t: 'App', cls: FN }, { t: '() {', cls: O, nl: true },
-        { t: '  return ', cls: K }, { t: '<h1>', cls: FN }, { t: 'Üdv a Luiz-Tech-nél! 🚀', cls: O }, { t: '</h1>', cls: FN }, { t: ';', cls: O, nl: true },
+        { t: 'export default function ', cls: K }, { t: 'Products', cls: FN }, { t: '() {', cls: O, nl: true },
+        { t: '  const ', cls: K }, { t: '[items, setItems] = ', cls: O }, { t: 'useState', cls: FN }, { t: '([]);', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: '  ', cls: O }, { t: 'useEffect', cls: FN }, { t: '(() => {', cls: O, nl: true },
+        { t: '    ', cls: O }, { t: 'fetch', cls: FN }, { t: '(', cls: O }, { t: "'/api/shop'", cls: STR }, { t: ')', cls: O, nl: true },
+        { t: '      .then((r) => r.', cls: O }, { t: 'json', cls: FN }, { t: '())', cls: O, nl: true },
+        { t: '      .then((d) => ', cls: O }, { t: 'setItems', cls: FN }, { t: '(d.products));', cls: O, nl: true },
+        { t: '  }, []);', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: '  return ', cls: K }, { t: 'items.', cls: O }, { t: 'map', cls: FN }, { t: '((p) => (', cls: O, nl: true },
+        { t: '    <', cls: O }, { t: 'Card', cls: FN }, { t: ' key={p.id} product={p} />', cls: O, nl: true },
+        { t: '  ));', cls: O, nl: true },
         { t: '}', cls: O, nl: true }
       ] },
-      { title: 'Program.cs', lines: [
-        { t: '// Luiz-Tech — C# szolgáltatás', cls: CM, nl: true },
-        { t: 'using ', cls: K }, { t: 'System', cls: FN }, { t: ';', cls: O, nl: true },
+      { title: 'OrderService.cs', lines: [
+        { t: '// Luiz-Tech — rendelés összegző szolgáltatás', cls: CM, nl: true },
+        { t: 'public class ', cls: K }, { t: 'OrderService', cls: FN, nl: true },
+        { t: '{', cls: O, nl: true },
+        { t: '    private readonly ', cls: K }, { t: 'IOrderRepository', cls: FN }, { t: ' _repo;', cls: O, nl: true },
         { t: '', nl: true },
-        { t: 'class ', cls: K }, { t: 'Program', cls: FN }, { t: ' {', cls: O, nl: true },
-        { t: '  static void ', cls: K }, { t: 'Main', cls: FN }, { t: '() {', cls: O, nl: true },
-        { t: '    Console', cls: FN }, { t: '.WriteLine(', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ');', cls: O, nl: true },
-        { t: '  }', cls: O, nl: true },
+        { t: '    public ', cls: K }, { t: 'OrderService', cls: FN }, { t: '(', cls: O }, { t: 'IOrderRepository', cls: FN }, { t: ' repo)', cls: O, nl: true },
+        { t: '        => _repo = repo;', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: '    public async ', cls: K }, { t: 'Task', cls: FN }, { t: '<', cls: O }, { t: 'decimal', cls: K }, { t: '> ', cls: O }, { t: 'TotalAsync', cls: FN }, { t: '(', cls: O }, { t: 'int', cls: K }, { t: ' id)', cls: O, nl: true },
+        { t: '    {', cls: O, nl: true },
+        { t: '        var items = await _repo.', cls: O }, { t: 'GetItemsAsync', cls: FN }, { t: '(id);', cls: O, nl: true },
+        { t: '        return items.', cls: O }, { t: 'Sum', cls: FN }, { t: '(i => i.Price * i.Qty);', cls: O, nl: true },
+        { t: '    }', cls: O, nl: true },
         { t: '}', cls: O, nl: true }
       ] },
-      { title: 'index.php', lines: [
+      { title: 'UserRepository.php', lines: [
         { t: '<?php', cls: K, nl: true },
-        { t: '// Luiz-Tech — PHP backend', cls: CM, nl: true },
-        { t: 'function ', cls: K }, { t: 'udvozlet', cls: FN }, { t: '(', cls: O }, { t: 'string ', cls: K }, { t: '$nev', cls: O }, { t: ') {', cls: O, nl: true },
-        { t: '  return ', cls: K }, { t: '"Üdv, {$nev}! 🚀"', cls: STR }, { t: ';', cls: O, nl: true },
-        { t: '}', cls: O, nl: true },
-        { t: 'echo ', cls: K }, { t: 'udvozlet', cls: FN }, { t: '(', cls: O }, { t: '"Luiz-Tech"', cls: STR }, { t: ');', cls: O, nl: true }
-      ] },
-      { title: 'main.cpp', lines: [
-        { t: '// Luiz-Tech — C++ program', cls: CM, nl: true },
-        { t: '#include ', cls: K }, { t: '<iostream>', cls: STR, nl: true },
+        { t: '// Luiz-Tech — biztonságos lekérdezés (PDO)', cls: CM, nl: true },
+        { t: 'declare', cls: FN }, { t: '(strict_types=', cls: O }, { t: '1', cls: STR }, { t: ');', cls: O, nl: true },
         { t: '', nl: true },
-        { t: 'int ', cls: K }, { t: 'main', cls: FN }, { t: '() {', cls: O, nl: true },
-        { t: '  std::cout << ', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ';', cls: O, nl: true },
-        { t: '  return ', cls: K }, { t: '0', cls: STR }, { t: ';', cls: O, nl: true },
+        { t: 'function ', cls: K }, { t: 'findUser', cls: FN }, { t: '(', cls: O }, { t: 'PDO', cls: FN }, { t: ' $pdo, ', cls: O }, { t: 'string', cls: K }, { t: ' $email): ?', cls: O }, { t: 'array', cls: K, nl: true },
+        { t: '{', cls: O, nl: true },
+        { t: '    $stmt = $pdo->', cls: O }, { t: 'prepare', cls: FN }, { t: '(', cls: O, nl: true },
+        { t: '        ', cls: O }, { t: "'SELECT id FROM users WHERE email = ?'", cls: STR, nl: true },
+        { t: '    );', cls: O, nl: true },
+        { t: '    $stmt->', cls: O }, { t: 'execute', cls: FN }, { t: '([$email]);', cls: O, nl: true },
+        { t: '    return ', cls: K }, { t: '$stmt->', cls: O }, { t: 'fetch', cls: FN }, { t: '() ?: ', cls: O }, { t: 'null', cls: K }, { t: ';', cls: O, nl: true },
         { t: '}', cls: O, nl: true }
       ] },
-      { title: 'app.js', lines: [
-        { t: '// Luiz-Tech — JavaScript', cls: CM, nl: true },
-        { t: 'const ', cls: K }, { t: 'app', cls: FN }, { t: ' = ', cls: O }, { t: 'document', cls: FN }, { t: '.querySelector(', cls: O }, { t: "'#app'", cls: STR }, { t: ');', cls: O, nl: true },
-        { t: 'app', cls: FN }, { t: '.textContent = ', cls: O }, { t: '"Üdv a Luiz-Tech-nél! 🚀"', cls: STR }, { t: ';', cls: O, nl: true }
+      { title: 'sum.cpp', lines: [
+        { t: '// Luiz-Tech — generikus összegző (C++17)', cls: CM, nl: true },
+        { t: '#include ', cls: K }, { t: '<vector>', cls: STR, nl: true },
+        { t: '#include ', cls: K }, { t: '<numeric>', cls: STR, nl: true },
+        { t: '', nl: true },
+        { t: 'template ', cls: K }, { t: '<typename ', cls: O }, { t: 'T', cls: FN }, { t: '>', cls: O, nl: true },
+        { t: 'T', cls: FN }, { t: ' ', cls: O }, { t: 'sum', cls: FN }, { t: '(const std::', cls: O }, { t: 'vector', cls: FN }, { t: '<', cls: O }, { t: 'T', cls: FN }, { t: '>& xs) {', cls: O, nl: true },
+        { t: '    return std::', cls: O }, { t: 'accumulate', cls: FN }, { t: '(', cls: O, nl: true },
+        { t: '        xs.', cls: O }, { t: 'begin', cls: FN }, { t: '(), xs.', cls: O }, { t: 'end', cls: FN }, { t: '(), ', cls: O }, { t: 'T', cls: FN }, { t: '{});', cls: O, nl: true },
+        { t: '}', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'int', cls: K }, { t: ' ', cls: O }, { t: 'main', cls: FN }, { t: '() {', cls: O, nl: true },
+        { t: '    std::', cls: O }, { t: 'vector', cls: FN }, { t: '<', cls: O }, { t: 'int', cls: K }, { t: '> p{', cls: O }, { t: '149000, 89000', cls: STR }, { t: '};', cls: O, nl: true },
+        { t: '    return ', cls: K }, { t: 'sum', cls: FN }, { t: '(p) > ', cls: O }, { t: '0', cls: STR }, { t: ' ? ', cls: O }, { t: '0', cls: STR }, { t: ' : ', cls: O }, { t: '1', cls: STR }, { t: ';', cls: O, nl: true },
+        { t: '}', cls: O, nl: true }
+      ] },
+      { title: 'api.js', lines: [
+        { t: '// Luiz-Tech — API kliens (hibakezeléssel)', cls: CM, nl: true },
+        { t: 'export async function ', cls: K }, { t: 'getJSON', cls: FN }, { t: '(url) {', cls: O, nl: true },
+        { t: '  const res = await ', cls: O }, { t: 'fetch', cls: FN }, { t: '(url, {', cls: O, nl: true },
+        { t: '    credentials: ', cls: O }, { t: "'same-origin'", cls: STR }, { t: ',', cls: O, nl: true },
+        { t: '  });', cls: O, nl: true },
+        { t: '  if ', cls: K }, { t: '(!res.ok) {', cls: O, nl: true },
+        { t: '    throw new ', cls: K }, { t: 'Error', cls: FN }, { t: '(`HTTP ${res.status}`);', cls: STR, nl: true },
+        { t: '  }', cls: O, nl: true },
+        { t: '  return ', cls: K }, { t: 'res.', cls: O }, { t: 'json', cls: FN }, { t: '();', cls: O, nl: true },
+        { t: '}', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'const shop = await ', cls: O }, { t: 'getJSON', cls: FN }, { t: '(', cls: O }, { t: "'/api/shop'", cls: STR }, { t: ');', cls: O, nl: true }
       ] }
     ];
 

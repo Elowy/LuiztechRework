@@ -491,6 +491,11 @@
     'Mindig itt vagyok, ha kellek. 🤖': "I'm always here if you need me. 🤖",
 
     // ---- Hero terminál kód (ember-nyelvű részek) ----
+    '// Luiz-Tech — terméklista React hookkal': '// Luiz-Tech — product list with a React hook',
+    '// Luiz-Tech — rendelés összegző szolgáltatás': '// Luiz-Tech — order total service',
+    '// Luiz-Tech — biztonságos lekérdezés (PDO)': '// Luiz-Tech — safe query (PDO)',
+    '// Luiz-Tech — generikus összegző (C++17)': '// Luiz-Tech — generic sum (C++17)',
+    '// Luiz-Tech — API kliens (hibakezeléssel)': '// Luiz-Tech — API client (with error handling)',
     '// Luiz-Tech — React komponens': '// Luiz-Tech — React component',
     '// Luiz-Tech — C# szolgáltatás': '// Luiz-Tech — C# service',
     '// Luiz-Tech — PHP backend': '// Luiz-Tech — PHP backend',
