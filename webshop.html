@@ -20,8 +20,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=42" />
-  <link rel="stylesheet" href="assets/css/webshop.css?v=42" />
+  <link rel="stylesheet" href="assets/css/style.css?v=43" />
+  <link rel="stylesheet" href="assets/css/webshop.css?v=43" />
 </head>
 <body class="shop-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -53,6 +53,16 @@
         <span class="eyebrow"><span class="pulse-dot"></span> <span id="shop-name-eyebrow">Luiz-Tech Shop</span></span>
         <h1 class="shop-hero-title" id="shop-hero-title">Technológia, ami magáért beszél</h1>
         <p class="shop-hero-text" id="shop-hero-text">Válogass kézzel összeállított kínálatunkból.</p>
+      </div>
+    </section>
+
+    <!-- ===================== TRUST BAR ===================== -->
+    <section class="shop-trust" aria-label="Garanciák és előnyök">
+      <div class="container shop-trust-row">
+        <div class="trust-item"><span class="trust-ic">🔒</span><div class="trust-text"><strong>Biztonságos fizetés</strong><span>Stripe titkosított rendszer</span></div></div>
+        <div class="trust-item"><span class="trust-ic">⚡</span><div class="trust-text"><strong>Gyors teljesítés</strong><span>Visszajelzés 12 órán belül</span></div></div>
+        <div class="trust-item"><span class="trust-ic">↩️</span><div class="trust-text"><strong>14 napos elállás</strong><span>Kockázatmentes rendelés</span></div></div>
+        <div class="trust-item"><span class="trust-ic">💬</span><div class="trust-text"><strong>Valódi support</strong><span>Személyes ügyintézés</span></div></div>
       </div>
     </section>
 
@@ -88,6 +98,7 @@
     <div class="cart-items" id="cart-items"></div>
     <!-- Checkout form (revealed in step 2) -->
     <form class="checkout-form" id="checkout-form" novalidate>
+      <div class="checkout-summary" id="checkout-summary"></div>
       <h3 class="checkout-head">Számlázási adatok</h3>
       <div class="field">
         <label for="co-name">Név *</label>
@@ -127,7 +138,14 @@
       <!-- step 2 -->
       <button class="btn btn-primary btn-block" id="checkout-submit" hidden>Rendelés leadása</button>
       <button class="btn btn-ghost btn-block" id="checkout-back" hidden>← Vissza a kosárhoz</button>
+      <button class="cart-continue" id="cart-continue" hidden>← Tovább vásárolok</button>
       <p class="cart-note" id="cart-note" role="status"></p>
+      <div class="cart-secure" id="cart-secure" hidden>
+        <span class="cart-secure-line">🔒 <span>Fizetés a Stripe biztonságos rendszerén keresztül</span></span>
+        <div class="pay-badges" aria-hidden="true">
+          <span class="pay-badge">VISA</span><span class="pay-badge">Mastercard</span><span class="pay-badge">AMEX</span><span class="pay-badge pay-badge-stripe">Stripe</span>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -255,6 +273,9 @@
     </div>
   </div>
 
+  <!-- ===================== TOASTS ===================== -->
+  <div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="false"></div>
+
   <!-- ===================== FOOTER ===================== -->
   <footer class="site-footer">
     <div class="container footer-bottom" style="border-top:0; flex-wrap:wrap; gap:10px;">
@@ -268,9 +289,9 @@
     </div>
   </footer>
 
-  <script src="assets/js/shop-config.js?v=42"></script>
-  <script src="assets/js/webshop.js?v=42" defer></script>
-  <script src="assets/js/i18n.js?v=42" defer></script>
-  <script src="assets/js/main.js?v=42" defer></script>
+  <script src="assets/js/shop-config.js?v=43"></script>
+  <script src="assets/js/webshop.js?v=43" defer></script>
+  <script src="assets/js/i18n.js?v=43" defer></script>
+  <script src="assets/js/main.js?v=43" defer></script>
 </body>
 </html>

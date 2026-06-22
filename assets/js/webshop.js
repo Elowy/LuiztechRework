@@ -28,6 +28,34 @@
     }[s] || 'st-new';
   }
 
+  /* ---------- Toast notifications ---------- */
+  var toastWrap = null;
+  function toast(msg, icon) {
+    toastWrap = toastWrap || $('#toast-wrap');
+    if (!toastWrap) return;
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = '<span class="toast-ic">' + (icon || '✓') + '</span><span>' + esc(msg) + '</span>';
+    toastWrap.appendChild(t);
+    setTimeout(function () {
+      t.classList.add('out');
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 320);
+    }, 2200);
+  }
+
+  /* ---------- Loading skeletons ---------- */
+  function renderSkeletons() {
+    var grid = $('#products-grid');
+    if (!grid) return;
+    var card = '<div class="skel-card"><div class="skel-media"></div><div class="skel-pad">' +
+      '<div class="skel-line w70"></div><div class="skel-line w40"></div>' +
+      '<div class="skel-foot"><div class="skel-line"></div><div class="skel-line"></div></div>' +
+      '</div></div>';
+    var html = '';
+    for (var i = 0; i < 6; i++) html += card;
+    grid.innerHTML = html;
+  }
+
   /* ---------- Branding ---------- */
   function applyBranding() {
     S.applyTheme(cfg);
@@ -192,7 +220,8 @@
     var limit = stockLimit(id);
     if (limit <= 0) return;
     cart[id] = Math.min((cart[id] || 0) + 1, limit);
-    S.saveCart(cart); updateCartUI(); openCart();
+    S.saveCart(cart); updateCartUI();
+    toast('Kosárba téve', '🛒');
   }
   function setQty(id, qty) {
     var limit = stockLimit(id);
@@ -211,16 +240,22 @@
     var wrap = $('#cart-items');
     wrap.innerHTML = '';
     var ids = Object.keys(cart);
+    var secure = $('#cart-secure'); var cont = $('#cart-continue');
     if (!ids.length) {
       wrap.innerHTML = '<p class="cart-empty">A kosarad még üres.<br>Böngészd a termékeket! 🛍️</p>';
       $('#cart-checkout').disabled = true;
+      if (secure) secure.hidden = true;
+      if (cont) cont.hidden = true;
       if ($('#cart-drawer').classList.contains('checkout-mode')) exitCheckout();
       return;
     }
     $('#cart-checkout').disabled = false;
+    if (secure) secure.hidden = false;
+    if (cont) cont.hidden = $('#cart-drawer').classList.contains('checkout-mode');
     ids.forEach(function (id) {
       var p = byId[id];
       if (!p) { delete cart[id]; return; }
+      var lineTotal = S.formatPrice(S.effectivePrice(p) * cart[id], cfg);
       var row = document.createElement('div');
       row.className = 'cart-row';
       row.innerHTML =
@@ -231,11 +266,15 @@
             ? '<span class="price-old">' + S.formatPrice(p.price, cfg) + '</span> ' + S.formatPrice(p.salePrice, cfg)
             : S.formatPrice(p.price, cfg)) + '</span>' +
         '</div>' +
-        '<div class="cart-qty">' +
-          '<button class="qty-btn" data-act="dec" data-id="' + esc(id) + '" aria-label="Kevesebb">−</button>' +
-          '<span>' + cart[id] + '</span>' +
-          '<button class="qty-btn" data-act="inc" data-id="' + esc(id) + '" aria-label="Több">+</button>' +
-        '</div>';
+        '<div class="cart-row-right">' +
+          '<div class="cart-qty">' +
+            '<button class="qty-btn" data-act="dec" data-id="' + esc(id) + '" aria-label="Kevesebb">−</button>' +
+            '<span>' + cart[id] + '</span>' +
+            '<button class="qty-btn" data-act="inc" data-id="' + esc(id) + '" aria-label="Több">+</button>' +
+          '</div>' +
+          '<span class="cart-row-sub">' + lineTotal + '</span>' +
+        '</div>' +
+        '<button class="cart-row-remove" data-remove="' + esc(id) + '" aria-label="Eltávolítás" title="Eltávolítás">🗑</button>';
       wrap.appendChild(row);
     });
     $$('.qty-btn', wrap).forEach(function (b) {
@@ -244,6 +283,9 @@
         var delta = b.getAttribute('data-act') === 'inc' ? 1 : -1;
         setQty(id, (cart[id] || 0) + delta);
       });
+    });
+    $$('.cart-row-remove', wrap).forEach(function (b) {
+      b.addEventListener('click', function () { setQty(b.getAttribute('data-remove'), 0); });
     });
   }
 
@@ -260,13 +302,29 @@
   }
 
   /* ---------- Checkout (2 steps) ---------- */
+  function renderCheckoutSummary() {
+    var box = $('#checkout-summary');
+    if (!box) return;
+    var byId = {};
+    (cfg.products || []).forEach(function (p) { byId[p.id] = p; });
+    var rows = '';
+    Object.keys(cart).forEach(function (id) {
+      var p = byId[id]; if (!p) return;
+      var line = S.formatPrice(S.effectivePrice(p) * cart[id], cfg);
+      rows += '<div class="cosum-row"><span class="cosum-name">' + esc(p.name) + ' ×' + cart[id] + '</span><span>' + line + '</span></div>';
+    });
+    box.innerHTML = '<div class="cosum-title">Rendelés áttekintése</div>' + rows +
+      '<div class="cosum-total"><span>Összesen</span><strong>' + S.formatPrice(S.cartTotal(cart, cfg), cfg) + '</strong></div>';
+  }
   function enterCheckout() {
     if (!Object.keys(cart).length) return;
     var drawer = $('#cart-drawer');
     drawer.classList.add('checkout-mode');
+    renderCheckoutSummary();
     $('#cart-checkout').hidden = true;
     $('#checkout-submit').hidden = false;
     $('#checkout-back').hidden = false;
+    if ($('#cart-continue')) $('#cart-continue').hidden = true;
     $('#cart-note').textContent = '';
     if (currentUser) {
       if (!$('#co-name').value) $('#co-name').value = currentUser.name || '';
@@ -280,6 +338,7 @@
     $('#cart-checkout').hidden = false;
     $('#checkout-submit').hidden = true;
     $('#checkout-back').hidden = true;
+    if ($('#cart-continue')) $('#cart-continue').hidden = !Object.keys(cart).length;
     $('#cart-note').textContent = '';
   }
   function submitOrder() {
@@ -529,9 +588,12 @@
     if (search) search.addEventListener('input', function () { query = search.value; renderProducts(); });
     $('#cart-checkout').addEventListener('click', enterCheckout);
     $('#checkout-back').addEventListener('click', exitCheckout);
+    var contBtn = $('#cart-continue');
+    if (contBtn) contBtn.addEventListener('click', closeCart);
     $('#checkout-submit').addEventListener('click', submitOrder);
     $('#checkout-form').addEventListener('submit', function (e) { e.preventDefault(); submitOrder(); });
 
+    renderSkeletons();
     S.getShop().then(function (data) {
       cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), data);
       if (!Array.isArray(cfg.products)) cfg.products = [];
