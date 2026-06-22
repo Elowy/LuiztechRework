@@ -20,6 +20,12 @@
     heroTitle: 'Technológia, ami magáért beszél',
     heroText: 'Válogass kézzel összeállított kínálatunkból — azonnali hozzáférés, megbízható minőség.',
     freeShippingOver: 0,
+    contactPhone: '+36 30 195 4944',
+    contactViber: '36301954944',
+    contactWhatsapp: '',
+    contactMessenger: '',
+    contactEmail: 'info@luiz-tech.hu',
+    backToTop: true,
     products: [
       { id: 'p1', name: 'Webfejlesztői csomag', desc: 'Egyedi weboldal a koncepciótól az élesítésig.', price: 149000, category: 'Szolgáltatás', emoji: '🌐' },
       { id: 'p2', name: 'Webshop indító csomag', desc: 'Teljes e-commerce megoldás fizetési integrációval.', price: 249000, category: 'Szolgáltatás', emoji: '🛒' },

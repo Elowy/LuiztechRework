@@ -37,6 +37,8 @@
     'Árajánlat ideje': 'Quote turnaround',
     'Leggyorsabb átfutás': 'Fastest delivery',
     'görgess': 'scroll',
+    'Hívás': 'Call',
+    'Vissza a tetejére': 'Back to top',
 
     // ---- Szekció-címkék / általános ----
     '// szolgáltatások': '// services',

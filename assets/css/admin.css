@@ -134,6 +134,9 @@
 
 .admin-h { font-size: 1.4rem; font-weight: 800; letter-spacing: -.4px; }
 .admin-desc { color: var(--text-muted); font-size: .94rem; margin: 6px 0 24px; }
+.admin-subh { font-size: 1rem; font-weight: 600; margin: 28px 0 4px; padding-top: 18px; border-top: 1px solid var(--border); }
+.admin-check { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: .94rem; margin: 10px 0 4px; color: var(--text-muted); }
+.admin-check input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
 .admin-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 
 .admin-content .field { display: grid; gap: 7px; margin-bottom: 18px; }

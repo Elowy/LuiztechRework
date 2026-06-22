@@ -163,8 +163,38 @@
     nav.addEventListener('click', (e) => { if (e.target.tagName === 'A') close(); });
   }
 
-  /* ---------- Floating chat widget + robot mascot ---------- */
-  if (!document.body.classList.contains('admin-body')) buildChatWidget();
+  /* ---------- Floating widgets (chat + vissza a tetejére) ---------- */
+  if (!document.body.classList.contains('admin-body')) {
+    fetch('/api/shop', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => initFloating(cfg || {}))
+      .catch(() => initFloating({}));
+  }
+  function initFloating(cfg) {
+    buildChatWidget(cfg);
+    buildBackToTop(cfg);
+  }
+
+  /* ---------- "Vissza a tetejére" gomb (alul középen) ---------- */
+  function buildBackToTop(cfg) {
+    if (cfg && cfg.backToTop === false) return;     // admin kikapcsolta
+    if (document.querySelector('.to-top')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'to-top';
+    btn.setAttribute('aria-label', 'Vissza a tetejére');
+    btn.innerHTML = '<span class="to-top-ic" aria-hidden="true">↑</span><span class="to-top-tx">Vissza a tetejére</span>';
+    document.body.appendChild(btn);
+    const onScroll = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      btn.classList.toggle('show', y > 120);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    btn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+    });
+  }
 
   /* ---------- Robot logó a fejlécben + véletlen trükkök ---------- */
   buildLogoRobot();
@@ -192,20 +222,25 @@
     brand.addEventListener('mouseenter', () => play('jump'));   // hover → trambulin (a logó linkje így is működik)
   }
 
-  function buildChatWidget() {
-    // Kapcsolati csatornák — töltsd ki a sajátoddal. Üres mező = nem jelenik meg.
+  function buildChatWidget(cfg) {
+    cfg = cfg || {};
+    // Alapértékek, ha a config nem érhető el (a mezőket az admin dashboardon lehet állítani).
+    const D = { contactWhatsapp: '', contactViber: '36301954944', contactMessenger: '',
+      contactPhone: '+36 30 195 4944', contactEmail: 'info@luiz-tech.hu' };
+    const g = (k) => (cfg[k] === undefined ? D[k] : cfg[k]);
     const CHAT = {
-      whatsapp: '',            // pl. '36301234567' (ország+körzet, + és szóköz nélkül)
-      viber: '36301954944',    // +36 30 195 4944
-      messenger: '',           // Facebook-oldal felhasználóneve → m.me/<ez>
-      phone: '',               // pl. '+36301234567' (SMS)
-      email: 'info@luiz-tech.hu'
+      whatsapp: String(g('contactWhatsapp')).replace(/[^\d]/g, ''),
+      viber: String(g('contactViber')).replace(/[^\d]/g, ''),
+      messenger: String(g('contactMessenger')).trim(),
+      phone: String(g('contactPhone')).trim(),
+      email: String(g('contactEmail')).trim()
     };
+    const telHref = CHAT.phone.replace(/[^\d+]/g, '');
     const channels = [];
+    if (CHAT.phone) channels.push({ label: 'Hívás', sub: CHAT.phone, icon: '📞', href: 'tel:' + telHref, ext: false });
     if (CHAT.whatsapp) channels.push({ label: 'WhatsApp', icon: '🟢', href: 'https://wa.me/' + CHAT.whatsapp, ext: true });
     if (CHAT.messenger) channels.push({ label: 'Messenger', icon: '💬', href: 'https://m.me/' + CHAT.messenger, ext: true });
     if (CHAT.viber) channels.push({ label: 'Viber', icon: '🟣', href: 'viber://chat?number=%2B' + CHAT.viber, ext: false });
-    if (CHAT.phone) channels.push({ label: 'SMS küldése', icon: '✉️', href: 'sms:' + CHAT.phone, ext: false });
     if (CHAT.email) channels.push({ label: 'E-mail', icon: '📧', href: 'mailto:' + CHAT.email, ext: false });
     if ($('#contact')) channels.push({ label: 'Írj üzenetet', icon: '📝', href: '#contact', ext: false, form: true });
 
@@ -219,7 +254,9 @@
           channels.map((c) =>
             '<a class="chat-channel' + (c.form ? ' is-form' : '') + '" href="' + c.href + '"' +
             (c.ext ? ' target="_blank" rel="noopener"' : '') + '>' +
-            '<span class="chat-channel-ic">' + c.icon + '</span>' + c.label + '</a>'
+            '<span class="chat-channel-ic">' + c.icon + '</span>' +
+            '<span class="chat-channel-tx">' + c.label + '</span>' +
+            (c.sub ? '<span class="chat-channel-sub">' + c.sub + '</span>' : '') + '</a>'
           ).join('') +
         '</div>' +
       '</div>' +

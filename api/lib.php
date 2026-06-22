@@ -33,6 +33,12 @@ const DEFAULT_CONFIG = [
   'heroText' => 'Válogass kézzel összeállított kínálatunkból — azonnali hozzáférés, megbízható minőség.',
   'freeShippingOver' => 25000,
   'notifyEmail' => 'info@luiz-tech.hu',
+  'contactPhone' => '+36 30 195 4944',
+  'contactViber' => '36301954944',
+  'contactWhatsapp' => '',
+  'contactMessenger' => '',
+  'contactEmail' => 'info@luiz-tech.hu',
+  'backToTop' => '1',
   'szamlazzAgentKey' => '',
 ];
 
@@ -54,7 +60,7 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','szamlazzAgentKey'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','szamlazzAgentKey'];
 // Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
 // és üres értékkel nem írjuk felül a meglévőt.
 const SECRET_CONFIG = ['szamlazzAgentKey'];
@@ -307,6 +313,7 @@ function get_config(PDO $pdo, $includeSecrets = false) {
   foreach (DEFAULT_CONFIG as $k => $dv) $out[$k] = array_key_exists($k, $map) ? $map[$k] : $dv;
   $out['freeShippingOver'] = (int)$out['freeShippingOver'];
   $out['theme'] = ($out['theme'] === 'light') ? 'light' : 'dark';
+  $out['backToTop'] = !in_array((string)$out['backToTop'], ['0', '', 'false'], true);
   if (!$includeSecrets) {
     // titkos kulcsokat soha nem küldünk ki — csak azt jelezzük, be van-e állítva
     foreach (SECRET_CONFIG as $sk) {
@@ -332,6 +339,11 @@ function save_config(PDO $pdo, array $in) {
       if ($k === 'theme') $v = ($v === 'light') ? 'light' : 'dark';
       if ($k === 'currency') $v = mb_substr((string)$v, 0, 6);
       if ($k === 'notifyEmail' && !filter_var($v, FILTER_VALIDATE_EMAIL)) continue;
+      if ($k === 'backToTop') $v = (!$v || $v === '0' || $v === 'false') ? '0' : '1';
+      if (in_array($k, ['contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail'], true)) {
+        $v = mb_substr(trim((string)$v), 0, 120);
+        if ($k === 'contactEmail' && $v !== '' && !filter_var($v, FILTER_VALIDATE_EMAIL)) continue;
+      }
       $up->execute([$k, (string)$v]);
     }
   }

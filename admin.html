@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=44" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=44" />
+  <link rel="stylesheet" href="assets/css/style.css?v=45" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=45" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -130,6 +130,38 @@
             <label for="f-notifyEmail">Értesítési e-mail (új üzenet / rendelés / ticket ide jön)</label>
             <input type="email" id="f-notifyEmail" placeholder="info@luiz-tech.hu" />
           </div>
+
+          <h3 class="admin-subh">Lebegő kapcsolat-gombok (jobb alsó sarok)</h3>
+          <p class="admin-desc">Csak a kitöltött csatornák jelennek meg. A telefonszám „Hívás" gombként jelenik meg.</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="f-contactPhone">Telefonszám (Hívás)</label>
+              <input type="tel" id="f-contactPhone" placeholder="+36 30 195 4944" />
+            </div>
+            <div class="field">
+              <label for="f-contactViber">Viber szám (+ és szóköz nélkül)</label>
+              <input type="text" id="f-contactViber" placeholder="36301954944" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="f-contactWhatsapp">WhatsApp szám (+ és szóköz nélkül)</label>
+              <input type="text" id="f-contactWhatsapp" placeholder="pl. 36301234567" />
+            </div>
+            <div class="field">
+              <label for="f-contactMessenger">Messenger (m.me/ felhasználónév)</label>
+              <input type="text" id="f-contactMessenger" placeholder="pl. luiztech" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-contactEmail">Kapcsolati e-mail (a gombhoz)</label>
+            <input type="email" id="f-contactEmail" placeholder="info@luiz-tech.hu" />
+          </div>
+          <label class="admin-check">
+            <input type="checkbox" id="f-backToTop" />
+            <span>„Vissza a tetejére" gomb megjelenítése</span>
+          </label>
+
           <div class="field">
             <label for="f-szamlazz">Számlázz.hu Agent kulcs</label>
             <input type="password" id="f-szamlazz" autocomplete="off" placeholder="Add meg az Agent kulcsot…" />
@@ -466,8 +498,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=44"></script>
-  <script src="assets/js/admin.js?v=44" defer></script>
-  <script src="assets/js/main.js?v=44" defer></script>
+  <script src="assets/js/shop-config.js?v=45"></script>
+  <script src="assets/js/admin.js?v=45" defer></script>
+  <script src="assets/js/main.js?v=45" defer></script>
 </body>
 </html>

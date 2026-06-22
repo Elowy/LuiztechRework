@@ -115,6 +115,12 @@
     setVal('#f-heroTitle', cfg.heroTitle); setVal('#f-heroText', cfg.heroText);
     setVal('#f-currency', cfg.currency);
     setVal('#f-notifyEmail', cfg.notifyEmail);
+    setVal('#f-contactPhone', cfg.contactPhone);
+    setVal('#f-contactViber', cfg.contactViber);
+    setVal('#f-contactWhatsapp', cfg.contactWhatsapp);
+    setVal('#f-contactMessenger', cfg.contactMessenger);
+    setVal('#f-contactEmail', cfg.contactEmail);
+    var btt = $('#f-backToTop'); if (btt) btt.checked = cfg.backToTop !== false;
     setVal('#f-accent', cfg.accent); setVal('#f-accent-hex', cfg.accent);
     setVal('#f-accent2', cfg.accent2); setVal('#f-accent2-hex', cfg.accent2);
     setTheme(cfg.theme);
@@ -324,6 +330,12 @@
     cfg.heroText = $('#f-heroText').value;
     cfg.currency = $('#f-currency').value || 'Ft';
     cfg.notifyEmail = $('#f-notifyEmail').value.trim();
+    cfg.contactPhone = $('#f-contactPhone').value.trim();
+    cfg.contactViber = $('#f-contactViber').value.trim();
+    cfg.contactWhatsapp = $('#f-contactWhatsapp').value.trim();
+    cfg.contactMessenger = $('#f-contactMessenger').value.trim();
+    cfg.contactEmail = $('#f-contactEmail').value.trim();
+    cfg.backToTop = !($('#f-backToTop') && !$('#f-backToTop').checked);
     var szk = $('#f-szamlazz').value.trim();
     if (szk) cfg.szamlazzAgentKey = szk; else delete cfg.szamlazzAgentKey;  // üres → ne írjuk felül
     var btn = $('#save-btn'); btn.disabled = true;

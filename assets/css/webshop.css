@@ -50,6 +50,7 @@
 [data-shop-theme="light"] .code-window,
 [data-shop-theme="light"] .login-card,
 [data-shop-theme="light"] .modal { background: #fff; }
+[data-shop-theme="light"] .to-top { background: #fff; }
 
 /* ---------- Header extras ---------- */
 .brand-sub {
