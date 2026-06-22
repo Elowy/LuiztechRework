@@ -9,8 +9,6 @@
 
   var CART_KEY = 'luiztech_shop_cart_v1';
   var CONFIG_KEY = 'luiztech_shop_config_v1';   // fallback only
-  var CRED_KEY = 'luiztech_admin_cred_v1';      // fallback only
-  var AUTH_KEY = 'luiztech_admin_session_v1';   // fallback only
 
   var DEFAULT_CONFIG = {
     name: 'Luiz-Tech Shop',
@@ -68,12 +66,7 @@
       return merged;
     },
     saveConfig: function (cfg) { writeJSON(CONFIG_KEY, cfg); return Local.getConfig(); },
-    reset: function () { localStorage.removeItem(CONFIG_KEY); return clone(DEFAULT_CONFIG); },
-    cred: function () { return readJSON(CRED_KEY, { user: 'admin', pass: 'luiztech' }); },
-    login: function (u, p) { var c = Local.cred(); if (u === c.user && p === c.pass) { sessionStorage.setItem(AUTH_KEY, '1'); return true; } return false; },
-    logout: function () { sessionStorage.removeItem(AUTH_KEY); },
-    isLoggedIn: function () { return sessionStorage.getItem(AUTH_KEY) === '1'; },
-    setCred: function (u, p) { var c = Local.cred(); writeJSON(CRED_KEY, { user: u || c.user, pass: p || c.pass }); return { user: u || c.user }; }
+    reset: function () { localStorage.removeItem(CONFIG_KEY); return clone(DEFAULT_CONFIG); }
   };
 
   /* ============================================================
@@ -112,30 +105,6 @@
       if (e.status) throw e;
       return Local.reset();
     });
-  }
-  function login(user, pass) {
-    return api('/api/auth/login', { method: 'POST', body: { user: user, pass: pass } })
-      .then(function () { return true; })
-      .catch(function (e) {
-        if (e.status === 401) return false;     // wrong credentials
-        return Local.login(user, pass);         // backend down → local demo
-      });
-  }
-  function logout() {
-    Local.logout();
-    return api('/api/auth/logout', { method: 'POST' }).catch(function () { return { ok: true }; });
-  }
-  function me() {
-    return api('/api/auth/me')
-      .then(function (d) { return !!d.authenticated; })
-      .catch(function (e) {
-        if (e.status === 401) return false;
-        return Local.isLoggedIn();
-      });
-  }
-  function setCredentials(user, pass) {
-    return api('/api/admin/account', { method: 'POST', body: { user: user, pass: pass } })
-      .catch(function (e) { if (e.status) throw e; return Local.setCred(user, pass); });
   }
   function getOrders() {
     return api('/api/admin/orders').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], orders: [] }; });
@@ -256,10 +225,6 @@
     getConfig: getConfig,
     saveConfig: saveConfig,
     resetConfig: resetConfig,
-    login: login,
-    logout: logout,
-    me: me,
-    setCredentials: setCredentials,
     getOrders: getOrders,
     updateOrderStatus: updateOrderStatus,
     createOrder: createOrder,
