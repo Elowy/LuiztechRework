@@ -6,10 +6,10 @@
 
 date_default_timezone_set('Europe/Budapest');
 
-const ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
+const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -40,6 +40,7 @@ const DEFAULT_CONFIG = [
   'contactEmail' => 'info@luiz-tech.hu',
   'backToTop' => '1',
   'szamlazzAgentKey' => '',
+  'stripeSecretKey' => '',
 ];
 
 const DEFAULT_PRODUCTS = [
@@ -60,10 +61,10 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','szamlazzAgentKey'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','szamlazzAgentKey','stripeSecretKey'];
 // Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
 // és üres értékkel nem írjuk felül a meglévőt.
-const SECRET_CONFIG = ['szamlazzAgentKey'];
+const SECRET_CONFIG = ['szamlazzAgentKey','stripeSecretKey'];
 
 /* ---------- Útvonalak ---------- */
 function config_path() { return __DIR__ . '/../config.php'; }
@@ -138,6 +139,9 @@ function migrate(PDO $pdo) {
     // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v7: Stripe checkout session azonosító a rendelésekhez
+    try { $pdo->exec("ALTER TABLE orders ADD COLUMN stripe_session VARCHAR(80) DEFAULT '' AFTER invoice_no"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }
@@ -201,6 +205,7 @@ function create_schema(PDO $pdo) {
     total INT NOT NULL DEFAULT 0,
     status VARCHAR(40) NOT NULL DEFAULT 'Új',
     invoice_no VARCHAR(40) DEFAULT '',
+    stripe_session VARCHAR(80) DEFAULT '',
     created_at DATETIME NOT NULL,
     KEY user_id_idx (user_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -566,16 +571,42 @@ function create_order(PDO $pdo, array $payload, $user) {
     $pdo->rollBack();
     return ['error' => 'A rendelés mentése sikertelen.'];
   }
-  // Számla kiállítása Számlázz.hu-n keresztül (ha be van állítva az Agent kulcs).
-  // Nem blokkoló: ha hibázik, a rendelés akkor is létrejön, a hiba naplóba kerül.
+  // Stripe: ha be van állítva a titkos kulcs, online bankkártyás fizetési munkamenetet hozunk létre.
+  $status = 'Új';
+  $checkoutUrl = '';
+  $cfgFull = get_config($pdo, true);
+  $stripeOn = trim((string)($cfgFull['stripeSecretKey'] ?? '')) !== '';
+  if ($stripeOn) {
+    $sess = stripe_create_checkout_session($cfgFull, $oid, $items, $email, site_origin());
+    if (!empty($sess['ok'])) {
+      $status = 'Fizetésre vár';
+      $checkoutUrl = (string)$sess['url'];
+      try { $pdo->prepare("UPDATE orders SET status=?, stripe_session=? WHERE id=?")->execute([$status, $sess['id'], $oid]); }
+      catch (Throwable $e) { /* nem blokkoló */ }
+    } else {
+      error_log('Stripe: ' . ($sess['error'] ?? '?'));   // hiba → visszaesünk manuális rendelésre
+    }
+  }
+
+  // Számla + admin-értesítés azonnal, KIVÉVE ha kártyás fizetésre vár — akkor a sikeres
+  // fizetés megerősítésekor állítjuk ki a számlát (lásd stripe_confirm()).
+  $invoiceNo = '';
+  if ($status !== 'Fizetésre vár') {
+    $invoiceNo = maybe_issue_invoice($pdo, $cfgFull, $oid, $name, $email, (string)($c['address'] ?? ''), $items);
+    notify_admin($pdo, 'Új rendelés – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, $invoiceNo, $items));
+  } else {
+    notify_admin($pdo, 'Új rendelés (fizetésre vár) – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, '', $items));
+  }
+
+  return ['order' => ['id' => $oid, 'total' => $total, 'status' => $status, 'invoiceNo' => $invoiceNo, 'checkoutUrl' => $checkoutUrl]];
+}
+
+/* ---------- Számla + értesítés segédek ---------- */
+function maybe_issue_invoice(PDO $pdo, array $cfg, $oid, $name, $email, $address, array $items) {
   $invoiceNo = '';
   try {
-    $cfgFull = get_config($pdo, true);
-    if (trim((string)($cfgFull['szamlazzAgentKey'] ?? '')) !== '') {
-      $res = szamlazz_create_invoice($cfgFull, [
-        'id' => $oid, 'name' => $name, 'email' => $email,
-        'address' => (string)($c['address'] ?? ''),
-      ], $items);
+    if (trim((string)($cfg['szamlazzAgentKey'] ?? '')) !== '') {
+      $res = szamlazz_create_invoice($cfg, ['id' => $oid, 'name' => $name, 'email' => $email, 'address' => $address], $items);
       if (!empty($res['ok'])) {
         $invoiceNo = (string)$res['invoice'];
         $pdo->prepare("UPDATE orders SET invoice_no = ? WHERE id = ?")->execute([$invoiceNo, $oid]);
@@ -586,16 +617,117 @@ function create_order(PDO $pdo, array $payload, $user) {
   } catch (Throwable $e) {
     error_log('Szamlazz.hu kivétel: ' . $e->getMessage());
   }
-
-  notify_admin($pdo, 'Új rendelés – ' . $oid,
-    "Új rendelés érkezett a webshopban.\n\nAzonosító: $oid\nÖsszeg: $total\n" .
+  return $invoiceNo;
+}
+function order_notify_body($oid, $total, $name, $email, $c, $invoiceNo, $items) {
+  return "Új rendelés érkezett a webshopban.\n\nAzonosító: $oid\nÖsszeg: $total\n" .
     "Vevő: {$name} <{$email}>\n" .
     (!empty($c['phone']) ? "Telefon: {$c['phone']}\n" : '') .
     (!empty($c['address']) ? "Cím: {$c['address']}\n" : '') .
     ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : '') .
-    "\nTételek:\n" . implode("\n", array_map(function ($it) { return "- {$it['name']} x{$it['qty']}"; }, $items)) . "\n");
+    "\nTételek:\n" . implode("\n", array_map(function ($it) { return "- {$it['name']} x{$it['qty']}"; }, $items)) . "\n";
+}
 
-  return ['order' => ['id' => $oid, 'total' => $total, 'status' => 'Új', 'invoiceNo' => $invoiceNo]];
+/* ============================================================
+   Stripe — online bankkártyás fizetés (Checkout, hosztolt oldal)
+   ============================================================ */
+function site_origin() {
+  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+  $host = $_SERVER['HTTP_HOST'] ?? 'luiz-tech.hu';
+  return ($https ? 'https' : 'http') . '://' . $host;
+}
+function stripe_currency(array $cfg) {
+  $c = strtolower(trim((string)($cfg['currency'] ?? 'Ft')));
+  if (strpos($c, 'eur') !== false || strpos($c, '€') !== false) return 'eur';
+  if (strpos($c, 'usd') !== false || strpos($c, '$') !== false) return 'usd';
+  return 'huf'; // alap: forint (Ft/HUF)
+}
+function stripe_create_checkout_session(array $cfg, $oid, array $items, $email, $origin) {
+  $key = trim((string)($cfg['stripeSecretKey'] ?? ''));
+  if ($key === '') return ['error' => 'Stripe nincs beállítva.'];
+  if (!function_exists('curl_init')) return ['error' => 'cURL nem elérhető.'];
+  $cur = stripe_currency($cfg);
+  $fields = [
+    'mode' => 'payment',
+    'locale' => 'hu',
+    'client_reference_id' => (string)$oid,
+    'success_url' => $origin . '/webshop.html?paid=' . rawurlencode($oid) . '&session={CHECKOUT_SESSION_ID}',
+    'cancel_url'  => $origin . '/webshop.html?canceled=' . rawurlencode($oid),
+  ];
+  if ($email) $fields['customer_email'] = $email;
+  $i = 0;
+  foreach ($items as $it) {
+    $fields["line_items[$i][price_data][currency]"] = $cur;
+    $fields["line_items[$i][price_data][product_data][name]"] = mb_substr((string)$it['name'], 0, 250);
+    $fields["line_items[$i][price_data][unit_amount]"] = (string)((int)round((float)$it['price']) * 100);
+    $fields["line_items[$i][quantity]"] = (string)max(1, (int)$it['qty']);
+    $i++;
+  }
+  $ch = curl_init('https://api.stripe.com/v1/checkout/sessions');
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => http_build_query($fields),
+    CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key],
+    CURLOPT_TIMEOUT => 20,
+    CURLOPT_CONNECTTIMEOUT => 10,
+  ]);
+  $resp = curl_exec($ch);
+  $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $cerr = curl_error($ch);
+  curl_close($ch);
+  if ($resp === false) return ['error' => 'Stripe kapcsolódási hiba: ' . $cerr];
+  $data = json_decode($resp, true);
+  if ($code >= 200 && $code < 300 && !empty($data['url'])) {
+    return ['ok' => true, 'url' => $data['url'], 'id' => $data['id'] ?? ''];
+  }
+  return ['error' => 'Stripe hiba: ' . (isset($data['error']['message']) ? $data['error']['message'] : ('HTTP ' . $code))];
+}
+// Sikeres fizetés megerősítése: lekérjük a Checkout Session-t, és ha kifizetett,
+// kifizetettre állítjuk a rendelést + kiállítjuk a számlát.
+function stripe_confirm(PDO $pdo, $oid, $sessionId) {
+  $oid = (string)$oid; $sessionId = (string)$sessionId;
+  if ($oid === '' || $sessionId === '') return ['error' => 'Hiányzó azonosító.'];
+  $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? LIMIT 1");
+  $stmt->execute([$oid]);
+  $order = $stmt->fetch();
+  if (!$order) return ['error' => 'Ismeretlen rendelés.'];
+  // ha már kifizetett, ne csináljunk semmit (idempotens)
+  if (in_array($order['status'], ['Fizetve', 'Teljesítve'], true)) {
+    return ['ok' => true, 'status' => $order['status'], 'id' => $oid];
+  }
+  $cfg = get_config($pdo, true);
+  $key = trim((string)($cfg['stripeSecretKey'] ?? ''));
+  if ($key === '') return ['error' => 'Stripe nincs beállítva.'];
+  $ch = curl_init('https://api.stripe.com/v1/checkout/sessions/' . rawurlencode($sessionId));
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key],
+    CURLOPT_TIMEOUT => 20,
+    CURLOPT_CONNECTTIMEOUT => 10,
+  ]);
+  $resp = curl_exec($ch);
+  $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+  if ($resp === false) return ['error' => 'Stripe kapcsolódási hiba.'];
+  $s = json_decode($resp, true);
+  if ($code < 200 || $code >= 300 || !is_array($s)) return ['error' => 'Stripe hiba.'];
+  // a session a rendeléshez tartozzon, és kifizetett legyen
+  if ((string)($s['client_reference_id'] ?? '') !== $oid) return ['error' => 'A fizetés nem ehhez a rendeléshez tartozik.'];
+  if (($s['payment_status'] ?? '') !== 'paid') return ['ok' => false, 'status' => $order['status'], 'pending' => true];
+  // kifizetve → státusz + számla
+  try { $pdo->prepare("UPDATE orders SET status = 'Fizetve' WHERE id = ?")->execute([$oid]); } catch (Throwable $e) {}
+  $items = [];
+  $it = $pdo->prepare("SELECT name, price, qty FROM order_items WHERE order_id = ?");
+  $it->execute([$oid]);
+  foreach ($it->fetchAll() as $r) $items[] = ['name' => $r['name'], 'price' => (float)$r['price'], 'qty' => (int)$r['qty']];
+  $invoiceNo = maybe_issue_invoice($pdo, $cfg, $oid, (string)$order['cust_name'], (string)$order['cust_email'], (string)$order['cust_address'], $items);
+  notify_admin($pdo, 'Fizetés beérkezett – ' . $oid,
+    "Sikeres bankkártyás fizetés.\n\nAzonosító: $oid\nÖsszeg: {$order['total']}\n" .
+    "Vevő: {$order['cust_name']} <{$order['cust_email']}>\n" .
+    ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : ''));
+  return ['ok' => true, 'status' => 'Fizetve', 'id' => $oid, 'invoiceNo' => $invoiceNo];
 }
 
 /* ---------- Számlázz.hu (Számla Agent) ---------- */

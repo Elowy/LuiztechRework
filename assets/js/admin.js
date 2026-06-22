@@ -125,7 +125,9 @@
     setVal('#f-accent2', cfg.accent2); setVal('#f-accent2-hex', cfg.accent2);
     setTheme(cfg.theme);
     setVal('#f-szamlazz', '');          // titkos kulcsot soha nem töltünk vissza
+    setVal('#f-stripe', '');
     updateSzamlazzNote();
+    updateStripeNote();
     buildSwatches();
     renderProductList();
     updatePreview();
@@ -136,6 +138,12 @@
     var note = $('#szamlazz-note'); if (!note) return;
     var set = !!cfg.szamlazzAgentKeySet;
     note.textContent = set ? '✓ Be van állítva' : 'Nincs beállítva';
+    note.className = 'admin-inline-note ' + (set ? 'ok' : '');
+  }
+  function updateStripeNote() {
+    var note = $('#stripe-note'); if (!note) return;
+    var set = !!cfg.stripeSecretKeySet;
+    note.textContent = set ? '✓ Be van állítva — kártyás fizetés aktív' : 'Nincs beállítva';
     note.className = 'admin-inline-note ' + (set ? 'ok' : '');
   }
 
@@ -155,7 +163,7 @@
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
   // Mentendő-jelzés a kapcsolati / értesítési mezőkre is (mentéskor a DOM-ból olvassuk ki)
-  ['#f-notifyEmail', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail'].forEach(function (sel) {
+  ['#f-notifyEmail', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
     var el = $(sel); if (el) el.addEventListener('input', markDirty);
   });
   var bttEl = $('#f-backToTop'); if (bttEl) bttEl.addEventListener('change', markDirty);
@@ -343,10 +351,12 @@
     cfg.backToTop = !($('#f-backToTop') && !$('#f-backToTop').checked);
     var szk = $('#f-szamlazz').value.trim();
     if (szk) cfg.szamlazzAgentKey = szk; else delete cfg.szamlazzAgentKey;  // üres → ne írjuk felül
+    var stk = $('#f-stripe').value.trim();
+    if (stk) cfg.stripeSecretKey = stk; else delete cfg.stripeSecretKey;    // üres → ne írjuk felül
     var btn = $('#save-btn'); btn.disabled = true;
     S.saveConfig(cfg).then(function (saved) {
       if (saved) { cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), saved); if (!Array.isArray(cfg.products)) cfg.products = []; }
-      setVal('#f-szamlazz', ''); updateSzamlazzNote();
+      setVal('#f-szamlazz', ''); setVal('#f-stripe', ''); updateSzamlazzNote(); updateStripeNote();
       markClean();
     }).catch(function (e) {
       if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
@@ -669,10 +679,11 @@
   /* ============================================================
      ORDERS
      ============================================================ */
-  var ORDER_STATUSES = ['Új', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
+  var ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
   function statusClass(s) {
     return {
       'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled',
+      'Fizetésre vár': 'st-progress', 'Fizetve': 'st-done',
       'Folyamatban': 'st-progress', 'Lezárt': 'st-done',
       'Nyitott': 'st-new', 'Válaszra vár': 'st-progress', 'Megoldva': 'st-done'
     }[s] || 'st-new';

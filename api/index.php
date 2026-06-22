@@ -49,7 +49,20 @@ if ($method === 'POST' && $route === '/orders') {
   $cust = current_customer($pdo);
   $r = create_order($pdo, body(), $cust);
   if (isset($r['error'])) json_error($r['error'], 400);
-  json_out(['ok' => true, 'id' => $r['order']['id'], 'total' => $r['order']['total'], 'status' => $r['order']['status']], 201);
+  json_out([
+    'ok' => true,
+    'id' => $r['order']['id'],
+    'total' => $r['order']['total'],
+    'status' => $r['order']['status'],
+    'checkoutUrl' => $r['order']['checkoutUrl'] ?? '',
+  ], 201);
+}
+// Stripe fizetés megerősítése a sikeres visszatérés után (a session a fizetés bizonyítéka)
+if ($method === 'POST' && $route === '/checkout/confirm') {
+  $b = body();
+  $res = stripe_confirm($pdo, (string)($b['order'] ?? ''), (string)($b['session'] ?? ''));
+  if (isset($res['error'])) json_error($res['error'], 400);
+  json_out($res);
 }
 
 /* ============================================================

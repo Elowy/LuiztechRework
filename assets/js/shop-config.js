@@ -122,6 +122,10 @@
     return api('/api/orders', { method: 'POST', body: payload })
       .catch(function (e) { if (e.status) throw e; return { ok: true, id: 'DEMO-' + Date.now().toString(36).toUpperCase(), local: true }; });
   }
+  function confirmPayment(order, session) {
+    return api('/api/checkout/confirm', { method: 'POST', body: { order: order, session: session } })
+      .catch(function (e) { return { error: (e && e.message) || 'A fizetés megerősítése sikertelen.' }; });
+  }
 
   /* ---------- Customer accounts (require backend) ---------- */
   function registerCustomer(name, email, pass) {
@@ -235,6 +239,7 @@
     getOrders: getOrders,
     updateOrderStatus: updateOrderStatus,
     createOrder: createOrder,
+    confirmPayment: confirmPayment,
     registerCustomer: registerCustomer,
     loginCustomer: loginCustomer,
     logoutCustomer: logoutCustomer,

@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=49" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=49" />
+  <link rel="stylesheet" href="assets/css/style.css?v=50" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=50" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -168,6 +168,17 @@
             <p class="admin-inline-note" id="szamlazz-note" role="status"></p>
             <p class="admin-desc" style="margin-top:6px">
               Ha megadod, minden új rendeléshez automatikusan e-számla készül (AAM, alanyi adómentes).
+              Biztonsági okból a mentett kulcsot nem jelenítjük meg újra — hagyd üresen, ha nem változtatod.
+            </p>
+          </div>
+          <div class="field">
+            <label for="f-stripe">Stripe titkos kulcs (online bankkártyás fizetés)</label>
+            <input type="password" id="f-stripe" autocomplete="off" placeholder="sk_live_… vagy sk_test_…" />
+            <p class="admin-inline-note" id="stripe-note" role="status"></p>
+            <p class="admin-desc" style="margin-top:6px">
+              Ha megadod, a webshop pénztárában a vásárlók <strong>online bankkártyával</strong> fizethetnek
+              (Stripe Checkout — biztonságos, hosztolt fizetőoldal). A kulcsot a Stripe Dashboard →
+              Fejlesztők → API-kulcsok alatt találod. Teszteléshez használj <code>sk_test_…</code> kulcsot.
               Biztonsági okból a mentett kulcsot nem jelenítjük meg újra — hagyd üresen, ha nem változtatod.
             </p>
           </div>
@@ -498,8 +509,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=49"></script>
-  <script src="assets/js/admin.js?v=49" defer></script>
-  <script src="assets/js/main.js?v=49" defer></script>
+  <script src="assets/js/shop-config.js?v=50"></script>
+  <script src="assets/js/admin.js?v=50" defer></script>
+  <script src="assets/js/main.js?v=50" defer></script>
 </body>
 </html>

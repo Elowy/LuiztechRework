@@ -24,6 +24,7 @@
   function statusClass(s) {
     return {
       'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled',
+      'Fizetésre vár': 'st-progress', 'Fizetve': 'st-done',
       'Nyitott': 'st-new', 'Válaszra vár': 'st-progress', 'Megoldva': 'st-done', 'Lezárt': 'st-done'
     }[s] || 'st-new';
   }
@@ -372,6 +373,12 @@
     S.createOrder(payload).then(function (resp) {
       btn.disabled = false;
       if (resp && resp.error) { note.textContent = resp.error; note.className = 'cart-note err'; return; }
+      if (resp && resp.checkoutUrl) {
+        note.textContent = 'Átirányítás a biztonságos fizetéshez…'; note.className = 'cart-note';
+        cart = {}; S.saveCart(cart);
+        window.location.href = resp.checkoutUrl;
+        return;
+      }
       note.textContent = 'Köszönjük a rendelést! Azonosító: ' + (resp.id || '—') +
         (resp.local ? ' (helyi demó)' : '') + '. Hamarosan felvesszük veled a kapcsolatot.';
       note.className = 'cart-note ok';
@@ -573,11 +580,34 @@
     });
   }
 
+  /* ---------- Stripe fizetés visszatérés ---------- */
+  function cleanPaymentParams() {
+    try { history.replaceState({}, '', location.pathname); } catch (e) { /* ignore */ }
+  }
+  function checkPaymentReturn() {
+    var qs;
+    try { qs = new URLSearchParams(location.search); } catch (e) { return; }
+    var paid = qs.get('paid'), session = qs.get('session'), canceled = qs.get('canceled');
+    if (paid && session) {
+      toast('Fizetés ellenőrzése…', '⏳');
+      S.confirmPayment(paid, session).then(function (res) {
+        if (res && res.ok) { toast('Köszönjük a vásárlást! 🎉', '✓'); if (currentUser) loadMyOrders(); }
+        else if (res && res.pending) { toast('A fizetés még feldolgozás alatt.', '⏳'); }
+        else { toast('A fizetést nem sikerült megerősíteni.', '⚠️'); }
+      });
+      cleanPaymentParams();
+    } else if (canceled) {
+      toast('A fizetés megszakadt — a rendelésed fizetésre vár.', 'ℹ️');
+      cleanPaymentParams();
+    }
+  }
+
   /* ---------- Init ---------- */
   function init() {
     initAuth();
     initTickets();
     initQuickView();
+    checkPaymentReturn();
     var sortSel = $('#shop-sort');
     if (sortSel) sortSel.addEventListener('change', function () { sortBy = sortSel.value; renderProducts(); });
     $('#cart-btn').addEventListener('click', openCart);
