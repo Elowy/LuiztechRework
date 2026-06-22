@@ -522,11 +522,17 @@
       ] }
     ];
 
-    // betöltésenként véletlen nyelv (minden frissítésnél másik lehet)
-    const pick = SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)];
-    const lines = pick.lines;
-    if (window.LT_translate) lines.forEach(function (seg) { seg.t = window.LT_translate(seg.t); });
-    if (heroTermTitle) heroTermTitle.textContent = 'luiz-tech ~ ' + pick.title;
+    // Az induló nyelv véletlen, majd lefutás után automatikusan a következőre vált (körbe).
+    let snipIdx = Math.floor(Math.random() * SNIPPETS.length);
+    const loadSnippet = (idx) => {
+      const pick = SNIPPETS[idx];
+      const lines = pick.lines.map(function (seg) {
+        return { t: window.LT_translate ? window.LT_translate(seg.t) : seg.t, cls: seg.cls, nl: seg.nl, wait: seg.wait };
+      });
+      if (heroTermTitle) heroTermTitle.textContent = 'luiz-tech ~ ' + pick.title;
+      return lines;
+    };
+    let lines = loadSnippet(snipIdx);
 
     if (prefersReduced) {
       // render statically
@@ -540,8 +546,12 @@
 
       const type = () => {
         if (li >= lines.length) {
-          // restart after a pause
-          setTimeout(() => { codeEl.innerHTML = ''; li = 0; ci = 0; current = null; type(); }, 4200);
+          // szünet után a következő nyelvi változatra váltunk
+          setTimeout(() => {
+            snipIdx = (snipIdx + 1) % SNIPPETS.length;
+            lines = loadSnippet(snipIdx);
+            codeEl.innerHTML = ''; li = 0; ci = 0; current = null; type();
+          }, 4200);
           return;
         }
         const line = lines[li];
