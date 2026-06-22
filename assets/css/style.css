@@ -1554,3 +1554,64 @@ code { font-family: var(--mono); }
   /* nagyon kis kijelzőn csak a 👤 (fiók) és 🛒 (kosár) ikonok maradnak */
   .shop-nav a:not(.nav-admin) { display: none; }
 }
+
+/* ============================================================
+   Dizájn-csiszolás csomag — egységes, prémium finomságok
+   ============================================================ */
+
+/* Egységes hover-glow az összes kártyatípusra (kohézió) */
+.service-card, .work-card, .news-card, .price-card {
+  transition: transform .3s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
+}
+.service-card:hover, .work-card:hover, .news-card:hover, .price-card:hover {
+  box-shadow: 0 26px 54px -30px var(--accent-glow);
+}
+
+/* Akadálymentes, márkahű fókusz-gyűrű minden interaktív elemen */
+a:focus-visible, button:focus-visible, input:focus-visible,
+textarea:focus-visible, select:focus-visible, summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Márkahű szövegkijelölés */
+::selection { background: var(--accent); color: #04121a; }
+::-moz-selection { background: var(--accent); color: #04121a; }
+
+/* Márkahű görgetősáv (egész oldal) */
+@media (pointer: fine) {
+  * { scrollbar-color: var(--border-strong) transparent; }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+}
+
+/* Gomb finom „lenyomás" visszajelzés */
+.btn:active { transform: translateY(0) scale(.98); }
+
+/* Szekció-címke finom kódoló-pislákolás (egységes ritmus) */
+.section-tag { display: inline-block; }
+
+/* Linkek finom aláhúzás-animációja a törzsszövegben */
+.about-copy a:not(.btn), .contact-copy a:not(.btn) {
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size .25s ease, color .2s ease;
+  padding-bottom: 1px;
+}
+.about-copy a:not(.btn):hover, .contact-copy a:not(.btn):hover {
+  background-size: 100% 1.5px;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active { transform: none; }
+}
