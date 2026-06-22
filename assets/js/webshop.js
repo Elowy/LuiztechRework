@@ -374,8 +374,8 @@
       btn.disabled = false;
       if (resp && resp.error) { note.textContent = resp.error; note.className = 'cart-note err'; return; }
       if (resp && resp.checkoutUrl) {
+        // a kosarat csak sikeres fizetés után ürítjük (megszakításnál megmarad)
         note.textContent = 'Átirányítás a biztonságos fizetéshez…'; note.className = 'cart-note';
-        cart = {}; S.saveCart(cart);
         window.location.href = resp.checkoutUrl;
         return;
       }
@@ -591,8 +591,11 @@
     if (paid && session) {
       toast('Fizetés ellenőrzése…', '⏳');
       S.confirmPayment(paid, session).then(function (res) {
-        if (res && res.ok) { toast('Köszönjük a vásárlást! 🎉', '✓'); if (currentUser) loadMyOrders(); }
-        else if (res && res.pending) { toast('A fizetés még feldolgozás alatt.', '⏳'); }
+        if (res && res.ok) {
+          cart = {}; S.saveCart(cart); updateCartUI();
+          toast('Köszönjük a vásárlást! 🎉', '✓');
+          if (currentUser) loadMyOrders();
+        } else if (res && res.pending) { toast('A fizetés még feldolgozás alatt.', '⏳'); }
         else { toast('A fizetést nem sikerült megerősíteni.', '⚠️'); }
       });
       cleanPaymentParams();
