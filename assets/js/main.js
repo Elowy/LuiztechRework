@@ -439,8 +439,9 @@
   const caret = $('#terminal-caret');
   const heroTermTitle = $('#hero-terminal-title');
   if (codeEl) {
-    // Több nyelvi változat — sessionönként véletlenszerűen más kód jelenik meg.
+    // Több jelenet — kód, deploy-napló, szerver-státusz, CI/SQL/Bash/Docker — véletlenszerű sorrendben.
     var K = 't-key', STR = 't-str', FN = 't-fn', O = 't-out', CM = 't-comment';
+    var PR = 't-prompt', CMD = 't-cmd', OK = 't-ok', WARN = 't-warn', DIM = 't-dim';
     const SNIPPETS = [
       { title: 'Products.jsx', lines: [
         { t: '// Luiz-Tech — terméklista React hookkal', cls: CM, nl: true },
@@ -519,6 +520,85 @@
         { t: '}', cls: O, nl: true },
         { t: '', nl: true },
         { t: 'const shop = await ', cls: O }, { t: 'getJSON', cls: FN }, { t: '(', cls: O }, { t: "'/api/shop'", cls: STR }, { t: ');', cls: O, nl: true }
+      ] },
+      { title: 'deploy.sh', lines: [
+        { t: '# automata kiszállítás éles szerverre', cls: CM, nl: true },
+        { t: 'luiz-tech@prod ~ $ ', cls: PR }, { t: './deploy.sh client-webshop', cls: CMD, nl: true },
+        { t: '  → build ............... ', cls: O }, { t: '✓', cls: OK }, { t: '  4.1s', cls: DIM, nl: true },
+        { t: '  → optimizing assets ... ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '  → upload to Hetzner ... ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '  → purge CDN cache ..... ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '', nl: true },
+        { t: '✓ ', cls: OK }, { t: 'client-webshop.hu', cls: FN }, { t: '  LIVE', cls: OK }, { t: ' · 99.99% uptime', cls: DIM, nl: true }
+      ] },
+      { title: 'pipeline', lines: [
+        { t: '# CI/CD folyamat minden push után', cls: CM, nl: true },
+        { t: 'luiz-tech@ci ~ $ ', cls: PR }, { t: 'git push origin main', cls: CMD, nl: true },
+        { t: '  → CI pipeline triggered ... ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '$ ', cls: PR }, { t: 'npm run build', cls: CMD, nl: true },
+        { t: '  vite v5  ', cls: O }, { t: '✓ built in 3.2s', cls: OK, nl: true },
+        { t: '$ ', cls: PR }, { t: 'docker compose up -d', cls: CMD, nl: true },
+        { t: '  shop-web  ', cls: O }, { t: 'Started ✓', cls: OK, nl: true },
+        { t: '  shop-db   ', cls: O }, { t: 'Healthy ✓', cls: OK, nl: true },
+        { t: '', nl: true },
+        { t: '✓ deployed · 0 errors · 1.8s', cls: OK, nl: true }
+      ] },
+      { title: 'status', lines: [
+        { t: '# élő rendszerfelügyelet', cls: CM, nl: true },
+        { t: '● ', cls: OK }, { t: 'service          status     time', cls: O, nl: true },
+        { t: '──────────────────────────────────────', cls: DIM, nl: true },
+        { t: '● ', cls: OK }, { t: 'web-01          ', cls: O }, { t: 'ONLINE', cls: OK }, { t: '    118ms', cls: DIM, nl: true },
+        { t: '● ', cls: OK }, { t: 'webshop-api     ', cls: O }, { t: 'ONLINE', cls: OK }, { t: '     43ms', cls: DIM, nl: true },
+        { t: '● ', cls: OK }, { t: 'mysql-primary   ', cls: O }, { t: 'healthy', cls: OK }, { t: '    12ms', cls: DIM, nl: true },
+        { t: '● ', cls: OK }, { t: 'ssl-cert        ', cls: O }, { t: 'VALID', cls: OK }, { t: '    89 days', cls: DIM, nl: true },
+        { t: '● ', cls: OK }, { t: 'daily backup    ', cls: O }, { t: 'OK', cls: OK }, { t: '       02:00 ✓', cls: DIM, nl: true },
+        { t: '──────────────────────────────────────', cls: DIM, nl: true },
+        { t: '  uptime: 99.99% · 0 incidents', cls: DIM, nl: true }
+      ] },
+      { title: 'docker', lines: [
+        { t: '# webshop konténer build', cls: CM, nl: true },
+        { t: 'luiz-tech@dev ~ $ ', cls: PR }, { t: 'docker build -t shop:latest .', cls: CMD, nl: true },
+        { t: '  → [1/4] FROM node:20-alpine   ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '  → [2/4] COPY . /app           ', cls: O }, { t: '✓', cls: OK, nl: true },
+        { t: '  → [3/4] RUN npm ci --omit=dev ', cls: O }, { t: '✓', cls: OK }, { t: '  6.2s', cls: DIM, nl: true },
+        { t: '  → [4/4] RUN npm run build     ', cls: O }, { t: '✓', cls: OK }, { t: '  3.1s', cls: DIM, nl: true },
+        { t: '', nl: true },
+        { t: '✓ ', cls: OK }, { t: 'shop:latest', cls: FN }, { t: '  (image 142MB)', cls: DIM, nl: true }
+      ] },
+      { title: 'deploy.yml', lines: [
+        { t: '# .github/workflows/deploy.yml', cls: CM, nl: true },
+        { t: '# automatikus kiszállítás minden push után', cls: CM, nl: true },
+        { t: 'name', cls: K }, { t: ': Deploy', cls: O, nl: true },
+        { t: 'on', cls: K }, { t: ': [push]', cls: O, nl: true },
+        { t: 'jobs', cls: K }, { t: ':', cls: O, nl: true },
+        { t: '  deploy', cls: K }, { t: ':', cls: O, nl: true },
+        { t: '    runs-on', cls: K }, { t: ': ', cls: O }, { t: 'ubuntu-latest', cls: STR, nl: true },
+        { t: '    steps', cls: K }, { t: ':', cls: O, nl: true },
+        { t: '      - ', cls: O }, { t: 'uses', cls: K }, { t: ': ', cls: O }, { t: 'actions/checkout@v4', cls: STR, nl: true },
+        { t: '      - ', cls: O }, { t: 'run', cls: K }, { t: ': ', cls: O }, { t: 'npm ci && npm run build', cls: STR, nl: true },
+        { t: '      - ', cls: O }, { t: 'name', cls: K }, { t: ': ', cls: O }, { t: 'Deploy via FTP', cls: STR, nl: true }
+      ] },
+      { title: 'schema.sql', lines: [
+        { t: '-- Luiz-Tech — webshop séma', cls: CM, nl: true },
+        { t: 'CREATE TABLE ', cls: K }, { t: 'products', cls: FN }, { t: ' (', cls: O, nl: true },
+        { t: '  id      ', cls: O }, { t: 'INT', cls: K }, { t: ' PRIMARY KEY AUTO_INCREMENT,', cls: O, nl: true },
+        { t: '  name    ', cls: O }, { t: 'VARCHAR', cls: K }, { t: '(160) ', cls: O }, { t: 'NOT NULL', cls: K }, { t: ',', cls: O, nl: true },
+        { t: '  price   ', cls: O }, { t: 'INT', cls: K }, { t: ' NOT NULL,', cls: O, nl: true },
+        { t: '  active  ', cls: O }, { t: 'TINYINT', cls: K }, { t: ' DEFAULT ', cls: O }, { t: '1', cls: STR }, { t: ');', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'SELECT ', cls: K }, { t: 'name, price ', cls: O }, { t: 'FROM ', cls: K }, { t: 'products', cls: FN, nl: true },
+        { t: 'WHERE ', cls: K }, { t: 'active = ', cls: O }, { t: '1 ', cls: STR }, { t: 'ORDER BY ', cls: K }, { t: 'price;', cls: O, nl: true }
+      ] },
+      { title: 'provision.sh', lines: [
+        { t: '#!/usr/bin/env bash', cls: CM, nl: true },
+        { t: '# Luiz-Tech — szerver beüzemelés', cls: CM, nl: true },
+        { t: 'set', cls: FN }, { t: ' -euo pipefail', cls: O, nl: true },
+        { t: '', nl: true },
+        { t: 'apt-get', cls: FN }, { t: ' update -qq', cls: O, nl: true },
+        { t: 'ufw', cls: FN }, { t: ' allow 443/tcp', cls: O }, { t: '          # HTTPS', cls: CM, nl: true },
+        { t: 'certbot', cls: FN }, { t: ' --nginx -d luiz-tech.hu', cls: O, nl: true },
+        { t: 'systemctl', cls: FN }, { t: ' reload nginx', cls: O, nl: true },
+        { t: 'echo', cls: FN }, { t: ' ', cls: O }, { t: '"✓ done"', cls: STR, nl: true }
       ] }
     ];
 
@@ -546,9 +626,11 @@
 
       const type = () => {
         if (li >= lines.length) {
-          // szünet után a következő nyelvi változatra váltunk
+          // szünet után véletlenszerűen egy másik jelenetre váltunk (nem ugyanarra)
           setTimeout(() => {
-            snipIdx = (snipIdx + 1) % SNIPPETS.length;
+            let nxt = snipIdx;
+            while (SNIPPETS.length > 1 && nxt === snipIdx) nxt = Math.floor(Math.random() * SNIPPETS.length);
+            snipIdx = nxt;
             lines = loadSnippet(snipIdx);
             codeEl.innerHTML = ''; li = 0; ci = 0; current = null; type();
           }, 4200);
