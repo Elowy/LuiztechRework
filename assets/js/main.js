@@ -614,6 +614,23 @@
     };
     let lines = loadSnippet(snipIdx);
 
+    // Fix magasság: lefoglaljuk a legmagasabb jelenethez szükséges helyet, hogy
+    // a kódablak ne "rángassa" az oldalt gépelés vagy jelenetváltás közben.
+    try {
+      const body = codeEl.parentElement; // <pre class="terminal-body">
+      let maxLines = 0;
+      SNIPPETS.forEach(function (s) {
+        let n = 0;
+        s.lines.forEach(function (l) { if (l.nl) n++; });
+        if (n > maxLines) maxLines = n;
+      });
+      const lh = parseFloat(getComputedStyle(codeEl).lineHeight) || 26;
+      const bs = getComputedStyle(body);
+      const pad = (parseFloat(bs.paddingTop) || 0) + (parseFloat(bs.paddingBottom) || 0);
+      // +1 sor a kurzornak
+      body.style.minHeight = Math.ceil((maxLines + 1) * lh + pad) + 'px';
+    } catch (e) { /* marad a CSS min-height */ }
+
     if (prefersReduced) {
       // render statically
       codeEl.innerHTML = lines.map((l) =>
