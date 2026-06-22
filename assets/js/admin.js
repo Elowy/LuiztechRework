@@ -154,6 +154,11 @@
     var el = $(sel); if (!el) return;
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
+  // Mentendő-jelzés a kapcsolati / értesítési mezőkre is (mentéskor a DOM-ból olvassuk ki)
+  ['#f-notifyEmail', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail'].forEach(function (sel) {
+    var el = $(sel); if (el) el.addEventListener('input', markDirty);
+  });
+  var bttEl = $('#f-backToTop'); if (bttEl) bttEl.addEventListener('change', markDirty);
 
   /* ---------- Colors ---------- */
   function bindColor(colorSel, hexSel, key) {
