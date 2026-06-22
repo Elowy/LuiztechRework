@@ -38,6 +38,7 @@
     'Leggyorsabb átfutás': 'Fastest delivery',
     'görgess': 'scroll',
     'Hívás': 'Call',
+    'Telefon': 'Phone',
     'Vissza a tetejére': 'Back to top',
 
     // ---- Szekció-címkék / általános ----
