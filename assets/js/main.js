@@ -27,9 +27,10 @@
     { a: '#b46bff', b: '#38e1ff' }, { a: '#28c840', b: '#00ffa3' }
   ];
   function sessionPalette() {
-    let i;
-    try { i = Number(sessionStorage.getItem('lt_palette')); } catch (e) { i = NaN; }
-    if (!(i >= 0 && i < SITE_PALETTES.length)) {
+    let raw = null;
+    try { raw = sessionStorage.getItem('lt_palette'); } catch (e) { raw = null; }
+    let i = (raw === null || raw === '') ? NaN : Number(raw);
+    if (!(Number.isInteger(i) && i >= 0 && i < SITE_PALETTES.length)) {
       i = Math.floor(Math.random() * SITE_PALETTES.length);
       try { sessionStorage.setItem('lt_palette', String(i)); } catch (e) { /* ignore */ }
     }

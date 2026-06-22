@@ -214,7 +214,8 @@
       try {
         var P = [['#38e1ff', '#6c7bff'], ['#00ffa3', '#38e1ff'], ['#ff7edb', '#6c7bff'],
                  ['#ffb86c', '#ff5f57'], ['#b46bff', '#38e1ff'], ['#28c840', '#00ffa3']];
-        var i = Number(sessionStorage.getItem('lt_palette'));
+        var raw = sessionStorage.getItem('lt_palette');
+        var i = (raw === null || raw === '') ? -1 : Number(raw);
         if (i >= 0 && i < P.length) { a = P[i][0]; b = P[i][1]; }
       } catch (e) { /* ignore */ }
     }
