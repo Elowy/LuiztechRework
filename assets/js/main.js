@@ -816,7 +816,8 @@
           const cards = items.map((it) => {
             const more = escH(it.details || it.description || '');
             const urlAttr = it.url ? ' data-url="' + escH(it.url) + '"' : '';
-            return '<article class="work-card clickable reveal in' + (it.gold ? ' work-gold' : '') + '" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
+            return '<article class="work-card clickable reveal in' + (it.gold ? ' work-gold' : '') + (it.new ? ' work-new' : '') + '" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
+              (it.new ? '<span class="work-new-badge">Új</span>' : '') +
               (it.tag ? '<div class="work-tag">' + escH(it.tag) + '</div>' : '') +
               '<h3>' + escH(it.title) + '</h3>' +
               '<p>' + escH(it.description || '') + '</p>' +

@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -138,6 +138,9 @@ function migrate(PDO $pdo) {
     // v5: arany szegély oszlop a referenciákhoz (ha még nincs)
     try { $pdo->exec("ALTER TABLE refs ADD COLUMN gold TINYINT NOT NULL DEFAULT 0"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v9: „új" jelölő oszlop a referenciákhoz (zöld keret + pecsét)
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN is_new TINYINT NOT NULL DEFAULT 0"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
@@ -258,6 +261,7 @@ function create_schema(PDO $pdo) {
     info VARCHAR(160) DEFAULT '',
     url VARCHAR(300) DEFAULT '',
     gold TINYINT NOT NULL DEFAULT 0,
+    is_new TINYINT NOT NULL DEFAULT 0,
     sort INT NOT NULL DEFAULT 0
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
@@ -998,7 +1002,7 @@ function clean_url($u) {
 function insert_reference(PDO $pdo, array $r, $sort = 0) {
   $id = (string)($r['id'] ?? '');
   if ($id === '') $id = 'r' . uniqid();
-  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,gold,sort) VALUES (?,?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,gold,is_new,sort) VALUES (?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($r['tag'] ?? ''), 0, 60),
@@ -1008,6 +1012,7 @@ function insert_reference(PDO $pdo, array $r, $sort = 0) {
     mb_substr((string)($r['info'] ?? ''), 0, 160),
     clean_url($r['url'] ?? ''),
     !empty($r['gold']) ? 1 : 0,
+    !empty($r['new']) ? 1 : 0,
     (int)$sort,
   ]);
   return $id;
@@ -1018,6 +1023,7 @@ function map_reference($r) {
     'description' => $r['description'], 'details' => $r['details'],
     'info' => $r['info'], 'url' => $r['url'],
     'gold' => !empty($r['gold']),
+    'new' => !empty($r['is_new']),
   ];
 }
 function get_references(PDO $pdo) {

@@ -475,7 +475,7 @@
       row.className = 'news-admin-row';
       row.innerHTML =
         '<div class="news-admin-info">' +
-          '<span class="news-admin-title">' + (r.gold ? '✨ ' : '') + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
+          '<span class="news-admin-title">' + (r.new ? '🆕 ' : '') + (r.gold ? '✨ ' : '') + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
           '<span class="news-admin-date">' + escAttr(r.tag || '—') + (r.info ? ' · ' + escAttr(r.info) : '') + '</span>' +
         '</div>' +
         '<div class="pa-actions">' +
@@ -500,6 +500,7 @@
     $('#r-info').value = r ? (r.info || '') : '';
     $('#r-url').value = r ? (r.url || '') : '';
     $('#r-gold').checked = r ? !!r.gold : false;
+    $('#r-new').checked = r ? !!r.new : false;
     $('#reference-modal-err').textContent = '';
     $('#reference-modal').hidden = false;
     setTimeout(function () { $('#r-title').focus(); }, 30);
@@ -514,7 +515,7 @@
     var payload = {
       title: title, tag: $('#r-tag').value.trim(), description: $('#r-description').value.trim(),
       details: $('#r-details').value.trim(), info: $('#r-info').value.trim(), url: $('#r-url').value.trim(),
-      gold: $('#r-gold').checked
+      gold: $('#r-gold').checked, new: $('#r-new').checked
     };
     var id = $('#r-id').value;
     var btn = $('#reference-modal-save'); btn.disabled = true;

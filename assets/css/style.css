@@ -797,6 +797,34 @@ code { font-family: var(--mono); }
 .work-card.work-gold:hover { border-color: #ffd86b; box-shadow: 0 0 0 1px rgba(245, 196, 81, .5), 0 26px 56px -24px rgba(245, 166, 35, .8); }
 .work-card.work-gold .work-tag { color: #f5c451; border-color: rgba(245, 196, 81, .5); }
 
+/* „új" referencia — zöld szegély + sarokpecsét */
+.work-card.work-new {
+  position: relative;
+  border: 1.5px solid var(--accent-3, #00ffa3);
+  box-shadow: 0 0 0 1px rgba(0, 255, 163, .3), 0 22px 50px -26px rgba(0, 255, 163, .6);
+}
+.work-card.work-new:hover {
+  border-color: var(--accent-3, #00ffa3);
+  box-shadow: 0 0 0 1px rgba(0, 255, 163, .5), 0 26px 56px -24px rgba(0, 255, 163, .8);
+}
+.work-new-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  padding: 4px 11px;
+  font-family: var(--mono);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #04150e;
+  background: var(--accent-3, #00ffa3);
+  border-radius: 999px;
+  box-shadow: 0 2px 12px -2px rgba(0, 255, 163, .7);
+  transform: rotate(3deg);
+}
+
 .work-card.clickable { cursor: pointer; }
 .work-card.clickable::after {
   content: "Részletek →";
