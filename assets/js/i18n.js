@@ -544,7 +544,55 @@
     // ---- Süti sáv (ha megjelenik) ----
     'Sütiket használunk': 'We use cookies',
     'Elfogadom': 'Accept',
-    'Elutasítom': 'Decline'
+    'Elutasítom': 'Decline',
+
+    // ---- ARIA-feliratok / címkék (akadálymentesség) ----
+    'Luiz-Tech főoldal': 'Luiz-Tech home',
+    'Fő navigáció': 'Main navigation',
+    'Menü megnyitása': 'Open menu',
+    'Webshop navigáció': 'Webshop navigation',
+    'Garanciák és előnyök': 'Guarantees and benefits',
+    'Kategóriák': 'Categories',
+    'Admin felület': 'Admin panel',
+    'vadmester.hu élő előnézet': 'vadmester.hu live preview',
+    'vadmester.hu megnyitása új lapon': 'Open vadmester.hu in a new tab',
+
+    // ---- Marquee címkék / egyéb ----
+    'Hálózat': 'Network',
+    'Adatmentés': 'Data backup',
+    '2024. május': 'May 2024',
+
+    // ---- Kapcsolat ----
+    'Írd le pár mondatban, miben segíthetünk.': 'Describe in a few sentences how we can help.',
+    '12 órán belül': 'within 12 hours',
+    'válaszolunk, kötelezettség nélkül.': "we'll reply, with no obligation.",
+
+    // ---- Vélemény (testimonial) ----
+    '„A kivételes szolgáltatás minőségét emelném ki. Az új weboldal modern, felhasználóbarát és gyönyörűen megtervezett lett — tökéletesen tükrözi a vállalkozásunk stílusát és kínálatát.”':
+      'I’d highlight the exceptional quality of service. The new website turned out modern, user-friendly and beautifully designed — it perfectly reflects our company’s style and offering.',
+    '— Elégedett ügyfél, weboldal projekt': '— Happy client, website project',
+
+    // ---- Lábléc ----
+    'Luiz-Tech. Minden jog fenntartva.': 'Luiz-Tech. All rights reserved.',
+    '· Készült ❤️-vel és': '· Made with ❤️ and',
+    '-vel': '',
+
+    // ---- Jogi oldalak közös navigáció ----
+    '← Vissza a főoldalra': '← Back to home',
+
+    // ---- Hiányzó státuszok / fiók ----
+    'Nyitott': 'Open',
+    'Megoldva': 'Resolved',
+    'Belépés / Regisztráció': 'Sign in / Register',
+
+    // ---- Kuponok (pénztár) ----
+    'Érvénytelen kupon.': 'Invalid coupon.',
+    'Add meg a kuponkódot.': 'Enter the coupon code.',
+    'Ismeretlen kuponkód.': 'Unknown coupon code.',
+    'Ez a kupon nem aktív.': 'This coupon is not active.',
+    'Ez a kupon lejárt.': 'This coupon has expired.',
+    'Ezt a kupont már elhasználták.': 'This coupon has already been used.',
+    'Ez a kupon nem alkalmazható erre a kosárra.': 'This coupon cannot be applied to this cart.'
   };
 
   // Dinamikus, értékkel összefűzött szövegek eleje (prefix) → angol
@@ -552,6 +600,7 @@
     ['Készleten:', 'In stock:'],
     ['Utolsó', 'Only'],
     ['Köszönjük a rendelést! Azonosító:', 'Thank you for your order! ID:'],
+    ['✓ Kupon beváltva:', '✓ Coupon applied:'],
     ['Üdv,', 'Hi,'],
     ['Fiókom —', 'My account —'],
     ['Fiókom – ', 'My account – ']
@@ -563,7 +612,8 @@
   // Mintázatos (számot tartalmazó) szövegek
   var REGEX = [
     [/^Utolsó\s+(\d+)\s+db$/, 'Only $1 left'],
-    [/^Készleten:\s*(\d+)\s+db$/, 'In stock: $1 pcs']
+    [/^Készleten:\s*(\d+)\s+db$/, 'In stock: $1 pcs'],
+    [/^A kupon\s+(\d+)\s+Ft feletti rendeléshez érvényes\.$/, 'The coupon is valid for orders over $1 Ft.']
   ];
 
   function translateString(s) {
