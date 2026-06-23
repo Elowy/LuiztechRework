@@ -229,7 +229,7 @@
       var row = document.createElement('div');
       row.className = 'product-admin-row';
       row.innerHTML =
-        '<span class="pa-emoji">' + (p.image ? '<img src="' + escAttr(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
+        '<span class="pa-emoji">' + (p.image ? '<img src="' + escAttr(p.image) + '" alt="">' : escAttr(p.emoji || '📦')) + '</span>' +
         '<div class="pa-info"><span class="pa-name">' + escAttr(p.name) + '</span>' +
         '<span class="pa-meta">' + escAttr(p.category || '—') + ' · ' +
           (S.isOnSale(p)

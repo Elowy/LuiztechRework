@@ -88,7 +88,7 @@
     const img = document.querySelector('.owner-photo');
     if (!img) return;
     const orig = img.getAttribute('src');
-    const alt = 'assets/img/owner-alt.png?v=31';
+    const alt = 'assets/img/owner-alt.png?v=57';
     let ready = false, showingAlt = false, busy = false, autoDone = false, timer = null;
     const pre = new Image();
     pre.onload = function () { ready = true; img.style.cursor = 'pointer'; img.setAttribute('title', '👁'); armAuto(); };

@@ -120,7 +120,7 @@
       card.className = 'shop-product reveal in';
       var media = p.image
         ? '<img class="shop-product-img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy">'
-        : '<span class="shop-product-emoji">' + (p.emoji || '📦') + '</span>';
+        : '<span class="shop-product-emoji">' + esc(p.emoji || '📦') + '</span>';
       var soldOut = p.stock === 0;
       var lowStock = p.stock != null && p.stock > 0 && p.stock <= 5;
       var onSale = S.isOnSale(p);
@@ -170,7 +170,7 @@
     if (!p) return;
     var media = p.image
       ? '<img class="qv-img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '">'
-      : '<span class="qv-emoji">' + (p.emoji || '📦') + '</span>';
+      : '<span class="qv-emoji">' + esc(p.emoji || '📦') + '</span>';
     var soldOut = p.stock === 0;
     var stockNote = p.stock == null ? ''
       : (soldOut ? '<span class="qv-stock sold">Elfogyott</span>'
@@ -271,7 +271,7 @@
       var row = document.createElement('div');
       row.className = 'cart-row';
       row.innerHTML =
-        '<span class="cart-row-emoji">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : (p.emoji || '📦')) + '</span>' +
+        '<span class="cart-row-emoji">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : esc(p.emoji || '📦')) + '</span>' +
         '<div class="cart-row-info">' +
           '<span class="cart-row-name">' + esc(p.name) + '</span>' +
           '<span class="cart-row-price">' + (S.isOnSale(p)
