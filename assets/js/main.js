@@ -886,9 +886,30 @@
     if (document.body.classList.contains('admin-body')) return; // admin eszköz: kihagyjuk
     const KEY = 'luiztech_cookie_consent_v1';
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+    let analyticsLoaded = false;
+    const loadAnalytics = () => {
+      if (analyticsLoaded) return;
+      analyticsLoaded = true;
+      // a GA4 mérési azonosító az admin beállításból (publikus /shop config)
+      fetch('/api/shop', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((cfg) => {
+          const id = cfg && cfg.gaMeasurementId ? String(cfg.gaMeasurementId).trim() : '';
+          if (!/^G-[A-Z0-9]{4,}$/i.test(id)) { analyticsLoaded = false; return; }
+          const s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+          document.head.appendChild(s);
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () { window.dataLayer.push(arguments); };
+          window.gtag('js', new Date());
+          window.gtag('config', id, { anonymize_ip: true });
+        })
+        .catch(() => { analyticsLoaded = false; });
+    };
     const apply = (c) => {
-      // Itt lehet később feltételesen betölteni statisztikai/marketing szkripteket:
-      // if (c.analytics) { /* pl. analytics betöltése */ }
+      // statisztikai sütik csak hozzájárulás esetén (GDPR)
+      if (c && c.analytics) loadAnalytics();
     };
     const save = (c) => {
       c.ts = new Date().toISOString();

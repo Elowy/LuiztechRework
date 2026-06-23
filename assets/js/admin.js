@@ -122,6 +122,7 @@
     setVal('#f-currency', cfg.currency);
     setVal('#f-metaTitle', cfg.metaTitle);
     setVal('#f-metaDescription', cfg.metaDescription);
+    setVal('#f-gaId', cfg.gaMeasurementId);
     setVal('#f-notifyEmail', cfg.notifyEmail);
     setVal('#f-contactPhone', cfg.contactPhone);
     setVal('#f-contactViber', cfg.contactViber);
@@ -171,7 +172,7 @@
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
   // Mentendő-jelzés a kapcsolati / értesítési mezőkre is (mentéskor a DOM-ból olvassuk ki)
-  ['#f-notifyEmail', '#f-metaTitle', '#f-metaDescription', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
+  ['#f-notifyEmail', '#f-metaTitle', '#f-metaDescription', '#f-gaId', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
     var el = $(sel); if (el) el.addEventListener('input', markDirty);
   });
   var bttEl = $('#f-backToTop'); if (bttEl) bttEl.addEventListener('change', markDirty);
@@ -353,6 +354,7 @@
     cfg.currency = $('#f-currency').value || 'Ft';
     cfg.metaTitle = $('#f-metaTitle').value.trim();
     cfg.metaDescription = $('#f-metaDescription').value.trim();
+    cfg.gaMeasurementId = $('#f-gaId').value.trim();
     cfg.notifyEmail = $('#f-notifyEmail').value.trim();
     cfg.contactPhone = $('#f-contactPhone').value.trim();
     cfg.contactViber = $('#f-contactViber').value.trim();

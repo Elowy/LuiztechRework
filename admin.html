@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=56" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=56" />
+  <link rel="stylesheet" href="assets/css/style.css?v=57" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=57" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -142,6 +142,13 @@
           <div class="field">
             <label for="f-metaDescription">Leírás (meta description)</label>
             <textarea id="f-metaDescription" rows="2" maxlength="180" placeholder="Rövid, vonzó leírás a keresőtalálathoz (max. ~160 karakter)."></textarea>
+          </div>
+
+          <h3 class="admin-subh">Google Analytics (látogatottság-mérés)</h3>
+          <p class="admin-desc">Add meg a GA4 mérési azonosítót (Measurement ID, pl. <code>G-XXXXXXXXXX</code>). Üresen hagyva nincs mérés. A statisztikai sütik csak a látogató süti-hozzájárulása után töltődnek be.</p>
+          <div class="field">
+            <label for="f-gaId">GA4 mérési azonosító</label>
+            <input type="text" id="f-gaId" maxlength="24" placeholder="G-XXXXXXXXXX" autocomplete="off" spellcheck="false" />
           </div>
 
           <h3 class="admin-subh">Lebegő kapcsolat-gombok (jobb alsó sarok)</h3>
@@ -602,8 +609,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=56"></script>
-  <script src="assets/js/admin.js?v=56" defer></script>
-  <script src="assets/js/main.js?v=56" defer></script>
+  <script src="assets/js/shop-config.js?v=57"></script>
+  <script src="assets/js/admin.js?v=57" defer></script>
+  <script src="assets/js/main.js?v=57" defer></script>
 </body>
 </html>

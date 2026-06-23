@@ -41,6 +41,7 @@ const DEFAULT_CONFIG = [
   'backToTop' => '1',
   'metaTitle' => '',
   'metaDescription' => '',
+  'gaMeasurementId' => '',
   'szamlazzAgentKey' => '',
   'stripeSecretKey' => '',
 ];
@@ -73,7 +74,7 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','metaTitle','metaDescription','szamlazzAgentKey','stripeSecretKey'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','metaTitle','metaDescription','gaMeasurementId','szamlazzAgentKey','stripeSecretKey'];
 // Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
 // és üres értékkel nem írjuk felül a meglévőt.
 const SECRET_CONFIG = ['szamlazzAgentKey','stripeSecretKey'];
