@@ -186,11 +186,15 @@
         '<span class="qv-qnum" id="qv-qnum">1</span>' +
         '<button type="button" class="qv-step" id="qv-plus" aria-label="Több">+</button></div>' +
         '<button class="btn btn-primary btn-block" id="qv-add">Kosárba</button>';
+    var longHtml = (p.longDesc && p.longDesc.trim())
+      ? '<div class="qv-longdesc">' + esc(p.longDesc).replace(/\r?\n/g, '<br>') + '</div>'
+      : '';
     $('#qv-body').innerHTML =
       '<div class="qv-media">' + media + (p.category ? '<span class="shop-product-cat">' + esc(p.category) + '</span>' : '') + '</div>' +
       '<div class="qv-info">' +
         '<h3 class="qv-title">' + esc(p.name) + '</h3>' +
         '<p class="qv-desc">' + esc(p.desc || '') + '</p>' +
+        longHtml +
         stockNote +
         priceHtml +
         actions +

@@ -110,7 +110,7 @@
     }
     img.addEventListener('click', runGlitch);
 
-    // Automatikus váltás: ha a fotó látszik, 10 mp után egyszer átvált.
+    // Automatikus váltás: ha a fotó látszik, 1,5 mp után egyszer átvált.
     function armAuto() {
       if (autoDone || prefersReduced || !('IntersectionObserver' in window)) return;
       const io = new IntersectionObserver(function (entries) {
@@ -120,7 +120,7 @@
             timer = setTimeout(function () {
               timer = null;
               if (!autoDone && !showingAlt) { autoDone = true; runGlitch(); io.disconnect(); }
-            }, 10000);
+            }, 1500);
           } else if (timer) {
             clearTimeout(timer); timer = null;   // elgörgetett → újraindul, ha visszajön
           }

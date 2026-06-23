@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -52,6 +52,16 @@ const DEFAULT_PRODUCTS = [
   ['id'=>'p4','name'=>'Adatmentési megoldás','desc'=>'Automatikus, ütemezett biztonsági mentés beüzemelve.','price'=>59000,'category'=>'Üzemeltetés','emoji'=>'💾','image'=>'','stock'=>null],
   ['id'=>'p5','name'=>'Hálózat optimalizálás','desc'=>'Wi-Fi és vezetékes hálózat felmérése és hangolása.','price'=>69000,'category'=>'Üzemeltetés','emoji'=>'📡','image'=>'','stock'=>null],
   ['id'=>'p6','name'=>'SEO indító csomag','desc'=>'Keresőoptimalizálás, technikai audit és kulcsszókutatás.','price'=>79000,'category'=>'Marketing','emoji'=>'📈','image'=>'','stock'=>null,'salePrice'=>59000],
+];
+
+// Hosszú leírások termék-név szerint (alapértelmezett termékekhez + meglévők backfilljéhez)
+const DEFAULT_LONG_DESCR = [
+  'Webfejlesztői csomag' => 'Modern, reszponzív weboldal a koncepciótól az élesítésig. Egyedi dizájn, mobilbarát megjelenés, villámgyors betöltés és SEO-barát felépítés. A csomag tartalmazza a tervezést, a fejlesztést, a tartalomfeltöltést és az éles indítást — átlátható folyamattal és gyors átfutással. Az eredmény egy weboldal, amely magáért beszél, és valódi érdeklődőket hoz.',
+  'Webshop indító csomag' => 'Teljes e-commerce megoldás kulcsrakészen: termékkatalógus, kosár, biztonságos online bankkártyás fizetés (Stripe), rendeléskezelés és automatikus számlázás. Reszponzív, gyors és könnyen bővíthető webshop, amely az első naptól értékesítésre kész. Beüzemeljük, betanítjuk a kezelését, és melletted állunk az induláskor is.',
+  'Kiberbiztonsági audit' => 'Átfogó sérülékenység-vizsgálat a rendszereiden: hálózat, weboldal és infrastruktúra ellenőrzése valós támadói szemmel. Részletes, érthető biztonsági jelentést kapsz a feltárt kockázatokról és a javasolt lépésekről, fontossági sorrendben — hogy a támadók előtt te lépj. Kérésre a javításban is segítünk.',
+  'Adatmentési megoldás' => 'Automatikus, ütemezett biztonsági mentés beüzemelve, hogy az adataid soha ne vesszenek el. Titkosított tárolás, rendszeres ellenőrzés és gyors, tesztelt helyreállítás. Beállítjuk, leteszteljük és átadjuk — neked már csak annyi a dolgod, hogy nyugodt legyél. Egy váratlan hiba vagy zsarolóvírus többé nem viheti el a munkádat.',
+  'Hálózat optimalizálás' => 'Wi-Fi és vezetékes hálózat teljes felmérése és hangolása: lefedettség, sebesség és stabilitás javítása. Megszüntetjük a holttereket és a szakadozást, optimalizáljuk az eszközöket és a beállításokat — gyorsabb, megbízhatóbb hálózat az egész irodában vagy otthonban. A végén átlátható dokumentációt és javaslatokat is kapsz.',
+  'SEO indító csomag' => 'Keresőoptimalizálás, amely valódi forgalmat hoz: technikai audit, kulcsszókutatás és on-page optimalizálás egy csomagban. Feltárjuk a növekedési lehetőségeket, kijavítjuk a technikai hibákat, és konkrét, mérhető lépéseket teszünk a jobb Google-helyezésekért. Átlátható riportot adunk arról, hol tartasz és merre érdemes tovább haladni.',
 ];
 
 const DEFAULT_REFERENCES = [
@@ -141,6 +151,10 @@ function migrate(PDO $pdo) {
     // v9: „új" jelölő oszlop a referenciákhoz (zöld keret + pecsét)
     try { $pdo->exec("ALTER TABLE refs ADD COLUMN is_new TINYINT NOT NULL DEFAULT 0"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v10: hosszú leírás oszlop a termékekhez + backfill a meglévő (alapértelmezett nevű) termékekhez
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN long_descr TEXT NULL AFTER descr"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    backfill_long_descr($pdo);
     // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
@@ -187,6 +201,7 @@ function create_schema(PDO $pdo) {
     id VARCHAR(40) PRIMARY KEY,
     name VARCHAR(160) NOT NULL,
     descr VARCHAR(600) DEFAULT '',
+    long_descr TEXT NULL,
     price INT NOT NULL DEFAULT 0,
     category VARCHAR(60) DEFAULT '',
     emoji VARCHAR(16) DEFAULT '📦',
@@ -316,6 +331,7 @@ function seed_defaults(PDO $pdo) {
     foreach (DEFAULT_PRODUCTS as $p) {
       insert_product($pdo, $p, $i++);
     }
+    backfill_long_descr($pdo);
   }
   // references
   $cnt = (int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'];
@@ -395,6 +411,7 @@ function reset_all(PDO $pdo) {
   foreach (DEFAULT_CONFIG as $k => $v) $stmt->execute([$k, (string)$v]);
   $i = 0;
   foreach (DEFAULT_PRODUCTS as $p) insert_product($pdo, $p, $i++);
+  backfill_long_descr($pdo);
   return get_config_with_products($pdo);
 }
 
@@ -422,16 +439,24 @@ function clean_image($img) {
   if ($img !== '' && !preg_match('#^(/uploads/|https?://)#', $img)) return '';
   return $img;
 }
+// Hosszú leírás kitöltése a meglévő, alapértelmezett nevű termékekhez (csak ha még üres)
+function backfill_long_descr(PDO $pdo) {
+  try {
+    $bf = $pdo->prepare("UPDATE products SET long_descr = ? WHERE name = ? AND (long_descr IS NULL OR long_descr = '')");
+    foreach (DEFAULT_LONG_DESCR as $pname => $ldesc) $bf->execute([$ldesc, $pname]);
+  } catch (Throwable $e) { /* nem blokkoló */ }
+}
 function insert_product(PDO $pdo, array $p, $sort = 0) {
   $id = (string)($p['id'] ?? '');
   if ($id === '') $id = 'p' . uniqid();
   $price = max(0, (int)($p['price'] ?? 0));
-  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,price,category,emoji,image,stock,sale_price,sort)
-    VALUES (?,?,?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,long_descr,price,category,emoji,image,stock,sale_price,sort)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($p['name'] ?? ''), 0, 160),
     mb_substr((string)($p['desc'] ?? ''), 0, 600),
+    mb_substr((string)($p['longDesc'] ?? ''), 0, 4000),
     $price,
     mb_substr((string)($p['category'] ?? ''), 0, 60),
     mb_substr((string)($p['emoji'] ?? '📦'), 0, 16),
@@ -446,6 +471,7 @@ function map_product($r) {
     'id' => $r['id'],
     'name' => $r['name'],
     'desc' => $r['descr'],
+    'longDesc' => $r['long_descr'] ?? '',
     'price' => (int)$r['price'],
     'category' => $r['category'],
     'emoji' => $r['emoji'],
