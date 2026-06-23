@@ -518,3 +518,77 @@
   .admin-content { padding: 24px 20px; }
   .field-row { flex-direction: column; gap: 0; }
 }
+
+/* ============================================================
+   Admin bővítések — eszköztár, vásárlók, kuponok, tétel-bontás
+   ============================================================ */
+.admin-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
+.admin-toolbar-select, .admin-toolbar-search {
+  padding: 9px 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .9rem;
+}
+.admin-toolbar-search { flex: 1; min-width: 180px; }
+.admin-toolbar-select:focus, .admin-toolbar-search:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* tétel-bontás a rendelés-kártyán */
+.order-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.order-line { display: flex; justify-content: space-between; gap: 12px; font-size: .9rem; color: var(--text); }
+.order-line span:last-child { font-family: var(--mono); color: var(--text-muted); white-space: nowrap; }
+.order-line-discount span { color: var(--accent-3, #00ffa3) !important; }
+
+/* vásárló-kártyák */
+.customers-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.customer-card {
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.customer-card:hover { border-color: var(--border-strong); }
+.customer-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.customer-name { font-size: 1rem; }
+.customer-email { font-size: .86rem; color: var(--text-muted); text-decoration: none; }
+.customer-email:hover { color: var(--accent); }
+.customer-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: .82rem; color: var(--text-muted); }
+.customer-stat b { color: var(--text); font-family: var(--mono); }
+
+/* kuponok */
+.coupons-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.coupon-card {
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.coupon-card.coupon-inactive { opacity: .6; }
+.coupon-main { display: flex; align-items: center; gap: 12px; }
+.coupon-code {
+  font-family: var(--mono); font-weight: 700; font-size: 1.02rem; color: var(--accent);
+  letter-spacing: .04em; padding: 3px 10px; background: var(--grad-soft); border-radius: 8px;
+}
+.coupon-meta { font-size: .84rem; color: var(--text-muted); flex: 1; min-width: 160px; }
+.coupon-actions { display: flex; gap: 8px; }
+.coupon-del { color: #ff7a7a; }
+.coupon-form {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 18px;
+}
+.coupon-form-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+@media (max-width: 600px) {
+  .customer-card, .coupon-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .coupon-actions { width: 100%; }
+  .coupon-actions .btn { flex: 1; }
+  .admin-head-actions { width: 100%; }
+}

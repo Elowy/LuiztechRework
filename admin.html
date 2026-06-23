@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=51" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=51" />
+  <link rel="stylesheet" href="assets/css/style.css?v=52" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=52" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -81,6 +81,8 @@
         <button class="admin-tab" data-tab="references">🏆 Referenciák</button>
         <button class="admin-tab" data-tab="faq">❓ GYIK</button>
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
+        <button class="admin-tab" data-tab="customers">👥 Vásárlók</button>
+        <button class="admin-tab" data-tab="coupons">🎟️ Kuponok</button>
         <button class="admin-tab" data-tab="messages">📨 Üzenetek</button>
         <button class="admin-tab" data-tab="support">🎫 Support</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
@@ -129,6 +131,17 @@
           <div class="field">
             <label for="f-notifyEmail">Értesítési e-mail (új üzenet / rendelés / ticket ide jön)</label>
             <input type="email" id="f-notifyEmail" placeholder="info@luiz-tech.hu" />
+          </div>
+
+          <h3 class="admin-subh">SEO — keresőoptimalizálás (webshop)</h3>
+          <p class="admin-desc">A böngésző címsorában és a Google találati listájában megjelenő szövegek. Üresen hagyva az alapértelmezett jelenik meg.</p>
+          <div class="field">
+            <label for="f-metaTitle">Oldal címe (meta title)</label>
+            <input type="text" id="f-metaTitle" maxlength="70" placeholder="Pl. Luiz-Tech Webshop — egyedi IT-megoldások" />
+          </div>
+          <div class="field">
+            <label for="f-metaDescription">Leírás (meta description)</label>
+            <textarea id="f-metaDescription" rows="2" maxlength="180" placeholder="Rövid, vonzó leírás a keresőtalálathoz (max. ~160 karakter)."></textarea>
           </div>
 
           <h3 class="admin-subh">Lebegő kapcsolat-gombok (jobb alsó sarok)</h3>
@@ -287,9 +300,84 @@
               <h2 class="admin-h">Rendelések</h2>
               <p class="admin-desc">A webshopon keresztül beérkezett rendelések.</p>
             </div>
-            <button class="btn btn-ghost btn-sm" id="refresh-orders">⟳ Frissítés</button>
+            <div class="admin-head-actions">
+              <button class="btn btn-ghost btn-sm" id="export-orders">⬇ CSV export</button>
+              <button class="btn btn-ghost btn-sm" id="refresh-orders">⟳ Frissítés</button>
+            </div>
+          </div>
+          <div class="admin-toolbar">
+            <select id="orders-filter-status" class="admin-toolbar-select" aria-label="Szűrés státusz szerint">
+              <option value="">Minden státusz</option>
+            </select>
+            <input type="search" id="orders-search" class="admin-toolbar-search" placeholder="Keresés: azonosító, név, e-mail…" aria-label="Keresés a rendelések közt" />
           </div>
           <div class="orders-list" id="orders-list"></div>
+        </section>
+
+        <!-- CUSTOMERS -->
+        <section class="admin-panel" data-panel="customers">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Vásárlók</h2>
+              <p class="admin-desc">Regisztrált fiókok és rendelési statisztikájuk.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refresh-customers">⟳ Frissítés</button>
+          </div>
+          <div class="admin-toolbar">
+            <input type="search" id="customers-search" class="admin-toolbar-search" placeholder="Keresés: név vagy e-mail…" aria-label="Keresés a vásárlók közt" />
+          </div>
+          <div class="customers-list" id="customers-list"></div>
+        </section>
+
+        <!-- COUPONS -->
+        <section class="admin-panel" data-panel="coupons">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Kuponok</h2>
+              <p class="admin-desc">Kedvezménykódok a webshop pénztárához.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="coupon-new">+ Új kupon</button>
+          </div>
+          <form class="coupon-form" id="coupon-form" hidden>
+            <div class="field-row">
+              <div class="field">
+                <label for="cp-code">Kuponkód</label>
+                <input type="text" id="cp-code" placeholder="pl. NYAR10" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="cp-type">Típus</label>
+                <select id="cp-type">
+                  <option value="percent">Százalékos (%)</option>
+                  <option value="fixed">Fix összeg (Ft)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="cp-value">Érték</label>
+                <input type="number" id="cp-value" min="1" placeholder="10" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="cp-min">Minimum rendelés (Ft, 0 = nincs)</label>
+                <input type="number" id="cp-min" min="0" placeholder="0" />
+              </div>
+              <div class="field">
+                <label for="cp-max">Max. felhasználás (0 = korlátlan)</label>
+                <input type="number" id="cp-max" min="0" placeholder="0" />
+              </div>
+              <div class="field">
+                <label for="cp-expires">Lejárat (opcionális)</label>
+                <input type="date" id="cp-expires" />
+              </div>
+            </div>
+            <label class="consent-row"><input type="checkbox" id="cp-active" checked /> <span>Aktív</span></label>
+            <p class="admin-inline-note" id="coupon-form-note" role="status"></p>
+            <div class="coupon-form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Mentés</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="coupon-cancel">Mégse</button>
+            </div>
+          </form>
+          <div class="coupons-list" id="coupons-list"></div>
         </section>
 
         <!-- MESSAGES -->
@@ -509,8 +597,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=51"></script>
-  <script src="assets/js/admin.js?v=51" defer></script>
-  <script src="assets/js/main.js?v=51" defer></script>
+  <script src="assets/js/shop-config.js?v=52"></script>
+  <script src="assets/js/admin.js?v=52" defer></script>
+  <script src="assets/js/main.js?v=52" defer></script>
 </body>
 </html>

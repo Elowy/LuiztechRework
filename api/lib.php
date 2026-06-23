@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -39,6 +39,8 @@ const DEFAULT_CONFIG = [
   'contactMessenger' => '',
   'contactEmail' => 'info@luiz-tech.hu',
   'backToTop' => '1',
+  'metaTitle' => '',
+  'metaDescription' => '',
   'szamlazzAgentKey' => '',
   'stripeSecretKey' => '',
 ];
@@ -61,7 +63,7 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','szamlazzAgentKey','stripeSecretKey'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','metaTitle','metaDescription','szamlazzAgentKey','stripeSecretKey'];
 // Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
 // és üres értékkel nem írjuk felül a meglévőt.
 const SECRET_CONFIG = ['szamlazzAgentKey','stripeSecretKey'];
@@ -142,6 +144,11 @@ function migrate(PDO $pdo) {
     // v7: Stripe checkout session azonosító a rendelésekhez
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN stripe_session VARCHAR(80) DEFAULT '' AFTER invoice_no"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v8: kupon oszlopok a rendelésekhez (a coupons táblát a create_schema hozza létre)
+    try { $pdo->exec("ALTER TABLE orders ADD COLUMN coupon_code VARCHAR(40) DEFAULT '' AFTER stripe_session"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE orders ADD COLUMN discount INT NOT NULL DEFAULT 0 AFTER coupon_code"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     if ((int)$pdo->query("SELECT COUNT(*) c FROM refs")->fetch()['c'] === 0) {
       $i = 0; foreach (DEFAULT_REFERENCES as $r) insert_reference($pdo, $r, $i++);
     }
@@ -206,6 +213,8 @@ function create_schema(PDO $pdo) {
     status VARCHAR(40) NOT NULL DEFAULT 'Új',
     invoice_no VARCHAR(40) DEFAULT '',
     stripe_session VARCHAR(80) DEFAULT '',
+    coupon_code VARCHAR(40) DEFAULT '',
+    discount INT NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,
     KEY user_id_idx (user_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -218,6 +227,18 @@ function create_schema(PDO $pdo) {
     price INT NOT NULL DEFAULT 0,
     qty INT NOT NULL DEFAULT 1,
     KEY order_id_idx (order_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS coupons (
+    code VARCHAR(40) PRIMARY KEY,
+    type VARCHAR(10) NOT NULL DEFAULT 'percent',
+    value INT NOT NULL DEFAULT 0,
+    min_total INT NOT NULL DEFAULT 0,
+    expires_at DATE NULL,
+    max_uses INT NOT NULL DEFAULT 0,
+    used INT NOT NULL DEFAULT 0,
+    active TINYINT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
   $pdo->exec("CREATE TABLE IF NOT EXISTS news (
@@ -502,6 +523,8 @@ function map_order(PDO $pdo, $row) {
     ],
     'status' => $row['status'],
     'invoiceNo' => $row['invoice_no'] ?? '',
+    'couponCode' => $row['coupon_code'] ?? '',
+    'discount' => (int)($row['discount'] ?? 0),
     'createdAt' => str_replace(' ', 'T', $row['created_at']),
   ];
 }
@@ -544,21 +567,31 @@ function create_order(PDO $pdo, array $payload, $user) {
     return ['error' => 'Név és érvényes e-mail cím megadása kötelező.'];
   }
 
-  $total = 0;
-  foreach ($items as $it) $total += $it['price'] * $it['qty'];
+  $subtotal = 0;
+  foreach ($items as $it) $subtotal += $it['price'] * $it['qty'];
+
+  // Kupon érvényesítése (a backend a hiteles forrás)
+  $couponCode = ''; $discount = 0;
+  $reqCoupon = trim((string)($payload['coupon'] ?? ''));
+  if ($reqCoupon !== '') {
+    $cv = validate_coupon($pdo, $reqCoupon, $subtotal);
+    if (!empty($cv['ok'])) { $couponCode = $cv['code']; $discount = (int)$cv['discount']; }
+    // érvénytelen kupon esetén csendben elhagyjuk (a kosár UI már jelezte)
+  }
+  $total = max(0, $subtotal - $discount);
   $oid = 'ORD-' . strtoupper(substr(uniqid(), -8));
   $now = date('Y-m-d H:i:s');
 
   $pdo->beginTransaction();
   try {
-    $stmt = $pdo->prepare("INSERT INTO orders (id,user_id,cust_name,cust_email,cust_phone,cust_address,cust_note,total,status,created_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO orders (id,user_id,cust_name,cust_email,cust_phone,cust_address,cust_note,total,status,coupon_code,discount,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
       $oid, $user['id'] ?? null, $name, $email,
       mb_substr((string)($c['phone'] ?? ''), 0, 40),
       mb_substr((string)($c['address'] ?? ''), 0, 300),
       mb_substr((string)($c['note'] ?? ''), 0, 500),
-      $total, 'Új', $now,
+      $total, 'Új', $couponCode, $discount, $now,
     ]);
     $ins = $pdo->prepare("INSERT INTO order_items (order_id,product_id,name,price,qty) VALUES (?,?,?,?,?)");
     $dec = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ? AND stock IS NOT NULL");
@@ -571,13 +604,18 @@ function create_order(PDO $pdo, array $payload, $user) {
     $pdo->rollBack();
     return ['error' => 'A rendelés mentése sikertelen.'];
   }
+  // kupon felhasználás-számláló növelése (nem blokkoló)
+  if ($couponCode !== '') {
+    try { $pdo->prepare("UPDATE coupons SET used = used + 1 WHERE code = ?")->execute([$couponCode]); }
+    catch (Throwable $e) { /* nem blokkoló */ }
+  }
   // Stripe: ha be van állítva a titkos kulcs, online bankkártyás fizetési munkamenetet hozunk létre.
   $status = 'Új';
   $checkoutUrl = '';
   $cfgFull = get_config($pdo, true);
   $stripeOn = trim((string)($cfgFull['stripeSecretKey'] ?? '')) !== '';
   if ($stripeOn) {
-    $sess = stripe_create_checkout_session($cfgFull, $oid, $items, $email, site_origin());
+    $sess = stripe_create_checkout_session($cfgFull, $oid, $items, $email, site_origin(), $discount);
     if (!empty($sess['ok'])) {
       $status = 'Fizetésre vár';
       $checkoutUrl = (string)$sess['url'];
@@ -643,7 +681,7 @@ function stripe_currency(array $cfg) {
   if (strpos($c, 'usd') !== false || strpos($c, '$') !== false) return 'usd';
   return 'huf'; // alap: forint (Ft/HUF)
 }
-function stripe_create_checkout_session(array $cfg, $oid, array $items, $email, $origin) {
+function stripe_create_checkout_session(array $cfg, $oid, array $items, $email, $origin, $discount = 0) {
   $key = trim((string)($cfg['stripeSecretKey'] ?? ''));
   if ($key === '') return ['error' => 'Stripe nincs beállítva.'];
   if (!function_exists('curl_init')) return ['error' => 'cURL nem elérhető.'];
@@ -664,6 +702,12 @@ function stripe_create_checkout_session(array $cfg, $oid, array $items, $email, 
     $fields["line_items[$i][quantity]"] = (string)max(1, (int)$it['qty']);
     $i++;
   }
+  // Kupon: egyszer használatos Stripe-kupon a kedvezmény összegével
+  $discount = (int)$discount;
+  if ($discount > 0) {
+    $coupon = stripe_create_once_coupon($key, $cur, $discount);
+    if ($coupon !== '') $fields['discounts[0][coupon]'] = $coupon;
+  }
   $ch = curl_init('https://api.stripe.com/v1/checkout/sessions');
   curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
@@ -683,6 +727,30 @@ function stripe_create_checkout_session(array $cfg, $oid, array $items, $email, 
     return ['ok' => true, 'url' => $data['url'], 'id' => $data['id'] ?? ''];
   }
   return ['error' => 'Stripe hiba: ' . (isset($data['error']['message']) ? $data['error']['message'] : ('HTTP ' . $code))];
+}
+// Egyszer használatos Stripe-kupon (fix összegű kedvezmény). Visszaadja a coupon id-t, vagy ''-t.
+function stripe_create_once_coupon($key, $currency, $amount) {
+  $ch = curl_init('https://api.stripe.com/v1/coupons');
+  curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => http_build_query([
+      'amount_off' => (string)((int)$amount * 100),
+      'currency' => $currency,
+      'duration' => 'once',
+      'max_redemptions' => '1',
+      'name' => 'Kupon',
+    ]),
+    CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key],
+    CURLOPT_TIMEOUT => 15,
+    CURLOPT_CONNECTTIMEOUT => 10,
+  ]);
+  $resp = curl_exec($ch);
+  $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+  if ($resp === false) return '';
+  $d = json_decode($resp, true);
+  return ($code >= 200 && $code < 300 && !empty($d['id'])) ? (string)$d['id'] : '';
 }
 // Sikeres fizetés megerősítése: lekérjük a Checkout Session-t, és ha kifizetett,
 // kifizetettre állítjuk a rendelést + kiállítjuk a számlát.
@@ -728,6 +796,101 @@ function stripe_confirm(PDO $pdo, $oid, $sessionId) {
     "Vevő: {$order['cust_name']} <{$order['cust_email']}>\n" .
     ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : ''));
   return ['ok' => true, 'status' => 'Fizetve', 'id' => $oid, 'invoiceNo' => $invoiceNo];
+}
+
+/* ============================================================
+   Vásárlók (regisztrált fiókok + rendelési statisztika)
+   ============================================================ */
+function list_customers(PDO $pdo) {
+  $rows = $pdo->query("
+    SELECT u.id, u.name, u.email, u.created_at,
+           COUNT(o.id) AS orders_count,
+           COALESCE(SUM(CASE WHEN o.status IN ('Teljesítve','Fizetve') THEN o.total ELSE 0 END), 0) AS spent,
+           MAX(o.created_at) AS last_order
+    FROM users u
+    LEFT JOIN orders o ON o.user_id = u.id
+    GROUP BY u.id, u.name, u.email, u.created_at
+    ORDER BY u.created_at DESC
+  ")->fetchAll();
+  return array_map(function ($r) {
+    return [
+      'id' => $r['id'], 'name' => $r['name'], 'email' => $r['email'],
+      'createdAt' => str_replace(' ', 'T', $r['created_at']),
+      'orders' => (int)$r['orders_count'],
+      'spent' => (int)$r['spent'],
+      'lastOrder' => $r['last_order'] ? str_replace(' ', 'T', $r['last_order']) : '',
+    ];
+  }, $rows);
+}
+
+/* ============================================================
+   Kuponok / kedvezménykódok
+   ============================================================ */
+function map_coupon($r) {
+  return [
+    'code' => $r['code'],
+    'type' => $r['type'],
+    'value' => (int)$r['value'],
+    'minTotal' => (int)$r['min_total'],
+    'expiresAt' => $r['expires_at'] ?: '',
+    'maxUses' => (int)$r['max_uses'],
+    'used' => (int)$r['used'],
+    'active' => (int)$r['active'] === 1,
+  ];
+}
+function list_coupons(PDO $pdo) {
+  $rows = $pdo->query("SELECT * FROM coupons ORDER BY created_at DESC")->fetchAll();
+  return array_map('map_coupon', $rows);
+}
+function save_coupon(PDO $pdo, array $b) {
+  $code = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', (string)($b['code'] ?? '')));
+  if ($code === '') return ['error' => 'A kuponkód megadása kötelező (csak betű, szám, - és _).'];
+  $type = ($b['type'] ?? 'percent') === 'fixed' ? 'fixed' : 'percent';
+  $value = max(0, (int)round((float)($b['value'] ?? 0)));
+  if ($type === 'percent' && $value > 100) $value = 100;
+  if ($value <= 0) return ['error' => 'A kedvezmény értéke legyen nullánál nagyobb.'];
+  $minTotal = max(0, (int)round((float)($b['minTotal'] ?? 0)));
+  $maxUses = max(0, (int)round((float)($b['maxUses'] ?? 0)));
+  $active = !empty($b['active']) ? 1 : 0;
+  $expires = trim((string)($b['expiresAt'] ?? ''));
+  $expires = preg_match('/^\d{4}-\d{2}-\d{2}$/', $expires) ? $expires : null;
+  $exists = $pdo->prepare("SELECT used FROM coupons WHERE code = ?");
+  $exists->execute([$code]);
+  $row = $exists->fetch();
+  if ($row) {
+    $pdo->prepare("UPDATE coupons SET type=?, value=?, min_total=?, expires_at=?, max_uses=?, active=? WHERE code=?")
+        ->execute([$type, $value, $minTotal, $expires, $maxUses, $active, $code]);
+  } else {
+    $pdo->prepare("INSERT INTO coupons (code,type,value,min_total,expires_at,max_uses,used,active,created_at) VALUES (?,?,?,?,?,?,0,?,?)")
+        ->execute([$code, $type, $value, $minTotal, $expires, $maxUses, $active, date('Y-m-d H:i:s')]);
+  }
+  $g = $pdo->prepare("SELECT * FROM coupons WHERE code = ?");
+  $g->execute([$code]);
+  return ['ok' => true, 'coupon' => map_coupon($g->fetch())];
+}
+function delete_coupon(PDO $pdo, $code) {
+  $pdo->prepare("DELETE FROM coupons WHERE code = ?")->execute([strtoupper((string)$code)]);
+  return ['ok' => true];
+}
+// Kupon ellenőrzése egy adott részösszegre. Visszaadja a kedvezmény összegét (Ft).
+function validate_coupon(PDO $pdo, $code, $subtotal) {
+  $code = strtoupper(preg_replace('/[^A-Za-z0-9_-]/', '', (string)$code));
+  if ($code === '') return ['error' => 'Add meg a kuponkódot.'];
+  $stmt = $pdo->prepare("SELECT * FROM coupons WHERE code = ? LIMIT 1");
+  $stmt->execute([$code]);
+  $c = $stmt->fetch();
+  if (!$c) return ['error' => 'Ismeretlen kuponkód.'];
+  if ((int)$c['active'] !== 1) return ['error' => 'Ez a kupon nem aktív.'];
+  if ($c['expires_at'] && $c['expires_at'] < date('Y-m-d')) return ['error' => 'Ez a kupon lejárt.'];
+  if ((int)$c['max_uses'] > 0 && (int)$c['used'] >= (int)$c['max_uses']) return ['error' => 'Ezt a kupont már elhasználták.'];
+  if ((int)$c['min_total'] > 0 && $subtotal < (int)$c['min_total']) {
+    return ['error' => 'A kupon ' . (int)$c['min_total'] . ' Ft feletti rendeléshez érvényes.'];
+  }
+  $discount = $c['type'] === 'fixed'
+    ? min((int)$c['value'], (int)$subtotal)
+    : (int)floor($subtotal * (int)$c['value'] / 100);
+  if ($discount <= 0) return ['error' => 'Ez a kupon nem alkalmazható erre a kosárra.'];
+  return ['ok' => true, 'code' => $code, 'discount' => $discount, 'type' => $c['type'], 'value' => (int)$c['value']];
 }
 
 /* ---------- Számlázz.hu (Számla Agent) ---------- */

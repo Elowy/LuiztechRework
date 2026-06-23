@@ -11,6 +11,7 @@
 
   var cfg = S.clone(S.DEFAULT_CONFIG);
   var cart = S.getCart();
+  var appliedCoupon = null;   // { code, discount }
   var activeCat = 'all';
   var query = '';
   var sortBy = 'default';
@@ -64,7 +65,13 @@
     setText('#shop-hero-title', cfg.heroTitle);
     setText('#shop-hero-text', cfg.heroText);
     setText('#footer-shop-name', cfg.name);
-    document.title = cfg.name + ' — Webshop';
+    // SEO: egyedi meta cím/leírás (admin → Általános → SEO), egyébként alapértelmezett
+    document.title = (cfg.metaTitle && cfg.metaTitle.trim()) ? cfg.metaTitle.trim() : (cfg.name + ' — Webshop');
+    if (cfg.metaDescription && cfg.metaDescription.trim()) {
+      var md = document.querySelector('meta[name="description"]');
+      if (!md) { md = document.createElement('meta'); md.setAttribute('name', 'description'); document.head.appendChild(md); }
+      md.setAttribute('content', cfg.metaDescription.trim());
+    }
   }
 
   /* ---------- Filters ---------- */
@@ -288,6 +295,12 @@
     $$('.cart-row-remove', wrap).forEach(function (b) {
       b.addEventListener('click', function () { setQty(b.getAttribute('data-remove'), 0); });
     });
+    // a kosár módosítása érvényteleníti az alkalmazott kupont (újra be kell váltani)
+    if (appliedCoupon) {
+      appliedCoupon = null;
+      var cn = $('#co-coupon-note'); if (cn) cn.textContent = '';
+    }
+    if ($('#cart-drawer').classList.contains('checkout-mode')) renderCheckoutSummary();
   }
 
   function openCart() {
@@ -314,8 +327,39 @@
       var line = S.formatPrice(S.effectivePrice(p) * cart[id], cfg);
       rows += '<div class="cosum-row"><span class="cosum-name">' + esc(p.name) + ' ×' + cart[id] + '</span><span>' + line + '</span></div>';
     });
-    box.innerHTML = '<div class="cosum-title">Rendelés áttekintése</div>' + rows +
-      '<div class="cosum-total"><span>Összesen</span><strong>' + S.formatPrice(S.cartTotal(cart, cfg), cfg) + '</strong></div>';
+    var subtotal = S.cartTotal(cart, cfg);
+    var discount = appliedCoupon ? Math.min(appliedCoupon.discount, subtotal) : 0;
+    var discountRow = discount > 0
+      ? '<div class="cosum-row cosum-discount"><span class="cosum-name">🎟️ Kupon (' + esc(appliedCoupon.code) + ')</span><span>−' + S.formatPrice(discount, cfg) + '</span></div>'
+      : '';
+    box.innerHTML = '<div class="cosum-title">Rendelés áttekintése</div>' + rows + discountRow +
+      '<div class="cosum-total"><span>Összesen</span><strong>' + S.formatPrice(subtotal - discount, cfg) + '</strong></div>';
+  }
+  function applyCoupon() {
+    var input = $('#co-coupon');
+    var note = $('#co-coupon-note');
+    if (!input) return;
+    var code = input.value.trim();
+    if (!code) { appliedCoupon = null; renderCheckoutSummary(); note.textContent = ''; return; }
+    var subtotal = S.cartTotal(cart, cfg);
+    note.textContent = 'Ellenőrzés…'; note.className = 'coupon-note';
+    S.validateCoupon(code, subtotal).then(function (res) {
+      if (res && res.ok) {
+        appliedCoupon = { code: res.code, discount: res.discount };
+        note.textContent = '✓ Kupon beváltva: −' + S.formatPrice(res.discount, cfg);
+        note.className = 'coupon-note ok';
+      } else {
+        appliedCoupon = null;
+        note.textContent = (res && res.error) || 'Érvénytelen kupon.';
+        note.className = 'coupon-note err';
+      }
+      renderCheckoutSummary();
+    }).catch(function (err) {
+      appliedCoupon = null;
+      note.textContent = (err && err.message) || 'Érvénytelen kupon.';
+      note.className = 'coupon-note err';
+      renderCheckoutSummary();
+    });
   }
   function enterCheckout() {
     if (!Object.keys(cart).length) return;
@@ -361,6 +405,7 @@
     }
     var payload = {
       items: ids.map(function (id) { return { id: id, qty: cart[id] }; }),
+      coupon: appliedCoupon ? appliedCoupon.code : '',
       customer: {
         name: name, email: email,
         phone: $('#co-phone').value.trim(),
@@ -383,7 +428,9 @@
         (resp.local ? ' (helyi demó)' : '') + '. Hamarosan felvesszük veled a kapcsolatot.';
       note.className = 'cart-note ok';
       cart = {}; S.saveCart(cart);
+      appliedCoupon = null;
       $('#checkout-form').reset();
+      if ($('#co-coupon-note')) $('#co-coupon-note').textContent = '';
       exitCheckout();
       updateCartUI();
       if (currentUser) loadMyOrders();
@@ -625,6 +672,10 @@
     if (contBtn) contBtn.addEventListener('click', closeCart);
     $('#checkout-submit').addEventListener('click', submitOrder);
     $('#checkout-form').addEventListener('submit', function (e) { e.preventDefault(); submitOrder(); });
+    var couponApply = $('#co-coupon-apply');
+    if (couponApply) couponApply.addEventListener('click', applyCoupon);
+    var couponInput = $('#co-coupon');
+    if (couponInput) couponInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } });
 
     renderSkeletons();
     S.getShop().then(function (data) {

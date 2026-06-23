@@ -607,6 +607,27 @@
   font-weight: 700;
 }
 .cosum-total strong { font-family: var(--mono); }
+.cosum-discount span:last-child { color: var(--accent-3); }
+
+/* ---------- Kupon a pénztárban ---------- */
+.coupon-row { display: flex; gap: 8px; margin: 12px 0 4px; }
+.coupon-row input {
+  flex: 1; min-width: 0;
+  padding: 10px 14px;
+  background: var(--bg-3, var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .92rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.coupon-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.coupon-row .btn { white-space: nowrap; }
+.coupon-note { font-size: .82rem; min-height: 1em; margin: 0 0 4px; }
+.coupon-note.ok { color: var(--accent-3); }
+.coupon-note.err { color: #ff7a7a; }
 
 /* ---------- Secure payment note + badges ---------- */
 .cart-secure { margin-top: 16px; text-align: center; }

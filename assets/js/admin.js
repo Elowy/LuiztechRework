@@ -20,6 +20,10 @@
   var faqItems = [];
   var messagesLoaded = false;
   var ticketsLoaded = false;
+  var customersLoaded = false;
+  var customersData = [];
+  var couponsLoaded = false;
+  var ordersData = [];
 
   var PALETTES = [
     { a: '#38e1ff', b: '#6c7bff' }, { a: '#00ffa3', b: '#38e1ff' },
@@ -89,6 +93,8 @@
       $$('.admin-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === name); });
       if (name === 'dashboard') loadDashboard();
       if (name === 'orders' && !ordersLoaded) loadOrders();
+      if (name === 'customers' && !customersLoaded) loadCustomers();
+      if (name === 'coupons' && !couponsLoaded) loadCoupons();
       if (name === 'news' && !newsLoaded) loadNews();
       if (name === 'references' && !refsLoaded) loadReferences();
       if (name === 'faq' && !faqLoaded) loadFaq();
@@ -114,6 +120,8 @@
     setVal('#f-name', cfg.name); setVal('#f-tagline', cfg.tagline);
     setVal('#f-heroTitle', cfg.heroTitle); setVal('#f-heroText', cfg.heroText);
     setVal('#f-currency', cfg.currency);
+    setVal('#f-metaTitle', cfg.metaTitle);
+    setVal('#f-metaDescription', cfg.metaDescription);
     setVal('#f-notifyEmail', cfg.notifyEmail);
     setVal('#f-contactPhone', cfg.contactPhone);
     setVal('#f-contactViber', cfg.contactViber);
@@ -163,7 +171,7 @@
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
   // Mentendő-jelzés a kapcsolati / értesítési mezőkre is (mentéskor a DOM-ból olvassuk ki)
-  ['#f-notifyEmail', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
+  ['#f-notifyEmail', '#f-metaTitle', '#f-metaDescription', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
     var el = $(sel); if (el) el.addEventListener('input', markDirty);
   });
   var bttEl = $('#f-backToTop'); if (bttEl) bttEl.addEventListener('change', markDirty);
@@ -342,6 +350,8 @@
     cfg.heroTitle = $('#f-heroTitle').value;
     cfg.heroText = $('#f-heroText').value;
     cfg.currency = $('#f-currency').value || 'Ft';
+    cfg.metaTitle = $('#f-metaTitle').value.trim();
+    cfg.metaDescription = $('#f-metaDescription').value.trim();
     cfg.notifyEmail = $('#f-notifyEmail').value.trim();
     cfg.contactPhone = $('#f-contactPhone').value.trim();
     cfg.contactViber = $('#f-contactViber').value.trim();
@@ -761,62 +771,254 @@
     wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
     S.getOrders().then(function (data) {
       ordersLoaded = true;
-      var orders = data.orders || [];
+      ordersData = data.orders || [];
       if (data.statuses && data.statuses.length) ORDER_STATUSES = data.statuses;
-      if (!orders.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs beérkezett rendelés.</p>'; return; }
-      wrap.innerHTML = '';
-      orders.forEach(function (o) {
-        var items = (o.items || []).map(function (it) { return escAttr(it.name) + ' ×' + it.qty; }).join(', ');
-        var when = '';
-        try { when = new Date(o.createdAt).toLocaleString('hu-HU'); } catch (e) { when = o.createdAt || ''; }
-        var c = o.customer || {};
-        var contact = [c.name, c.email, c.phone].filter(Boolean).map(escAttr).join(' · ');
-        var status = o.status || 'Új';
-        var opts = ORDER_STATUSES.map(function (s) {
-          return '<option value="' + escAttr(s) + '"' + (s === status ? ' selected' : '') + '>' + escAttr(s) + '</option>';
-        }).join('');
-
-        var card = document.createElement('div');
-        card.className = 'order-card';
-        card.innerHTML =
-          '<div class="order-head">' +
-            '<span class="order-id">' + escAttr(o.id) + '</span>' +
-            '<span class="status-badge ' + statusClass(status) + '" data-badge>' + escAttr(status) + '</span>' +
-            '<strong class="order-total">' + S.formatPrice(o.total, cfg) + '</strong>' +
-          '</div>' +
-          '<div class="order-items">' + items + '</div>' +
-          (contact ? '<div class="order-contact">👤 ' + contact + '</div>' : '') +
-          (c.address ? '<div class="order-contact">📍 ' + escAttr(c.address) + '</div>' : '') +
-          (o.invoiceNo ? '<div class="order-contact">🧾 Számla: ' + escAttr(o.invoiceNo) + '</div>' : '') +
-          (c.note ? '<div class="order-contact">📝 ' + escAttr(c.note) + '</div>' : '') +
-          '<div class="order-meta">' + when + '</div>' +
-          '<div class="order-status-row"><label>Státusz:</label>' +
-            '<select class="order-status-select">' + opts + '</select></div>';
-
-        var sel = card.querySelector('.order-status-select');
-        var badge = card.querySelector('[data-badge]');
-        sel.addEventListener('change', function () {
-          var next = sel.value;
-          sel.disabled = true;
-          S.updateOrderStatus(o.id, next).then(function () {
-            badge.textContent = next;
-            badge.className = 'status-badge ' + statusClass(next);
-            sel.disabled = false;
-          }).catch(function (e) {
-            sel.disabled = false;
-            if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
-            sel.value = status;
-            alert('Nem sikerült frissíteni a státuszt.');
-          });
+      // státusz-szűrő feltöltése
+      var fsel = $('#orders-filter-status');
+      if (fsel && fsel.options.length <= 1) {
+        ORDER_STATUSES.forEach(function (s) {
+          var o = document.createElement('option'); o.value = s; o.textContent = s; fsel.appendChild(o);
         });
-        wrap.appendChild(card);
-      });
+      }
+      renderOrders();
     }).catch(function (e) {
       if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a rendeléseket.</p>';
     });
   }
+  function filteredOrders() {
+    var fstat = ($('#orders-filter-status') || {}).value || '';
+    var q = (($('#orders-search') || {}).value || '').trim().toLowerCase();
+    return ordersData.filter(function (o) {
+      if (fstat && (o.status || 'Új') !== fstat) return false;
+      if (q) {
+        var c = o.customer || {};
+        var hay = [o.id, c.name, c.email, c.phone].filter(Boolean).join(' ').toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderOrders() {
+    var wrap = $('#orders-list');
+    var orders = filteredOrders();
+    if (!ordersData.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs beérkezett rendelés.</p>'; return; }
+    if (!orders.length) { wrap.innerHTML = '<p class="admin-desc">Nincs a szűrésnek megfelelő rendelés.</p>'; return; }
+    wrap.innerHTML = '';
+    orders.forEach(function (o) {
+      var when = '';
+      try { when = new Date(o.createdAt).toLocaleString('hu-HU'); } catch (e) { when = o.createdAt || ''; }
+      var c = o.customer || {};
+      var contact = [c.name, c.email, c.phone].filter(Boolean).map(escAttr).join(' · ');
+      var status = o.status || 'Új';
+      var opts = ORDER_STATUSES.map(function (s) {
+        return '<option value="' + escAttr(s) + '"' + (s === status ? ' selected' : '') + '>' + escAttr(s) + '</option>';
+      }).join('');
+      // részletes tétel-bontás árakkal
+      var rows = (o.items || []).map(function (it) {
+        return '<div class="order-line"><span>' + escAttr(it.name) + ' × ' + it.qty + '</span>' +
+          '<span>' + S.formatPrice((it.price || 0) * (it.qty || 1), cfg) + '</span></div>';
+      }).join('');
+      var discountRow = (o.discount && o.discount > 0)
+        ? '<div class="order-line order-line-discount"><span>🎟️ Kupon' + (o.couponCode ? ' (' + escAttr(o.couponCode) + ')' : '') + '</span><span>−' + S.formatPrice(o.discount, cfg) + '</span></div>'
+        : '';
+
+      var card = document.createElement('div');
+      card.className = 'order-card';
+      card.innerHTML =
+        '<div class="order-head">' +
+          '<span class="order-id">' + escAttr(o.id) + '</span>' +
+          '<span class="status-badge ' + statusClass(status) + '" data-badge>' + escAttr(status) + '</span>' +
+          '<strong class="order-total">' + S.formatPrice(o.total, cfg) + '</strong>' +
+        '</div>' +
+        '<div class="order-lines">' + rows + discountRow + '</div>' +
+        (contact ? '<div class="order-contact">👤 ' + contact + '</div>' : '') +
+        (c.address ? '<div class="order-contact">📍 ' + escAttr(c.address) + '</div>' : '') +
+        (o.invoiceNo ? '<div class="order-contact">🧾 Számla: ' + escAttr(o.invoiceNo) + '</div>' : '') +
+        (c.note ? '<div class="order-contact">📝 ' + escAttr(c.note) + '</div>' : '') +
+        '<div class="order-meta">' + when + '</div>' +
+        '<div class="order-status-row"><label>Státusz:</label>' +
+          '<select class="order-status-select">' + opts + '</select></div>';
+
+      var sel = card.querySelector('.order-status-select');
+      var badge = card.querySelector('[data-badge]');
+      sel.addEventListener('change', function () {
+        var next = sel.value;
+        sel.disabled = true;
+        S.updateOrderStatus(o.id, next).then(function () {
+          o.status = next;
+          badge.textContent = next;
+          badge.className = 'status-badge ' + statusClass(next);
+          sel.disabled = false;
+        }).catch(function (e) {
+          sel.disabled = false;
+          if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
+          sel.value = status;
+          alert('Nem sikerült frissíteni a státuszt.');
+        });
+      });
+      wrap.appendChild(card);
+    });
+  }
+  function exportOrdersCsv() {
+    var orders = filteredOrders();
+    if (!orders.length) { alert('Nincs exportálható rendelés.'); return; }
+    var head = ['Azonosító', 'Dátum', 'Státusz', 'Név', 'E-mail', 'Telefon', 'Cím', 'Tételek', 'Kupon', 'Kedvezmény', 'Végösszeg', 'Számla'];
+    function cell(v) { v = (v == null ? '' : String(v)).replace(/"/g, '""'); return '"' + v + '"'; }
+    var lines = [head.map(cell).join(',')];
+    orders.forEach(function (o) {
+      var c = o.customer || {};
+      var items = (o.items || []).map(function (it) { return it.name + ' x' + it.qty; }).join('; ');
+      var when = ''; try { when = new Date(o.createdAt).toLocaleString('hu-HU'); } catch (e) { when = o.createdAt || ''; }
+      lines.push([o.id, when, o.status || '', c.name || '', c.email || '', c.phone || '', c.address || '',
+        items, o.couponCode || '', o.discount || 0, o.total || 0, o.invoiceNo || ''].map(cell).join(','));
+    });
+    var csv = '﻿' + lines.join('\r\n'); // BOM az Excel ékezetekhez
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rendelesek-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+  }
   $('#refresh-orders').addEventListener('click', loadOrders);
+  $('#export-orders').addEventListener('click', exportOrdersCsv);
+  var ofs = $('#orders-filter-status'); if (ofs) ofs.addEventListener('change', renderOrders);
+  var osr = $('#orders-search'); if (osr) osr.addEventListener('input', renderOrders);
+
+  /* ============================================================
+     VÁSÁRLÓK
+     ============================================================ */
+  function loadCustomers() {
+    var wrap = $('#customers-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getCustomers().then(function (data) {
+      customersLoaded = true;
+      customersData = (data && data.customers) || [];
+      renderCustomers();
+    }).catch(function (e) {
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
+      wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a vásárlókat.</p>';
+    });
+  }
+  function renderCustomers() {
+    var wrap = $('#customers-list');
+    var q = (($('#customers-search') || {}).value || '').trim().toLowerCase();
+    var list = customersData.filter(function (u) {
+      if (!q) return true;
+      return (u.name + ' ' + u.email).toLowerCase().indexOf(q) !== -1;
+    });
+    if (!customersData.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs regisztrált vásárló.</p>'; return; }
+    if (!list.length) { wrap.innerHTML = '<p class="admin-desc">Nincs a keresésnek megfelelő vásárló.</p>'; return; }
+    wrap.innerHTML = '';
+    list.forEach(function (u) {
+      var reg = ''; try { reg = new Date(u.createdAt).toLocaleDateString('hu-HU'); } catch (e) { reg = ''; }
+      var last = ''; if (u.lastOrder) { try { last = new Date(u.lastOrder).toLocaleDateString('hu-HU'); } catch (e) {} }
+      var card = document.createElement('div');
+      card.className = 'customer-card';
+      card.innerHTML =
+        '<div class="customer-main">' +
+          '<strong class="customer-name">' + escAttr(u.name) + '</strong>' +
+          '<a class="customer-email" href="mailto:' + escAttr(u.email) + '">' + escAttr(u.email) + '</a>' +
+        '</div>' +
+        '<div class="customer-stats">' +
+          '<span class="customer-stat"><b>' + u.orders + '</b> rendelés</span>' +
+          '<span class="customer-stat"><b>' + S.formatPrice(u.spent, cfg) + '</b> költés</span>' +
+          '<span class="customer-stat">Reg.: ' + reg + '</span>' +
+          (last ? '<span class="customer-stat">Utolsó: ' + last + '</span>' : '') +
+        '</div>';
+      wrap.appendChild(card);
+    });
+  }
+  var rc = $('#refresh-customers'); if (rc) rc.addEventListener('click', loadCustomers);
+  var cs = $('#customers-search'); if (cs) cs.addEventListener('input', renderCustomers);
+
+  /* ============================================================
+     KUPONOK
+     ============================================================ */
+  var couponsData = [];
+  function loadCoupons() {
+    var wrap = $('#coupons-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getCoupons().then(function (data) {
+      couponsLoaded = true;
+      couponsData = (data && data.coupons) || [];
+      renderCoupons();
+    }).catch(function (e) {
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
+      wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a kuponokat.</p>';
+    });
+  }
+  function couponValueLabel(c) {
+    return c.type === 'fixed' ? S.formatPrice(c.value, cfg) : (c.value + '%');
+  }
+  function renderCoupons() {
+    var wrap = $('#coupons-list');
+    if (!couponsData.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs kupon. Hozz létre egyet a „+ Új kupon" gombbal.</p>'; return; }
+    wrap.innerHTML = '';
+    couponsData.forEach(function (c) {
+      var meta = [];
+      meta.push(couponValueLabel(c) + ' kedvezmény');
+      if (c.minTotal > 0) meta.push('min. ' + S.formatPrice(c.minTotal, cfg));
+      if (c.expiresAt) meta.push('lejár: ' + c.expiresAt);
+      meta.push('felhasználva: ' + c.used + (c.maxUses > 0 ? ' / ' + c.maxUses : ''));
+      var card = document.createElement('div');
+      card.className = 'coupon-card' + (c.active ? '' : ' coupon-inactive');
+      card.innerHTML =
+        '<div class="coupon-main">' +
+          '<span class="coupon-code">' + escAttr(c.code) + '</span>' +
+          '<span class="status-badge ' + (c.active ? 'st-done' : 'st-cancelled') + '">' + (c.active ? 'Aktív' : 'Inaktív') + '</span>' +
+        '</div>' +
+        '<div class="coupon-meta">' + meta.map(escAttr).join(' · ') + '</div>' +
+        '<div class="coupon-actions">' +
+          '<button class="btn btn-ghost btn-sm" data-edit>Szerkesztés</button>' +
+          '<button class="btn btn-ghost btn-sm coupon-del" data-del>Törlés</button>' +
+        '</div>';
+      card.querySelector('[data-edit]').addEventListener('click', function () { openCouponForm(c); });
+      card.querySelector('[data-del]').addEventListener('click', function () {
+        if (!confirm('Biztosan törlöd a(z) "' + c.code + '" kupont?')) return;
+        S.deleteCoupon(c.code).then(loadCoupons).catch(function () { alert('Nem sikerült törölni.'); });
+      });
+      wrap.appendChild(card);
+    });
+  }
+  function openCouponForm(c) {
+    var form = $('#coupon-form');
+    form.hidden = false;
+    setVal('#cp-code', c ? c.code : '');
+    setVal('#cp-type', c ? c.type : 'percent');
+    setVal('#cp-value', c ? c.value : '');
+    setVal('#cp-min', c ? c.minTotal : 0);
+    setVal('#cp-max', c ? c.maxUses : 0);
+    setVal('#cp-expires', c ? c.expiresAt : '');
+    $('#cp-active').checked = c ? !!c.active : true;
+    $('#cp-code').readOnly = !!c;   // meglévő kód nem szerkeszthető (kulcs)
+    $('#coupon-form-note').textContent = '';
+    $('#cp-code').focus();
+  }
+  var cnew = $('#coupon-new'); if (cnew) cnew.addEventListener('click', function () { openCouponForm(null); });
+  var ccancel = $('#coupon-cancel'); if (ccancel) ccancel.addEventListener('click', function () { $('#coupon-form').hidden = true; });
+  var cform = $('#coupon-form');
+  if (cform) cform.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var note = $('#coupon-form-note');
+    var payload = {
+      code: $('#cp-code').value.trim(),
+      type: $('#cp-type').value,
+      value: $('#cp-value').value,
+      minTotal: $('#cp-min').value || 0,
+      maxUses: $('#cp-max').value || 0,
+      expiresAt: $('#cp-expires').value || '',
+      active: $('#cp-active').checked,
+    };
+    S.saveCoupon(payload).then(function () {
+      $('#coupon-form').hidden = true;
+      loadCoupons();
+    }).catch(function (err) {
+      note.textContent = (err && err.message) || 'Nem sikerült menteni a kupont.';
+      note.className = 'admin-inline-note err';
+    });
+  });
 
   /* warn before leaving with unsaved changes */
   window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });

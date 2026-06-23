@@ -100,6 +100,35 @@ if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
   json_out(['ok' => true, 'order' => map_order($pdo, $row->fetch())]);
 }
 
+/* ---- vásárlók ---- */
+if ($method === 'GET' && $route === '/admin/customers') {
+  require_admin($pdo);
+  json_out(['customers' => list_customers($pdo)]);
+}
+
+/* ---- kuponok ---- */
+if ($method === 'GET' && $route === '/admin/coupons') {
+  require_admin($pdo);
+  json_out(['coupons' => list_coupons($pdo)]);
+}
+if ($method === 'POST' && $route === '/admin/coupons') {
+  require_admin($pdo);
+  $res = save_coupon($pdo, body());
+  if (isset($res['error'])) json_error($res['error'], 400);
+  json_out($res);
+}
+if ($method === 'DELETE' && match_route('/admin/coupons/{code}', $route, $params)) {
+  require_admin($pdo);
+  json_out(delete_coupon($pdo, $params[0]));
+}
+// publikus: kupon ellenőrzése a pénztárban (a backend a hiteles forrás a rendeléskor is)
+if ($method === 'POST' && $route === '/coupon/validate') {
+  $b = body();
+  $res = validate_coupon($pdo, (string)($b['code'] ?? ''), (int)round((float)($b['subtotal'] ?? 0)));
+  if (isset($res['error'])) json_error($res['error'], 400);
+  json_out($res);
+}
+
 /* ---- hírek ---- */
 if ($method === 'POST' && $route === '/admin/news') {
   require_admin($pdo);

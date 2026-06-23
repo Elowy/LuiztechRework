@@ -172,6 +172,15 @@
   function updateFaq(id, f) { return api('/api/admin/faq/' + encodeURIComponent(id), { method: 'PUT', body: f }); }
   function deleteFaq(id) { return api('/api/admin/faq/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
+  /* ---------- Customers (admin) ---------- */
+  function getCustomers() { return api('/api/admin/customers').catch(function (e) { if (e.status === 401) throw e; return { customers: [] }; }); }
+
+  /* ---------- Coupons ---------- */
+  function getCoupons() { return api('/api/admin/coupons').catch(function (e) { if (e.status === 401) throw e; return { coupons: [] }; }); }
+  function saveCoupon(c) { return api('/api/admin/coupons', { method: 'POST', body: c }); }
+  function deleteCoupon(code) { return api('/api/admin/coupons/' + encodeURIComponent(code), { method: 'DELETE' }); }
+  function validateCoupon(code, subtotal) { return api('/api/coupon/validate', { method: 'POST', body: { code: code, subtotal: subtotal } }); }
+
   /* ---------- Messages / leads (admin) ---------- */
   function getMessages() { return api('/api/admin/messages').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], messages: [] }; }); }
   function updateMessageStatus(id, status) { return api('/api/admin/messages/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } }); }
@@ -257,6 +266,11 @@
     addFaq: addFaq,
     updateFaq: updateFaq,
     deleteFaq: deleteFaq,
+    getCustomers: getCustomers,
+    getCoupons: getCoupons,
+    saveCoupon: saveCoupon,
+    deleteCoupon: deleteCoupon,
+    validateCoupon: validateCoupon,
     getMessages: getMessages,
     updateMessageStatus: updateMessageStatus,
     deleteMessage: deleteMessage,
