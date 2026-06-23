@@ -316,6 +316,13 @@ function create_schema(PDO $pdo) {
     created_at DATETIME NOT NULL,
     KEY ticket_idx (ticket_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS rate_limits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    rk VARCHAR(190) NOT NULL,
+    ts INT NOT NULL,
+    KEY rk_ts (rk, ts)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 function seed_defaults(PDO $pdo) {
@@ -504,6 +511,49 @@ function start_app_session() {
     'samesite' => 'Lax', 'secure' => $secure,
   ]);
   session_start();
+  // CSRF-token: a session-ben tároljuk, és JS által olvasható sütiben is kiküldjük,
+  // hogy a kliens vissza tudja küldeni X-CSRF-Token fejlécben (double-submit).
+  if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+  }
+  if (($_COOKIE['lt_csrf'] ?? '') !== $_SESSION['csrf']) {
+    setcookie('lt_csrf', $_SESSION['csrf'], [
+      'expires' => $lifetime ? time() + $lifetime : 0,
+      'path' => '/', 'httponly' => false, 'samesite' => 'Lax', 'secure' => $secure,
+    ]);
+  }
+}
+// Állapotváltó kéréseknél kötelező, érvényes CSRF-fejléc ellenőrzése.
+function require_csrf() {
+  $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+  $sess = $_SESSION['csrf'] ?? '';
+  if ($sess === '' || !is_string($sent) || !hash_equals($sess, $sent)) {
+    json_error('Érvénytelen vagy hiányzó biztonsági token. Töltsd újra az oldalt.', 403);
+  }
+}
+/* ---------- Egyszerű IP-alapú rate limit ---------- */
+function client_ip() {
+  $xff = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+  if ($xff !== '') { $p = explode(',', $xff); return trim($p[0]); }
+  return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+// Túllépés esetén 429-cel megszakítja a kérést.
+function rate_limit(PDO $pdo, $action, $maxAttempts, $windowSec) {
+  $rk = $action . ':' . client_ip();
+  $now = time();
+  try {
+    $pdo->prepare("DELETE FROM rate_limits WHERE rk = ? AND ts < ?")
+        ->execute([$rk, $now - $windowSec]);
+    $c = $pdo->prepare("SELECT COUNT(*) FROM rate_limits WHERE rk = ? AND ts > ?");
+    $c->execute([$rk, $now - $windowSec]);
+    if ((int)$c->fetchColumn() >= $maxAttempts) {
+      json_error('Túl sok próbálkozás. Kérlek, próbáld újra később.', 429);
+    }
+    $pdo->prepare("INSERT INTO rate_limits (rk, ts) VALUES (?, ?)")->execute([$rk, $now]);
+  } catch (PDOException $e) {
+    // ha a tábla bármiért nem elérhető, ne blokkoljuk a szolgáltatást
+    error_log('rate_limit: ' . $e->getMessage());
+  }
 }
 // "Maradjak bejelentkezve" beállítása: tartóssá teszi (vagy törli) a session-sütit.
 function set_remember($on) {

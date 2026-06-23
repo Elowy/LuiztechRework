@@ -3,6 +3,27 @@
    Dark developer theme with code-flavoured animations
    ============================================================ */
 
+/* Skip-to-content link (akadálymentesség) — csak fókuszban látszik */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -56px;
+  z-index: 3000;
+  padding: 10px 18px;
+  background: #38e1ff;
+  color: #06121a;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .4);
+  transition: top .18s ease;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 :root {
   --bg: #0a0e17;
   --bg-2: #0d1320;

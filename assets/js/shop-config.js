@@ -42,10 +42,17 @@
 
   /* ---------- API helper ---------- */
   var backendUp = null; // null = unknown, true/false once probed
+  function csrfToken() {
+    var m = document.cookie.match(/(?:^|;\s*)lt_csrf=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
   function api(path, opts) {
     opts = opts || {};
     opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
     opts.credentials = 'same-origin';
+    // CSRF-token minden állapotváltó kérésnél
+    var method = (opts.method || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') opts.headers['X-CSRF-Token'] = csrfToken();
     if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
     return fetch(path, opts).then(function (res) {
       backendUp = true;
@@ -78,14 +85,24 @@
   /* ============================================================
      CART (always client-side)
      ============================================================ */
-  function getCart() { return readJSON(CART_KEY, {}); }
+  function getCart() {
+    // betöltéskor szanáljuk: csak pozitív egész mennyiségek maradnak
+    var raw = readJSON(CART_KEY, {});
+    if (!raw || typeof raw !== 'object') return {};
+    var clean = {};
+    Object.keys(raw).forEach(function (k) {
+      var q = Math.floor(Number(raw[k]));
+      if (isFinite(q) && q > 0) clean[k] = q;
+    });
+    return clean;
+  }
   function saveCart(c) { return writeJSON(CART_KEY, c); }
-  function cartCount(c) { c = c || getCart(); return Object.keys(c).reduce(function (n, k) { return n + c[k]; }, 0); }
+  function cartCount(c) { c = c || getCart(); return Object.keys(c).reduce(function (n, k) { return n + (Number(c[k]) || 0); }, 0); }
   function cartTotal(c, cfg) {
     c = c || getCart();
     var byId = {};
     (cfg && cfg.products ? cfg.products : []).forEach(function (p) { byId[p.id] = p; });
-    return Object.keys(c).reduce(function (s, id) { return s + (byId[id] ? effectivePrice(byId[id]) * c[id] : 0); }, 0);
+    return Object.keys(c).reduce(function (s, id) { return s + (byId[id] ? effectivePrice(byId[id]) * (Number(c[id]) || 0) : 0); }, 0);
   }
 
   /* ============================================================

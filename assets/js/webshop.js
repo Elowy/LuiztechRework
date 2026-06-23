@@ -9,6 +9,39 @@
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
 
+  /* Fókusz-csapda: Tab-bal nem lehet kilépni a nyitott panelből, záráskor a
+     fókusz visszatér a kiváltó elemre. */
+  function makeTrap() {
+    var prev = null, handler = null;
+    var SEL = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    function items(el) {
+      return $$(SEL, el).filter(function (n) { return n.offsetWidth || n.offsetHeight || n === document.activeElement; });
+    }
+    return {
+      on: function (el, first) {
+        if (!el) return;
+        prev = document.activeElement;
+        handler = function (e) {
+          if (e.key !== 'Tab') return;
+          var f = items(el); if (!f.length) return;
+          var a = f[0], b = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+          else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+        };
+        document.addEventListener('keydown', handler, true);
+        var t = first || items(el)[0];
+        if (t) setTimeout(function () { try { t.focus(); } catch (e) {} }, 30);
+      },
+      off: function () {
+        if (handler) document.removeEventListener('keydown', handler, true);
+        handler = null;
+        if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
+        prev = null;
+      }
+    };
+  }
+  var cartTrap = makeTrap(), authTrap = makeTrap(), acctTrap = makeTrap(), qvTrap = makeTrap();
+
   var cfg = S.clone(S.DEFAULT_CONFIG);
   var cart = S.getCart();
   var appliedCoupon = null;   // { code, discount }
@@ -200,6 +233,7 @@
         actions +
       '</div>';
     $('#quickview-modal').hidden = false;
+    qvTrap.on($('#quickview-modal'), $('#qv-close'));
     if (soldOut) return;
     var qty = 1;
     var limit = (p.stock != null) ? p.stock : Infinity;
@@ -209,13 +243,14 @@
     $('#qv-add').addEventListener('click', function () {
       cart[id] = Math.min((cart[id] || 0) + qty, limit);
       S.saveCart(cart); updateCartUI();
-      $('#quickview-modal').hidden = true;
+      closeQuickView();
       openCart();
     });
   }
+  function closeQuickView() { $('#quickview-modal').hidden = true; qvTrap.off(); }
   function initQuickView() {
-    $('#qv-close').addEventListener('click', function () { $('#quickview-modal').hidden = true; });
-    $('#quickview-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+    $('#qv-close').addEventListener('click', closeQuickView);
+    $('#quickview-modal').addEventListener('click', function (e) { if (e.target === this) closeQuickView(); });
   }
 
   /* ---------- Cart ---------- */
@@ -311,12 +346,14 @@
     $('#cart-drawer').classList.add('open');
     $('#cart-drawer').setAttribute('aria-hidden', 'false');
     $('#cart-overlay').hidden = false;
+    cartTrap.on($('#cart-drawer'), $('#cart-close'));
   }
   function closeCart() {
     $('#cart-drawer').classList.remove('open');
     $('#cart-drawer').setAttribute('aria-hidden', 'true');
     $('#cart-overlay').hidden = true;
     exitCheckout();
+    cartTrap.off();
   }
 
   /* ---------- Checkout (2 steps) ---------- */
@@ -470,9 +507,9 @@
   function openAuth(tab) {
     switchAuthTab(tab || 'login');
     $('#auth-modal').hidden = false;
-    setTimeout(function () { var f = $('.auth-form.active input'); if (f) f.focus(); }, 30);
+    authTrap.on($('#auth-modal'), $('.auth-form.active input'));
   }
-  function closeAuth() { $('#auth-modal').hidden = true; }
+  function closeAuth() { $('#auth-modal').hidden = true; authTrap.off(); }
   function switchAuthTab(tab) {
     $$('.auth-tab').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-auth-tab') === tab); });
     $$('.auth-form').forEach(function (f) { f.classList.toggle('active', f.getAttribute('data-auth-form') === tab); });
@@ -520,6 +557,7 @@
     $('#account-drawer').classList.add('open');
     $('#account-drawer').setAttribute('aria-hidden', 'false');
     $('#account-overlay').hidden = false;
+    acctTrap.on($('#account-drawer'), $('#account-close'));
     loadMyOrders();
     loadMyTickets();
   }
@@ -588,6 +626,7 @@
     $('#account-drawer').classList.remove('open');
     $('#account-drawer').setAttribute('aria-hidden', 'true');
     $('#account-overlay').hidden = true;
+    acctTrap.off();
   }
   function loadMyOrders() {
     var wrap = $('#account-orders');
@@ -667,7 +706,7 @@
     $('#cart-btn').addEventListener('click', openCart);
     $('#cart-close').addEventListener('click', closeCart);
     $('#cart-overlay').addEventListener('click', closeCart);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeCart(); $('#quickview-modal').hidden = true; } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeCart(); closeQuickView(); closeAuth(); closeAccount(); } });
     var search = $('#shop-search');
     if (search) search.addEventListener('input', function () { query = search.value; renderProducts(); });
     $('#cart-checkout').addEventListener('click', enterCheckout);

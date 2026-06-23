@@ -13,6 +13,11 @@ $route = '/' . trim($route, '/');
 if ($route === '/') { /* gyökér */ }
 $method = $_SERVER['REQUEST_METHOD'];
 
+/* ---- CSRF: minden állapotváltó (nem GET) kérésnél kötelező az érvényes token ---- */
+if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
+  require_csrf();
+}
+
 /* ---- segéd: route minta illesztés ---- */
 function match_route($pattern, $route, &$params) {
   $regex = '#^' . preg_replace('#\{[^/]+\}#', '([^/]+)', $pattern) . '$#';
@@ -123,6 +128,7 @@ if ($method === 'DELETE' && match_route('/admin/coupons/{code}', $route, $params
 }
 // publikus: kupon ellenőrzése a pénztárban (a backend a hiteles forrás a rendeléskor is)
 if ($method === 'POST' && $route === '/coupon/validate') {
+  rate_limit($pdo, 'coupon', 20, 600); // max 20 / 10 perc / IP
   $b = body();
   $res = validate_coupon($pdo, (string)($b['code'] ?? ''), (int)round((float)($b['subtotal'] ?? 0)));
   if (isset($res['error'])) json_error($res['error'], 400);
@@ -286,6 +292,7 @@ if ($method === 'POST' && $route === '/admin/upload') {
    VÁSÁRLÓI FIÓK
    ============================================================ */
 if ($method === 'POST' && $route === '/account/register') {
+  rate_limit($pdo, 'register', 5, 3600); // max 5 / óra / IP
   $b = body();
   $name = trim((string)($b['name'] ?? ''));
   $email = trim((string)($b['email'] ?? ''));
@@ -304,6 +311,7 @@ if ($method === 'POST' && $route === '/account/register') {
   json_out(['ok' => true, 'user' => ['id' => $id, 'name' => $name, 'email' => $lemail, 'isAdmin' => is_admin_email($lemail)]], 201);
 }
 if ($method === 'POST' && $route === '/account/login') {
+  rate_limit($pdo, 'login', 8, 900); // max 8 / 15 perc / IP
   $b = body();
   $email = mb_strtolower(trim((string)($b['email'] ?? '')));
   $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?"); $stmt->execute([$email]);

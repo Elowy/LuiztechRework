@@ -541,6 +541,9 @@
     '"Üdv a Luiz-Tech-nél! 🚀"': '"Welcome to Luiz-Tech! 🚀"',
     '"Üdv, {$nev}! 🚀"': '"Hi, {$nev}! 🚀"',
 
+    // ---- Akadálymentesség ----
+    'Tartalomra ugrás': 'Skip to content',
+
     // ---- Süti sáv (ha megjelenik) ----
     'Sütiket használunk': 'We use cookies',
     'Elfogadom': 'Accept',

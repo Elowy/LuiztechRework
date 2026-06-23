@@ -757,9 +757,10 @@
           note.className = 'form-note err';
         }
       };
+      const csrf = (document.cookie.match(/(?:^|;\s*)lt_csrf=([^;]+)/) || [])[1];
       fetch('/api/messages', {
         method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf ? decodeURIComponent(csrf) : '' },
         body: JSON.stringify(payload)
       }).then((r) => done(r.ok)).catch(() => done(false));
     });
@@ -998,13 +999,32 @@
 
     const showBanner = () => { startFog(); requestAnimationFrame(() => banner.classList.add('show')); };
     const hideBanner = () => { banner.classList.remove('show'); stopFog(); };
+    let modalPrevFocus = null, modalTrap = null;
     const openModal = () => {
       const c = read() || { analytics: false, marketing: false };
       modal.querySelector('[data-cat="analytics"]').checked = !!c.analytics;
       modal.querySelector('[data-cat="marketing"]').checked = !!c.marketing;
       modal.hidden = false;
+      modalPrevFocus = document.activeElement;
+      const foc = () => Array.from(modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])'))
+        .filter((n) => n.offsetWidth || n.offsetHeight);
+      modalTrap = (e) => {
+        if (e.key !== 'Tab') return;
+        const f = foc(); if (!f.length) return;
+        const a = f[0], b = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+        else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+      };
+      document.addEventListener('keydown', modalTrap, true);
+      const first = foc()[0]; if (first) setTimeout(() => { try { first.focus(); } catch (e) {} }, 30);
     };
-    const closeModal = () => { modal.hidden = true; };
+    const closeModal = () => {
+      modal.hidden = true;
+      if (modalTrap) document.removeEventListener('keydown', modalTrap, true);
+      modalTrap = null;
+      if (modalPrevFocus && modalPrevFocus.focus) { try { modalPrevFocus.focus(); } catch (e) {} }
+      modalPrevFocus = null;
+    };
 
     const accept = (mode) => {
       const c = mode === 'all'
