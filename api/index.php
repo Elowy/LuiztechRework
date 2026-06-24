@@ -95,11 +95,14 @@ if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
   require_admin($pdo);
   $status = (string)(body()['status'] ?? '');
   if (!in_array($status, ORDER_STATUSES, true)) json_error('Érvénytelen státusz.', 400);
-  $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-  $stmt->execute([$status, $params[0]]);
-  if ($stmt->rowCount() === 0) {
-    $chk = $pdo->prepare("SELECT id FROM orders WHERE id = ?"); $chk->execute([$params[0]]);
-    if (!$chk->fetch()) json_error('A rendelés nem található.', 404);
+  $old = $pdo->prepare("SELECT * FROM orders WHERE id = ?"); $old->execute([$params[0]]);
+  $prev = $old->fetch();
+  if (!$prev) json_error('A rendelés nem található.', 404);
+  $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?")->execute([$status, $params[0]]);
+  // tényleges változásnál értesítjük a vásárlót (tranzakciós, nem blokkoló)
+  if ((string)$prev['status'] !== $status) {
+    try { send_status_update(get_config($pdo), $params[0], (string)$prev['cust_name'], (string)$prev['cust_email'], $status); }
+    catch (Throwable $e) { error_log('status update mail: ' . $e->getMessage()); }
   }
   $row = $pdo->prepare("SELECT * FROM orders WHERE id = ?"); $row->execute([$params[0]]);
   json_out(['ok' => true, 'order' => map_order($pdo, $row->fetch())]);

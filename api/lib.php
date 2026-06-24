@@ -712,10 +712,13 @@ function create_order(PDO $pdo, array $payload, $user) {
   $invoiceNo = '';
   if ($status !== 'Fizetésre vár') {
     $invoiceNo = maybe_issue_invoice($pdo, $cfgFull, $oid, $name, $email, (string)($c['address'] ?? ''), $items);
-    notify_admin($pdo, 'Új rendelés – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, $invoiceNo, $items));
+    notify_admin($pdo, 'Új rendelés – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, $invoiceNo, $items), $email);
   } else {
-    notify_admin($pdo, 'Új rendelés (fizetésre vár) – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, '', $items));
+    notify_admin($pdo, 'Új rendelés (fizetésre vár) – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, '', $items), $email);
   }
+  // Vásárlói visszaigazoló e-mail (tranzakciós, nem blokkoló)
+  try { send_order_confirmation($cfgFull, $oid, $name, $email, $c, $total, $items, $status, $invoiceNo); }
+  catch (Throwable $e) { error_log('order confirmation mail: ' . $e->getMessage()); }
 
   return ['order' => ['id' => $oid, 'total' => $total, 'status' => $status, 'invoiceNo' => $invoiceNo, 'checkoutUrl' => $checkoutUrl]];
 }
@@ -875,7 +878,10 @@ function stripe_confirm(PDO $pdo, $oid, $sessionId) {
   notify_admin($pdo, 'Fizetés beérkezett – ' . $oid,
     "Sikeres bankkártyás fizetés.\n\nAzonosító: $oid\nÖsszeg: {$order['total']}\n" .
     "Vevő: {$order['cust_name']} <{$order['cust_email']}>\n" .
-    ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : ''));
+    ($invoiceNo !== '' ? "Számla: {$invoiceNo}\n" : ''), (string)$order['cust_email']);
+  // Fizetési nyugta a vásárlónak (tranzakciós, nem blokkoló)
+  try { send_payment_receipt($cfg, $oid, (string)$order['cust_name'], (string)$order['cust_email'], (int)$order['total'], $invoiceNo); }
+  catch (Throwable $e) { error_log('payment receipt mail: ' . $e->getMessage()); }
   return ['ok' => true, 'status' => 'Fizetve', 'id' => $oid, 'invoiceNo' => $invoiceNo];
 }
 
@@ -1119,22 +1125,90 @@ function map_faq($r) { return ['id'=>$r['id'], 'question'=>$r['question'], 'answ
 function get_faq(PDO $pdo) { return array_map('map_faq', $pdo->query("SELECT * FROM faq ORDER BY sort ASC")->fetchAll()); }
 
 /* ---------- E-mail értesítés (PHP mail) ---------- */
-function notify_admin(PDO $pdo, $subject, $bodyText) {
+function notify_admin(PDO $pdo, $subject, $bodyText, $replyTo = '') {
   $cfg = get_config($pdo);
   $to = filter_var($cfg['notifyEmail'] ?? '', FILTER_VALIDATE_EMAIL);
-  if ($to) send_mail($to, $subject, $bodyText);
+  if ($to) send_mail($to, $subject, $bodyText, $replyTo);
 }
-function send_mail($to, $subject, $bodyText) {
+// A feladó MINDIG a bolt domainje (nem a címzetté!) — különben a vásárlói
+// leveleknél no-reply@gmail.com-szerű hamis feladó keletkezne.
+function mail_from_domain() {
+  $host = preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? ''));
+  $host = preg_replace('/^www\./', '', $host);
+  return $host !== '' ? $host : 'luiz-tech.hu';
+}
+function send_mail($to, $subject, $bodyText, $replyTo = '') {
   if (!is_string($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
   if (!function_exists('mail')) return false;
-  $domain = substr(strrchr($to, '@'), 1) ?: 'localhost';
-  $from = 'no-reply@' . $domain;
+  $from = 'no-reply@' . mail_from_domain();
   $headers = "From: Luiz-Tech <{$from}>\r\n";
+  if ($replyTo && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+    $headers .= "Reply-To: {$replyTo}\r\n";
+  }
   $headers .= "MIME-Version: 1.0\r\n";
   $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
   $headers .= "Content-Transfer-Encoding: 8bit\r\n";
   $subjEnc = '=?UTF-8?B?' . base64_encode($subject) . '?=';
   return @mail($to, $subjEnc, $bodyText, $headers);
+}
+/* ---------- Vásárlói (tranzakciós) e-mailek ---------- */
+function shop_contact_email(array $cfg) {
+  $e = filter_var($cfg['contactEmail'] ?? '', FILTER_VALIDATE_EMAIL);
+  if ($e) return $e;
+  return filter_var($cfg['notifyEmail'] ?? '', FILTER_VALIDATE_EMAIL) ?: '';
+}
+function fmt_money($n, $currency) { return number_format((int)$n, 0, ',', ' ') . ' ' . $currency; }
+function order_items_text(array $items, $currency) {
+  return implode("\n", array_map(function ($it) use ($currency) {
+    $line = (int)round((float)$it['price']) * max(1, (int)$it['qty']);
+    return "  - {$it['name']} × {$it['qty']}  (" . fmt_money($line, $currency) . ')';
+  }, $items));
+}
+// Rendelés-visszaigazoló e-mail a vásárlónak (leadáskor).
+function send_order_confirmation(array $cfg, $oid, $name, $email, array $c, $total, array $items, $status, $invoiceNo) {
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return;
+  $shop = (string)($cfg['name'] ?? 'Luiz-Tech');
+  $cur = (string)($cfg['currency'] ?? 'Ft');
+  $reply = shop_contact_email($cfg);
+  $pending = ($status === 'Fizetésre vár');
+  $subject = ($pending ? 'Rendelésed rögzítettük (fizetésre vár)' : 'Rendelés visszaigazolása') . ' – ' . $oid;
+  $body = "Kedves {$name}!\n\n"
+    . ($pending
+        ? "Köszönjük a rendelésed! Az alábbi tételeket rögzítettük. A rendelés akkor véglegesül, amint a bankkártyás fizetésed beérkezik.\n"
+        : "Köszönjük a rendelésed! Az alábbi tételeket rögzítettük, és hamarosan felvesszük veled a kapcsolatot.\n")
+    . "\nRendelésazonosító: {$oid}\n"
+    . "\nTételek:\n" . order_items_text($items, $cur) . "\n"
+    . "\nVégösszeg: " . fmt_money($total, $cur) . "\n"
+    . ($invoiceNo !== '' ? "Számla sorszáma: {$invoiceNo}\n" : '')
+    . (!empty($c['address']) ? "\nCím: {$c['address']}\n" : '')
+    . "\nHa kérdésed van, válaszolj erre az e-mailre" . ($reply ? " ({$reply})" : '') . ".\n\nÜdvözlettel,\n{$shop}\n";
+  send_mail($email, $subject, $body, $reply);
+}
+// Fizetési nyugta a vásárlónak (sikeres bankkártyás fizetéskor).
+function send_payment_receipt(array $cfg, $oid, $name, $email, $total, $invoiceNo) {
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return;
+  $shop = (string)($cfg['name'] ?? 'Luiz-Tech');
+  $cur = (string)($cfg['currency'] ?? 'Ft');
+  $reply = shop_contact_email($cfg);
+  $subject = 'Fizetésedet megkaptuk – ' . $oid;
+  $body = "Kedves {$name}!\n\n"
+    . "Köszönjük, a bankkártyás fizetésed sikeresen beérkezett.\n\n"
+    . "Rendelésazonosító: {$oid}\n"
+    . "Fizetett összeg: " . fmt_money($total, $cur) . "\n"
+    . ($invoiceNo !== '' ? "Számla sorszáma: {$invoiceNo}\n" : '')
+    . "\nHamarosan értesítünk a rendelés állapotáról.\n\nÜdvözlettel,\n{$shop}\n";
+  send_mail($email, $subject, $body, $reply);
+}
+// Státuszváltozás-értesítő a vásárlónak (admin állapotmódosításkor).
+function send_status_update(array $cfg, $oid, $name, $email, $status) {
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return;
+  $shop = (string)($cfg['name'] ?? 'Luiz-Tech');
+  $reply = shop_contact_email($cfg);
+  $subject = 'Rendelésed státusza frissült – ' . $oid;
+  $body = "Kedves {$name}!\n\n"
+    . "A(z) {$oid} azonosítójú rendelésed új állapota: {$status}.\n"
+    . "\nHa kérdésed van, válaszolj erre az e-mailre" . ($reply ? " ({$reply})" : '') . ".\n\nÜdvözlettel,\n{$shop}\n";
+  send_mail($email, $subject, $body, $reply);
 }
 
 /* ---------- Messages (leadek a kapcsolati űrlapról) ---------- */
