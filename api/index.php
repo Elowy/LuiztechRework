@@ -108,6 +108,24 @@ if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
   json_out(['ok' => true, 'order' => map_order($pdo, $row->fetch())]);
 }
 
+/* ---- termékvélemények (admin moderálás) ---- */
+if ($method === 'GET' && $route === '/admin/reviews') {
+  require_admin($pdo);
+  json_out(['reviews' => list_all_reviews($pdo)]);
+}
+if ($method === 'PATCH' && match_route('/admin/reviews/{id}', $route, $params)) {
+  require_admin($pdo);
+  $status = (string)(body()['status'] ?? '');
+  if (!in_array($status, ['pending', 'approved', 'rejected'], true)) json_error('Érvénytelen státusz.', 400);
+  $pdo->prepare("UPDATE reviews SET status = ? WHERE id = ?")->execute([$status, (int)$params[0]]);
+  json_out(['ok' => true]);
+}
+if ($method === 'DELETE' && match_route('/admin/reviews/{id}', $route, $params)) {
+  require_admin($pdo);
+  $pdo->prepare("DELETE FROM reviews WHERE id = ?")->execute([(int)$params[0]]);
+  json_out(['ok' => true]);
+}
+
 /* ---- vásárlók ---- */
 if ($method === 'GET' && $route === '/admin/customers') {
   require_admin($pdo);
@@ -136,6 +154,17 @@ if ($method === 'POST' && $route === '/coupon/validate') {
   $res = validate_coupon($pdo, (string)($b['code'] ?? ''), (int)round((float)($b['subtotal'] ?? 0)));
   if (isset($res['error'])) json_error($res['error'], 400);
   json_out($res);
+}
+
+/* ---- termékvélemények (publikus) ---- */
+if ($method === 'GET' && match_route('/reviews/{id}', $route, $params)) {
+  json_out(['reviews' => get_approved_reviews($pdo, $params[0])]);
+}
+if ($method === 'POST' && $route === '/reviews') {
+  rate_limit($pdo, 'review', 5, 600); // max 5 / 10 perc / IP
+  $res = create_review($pdo, body(), current_customer($pdo));
+  if (isset($res['error'])) json_error($res['error'], 400);
+  json_out($res, 201);
 }
 
 /* ---- hírek ---- */

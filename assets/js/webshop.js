@@ -176,6 +176,7 @@
         '</div>' +
         '<div class="shop-product-body">' +
           '<h3>' + esc(p.name) + '</h3>' +
+          ratingRow(p) +
           '<p>' + esc(p.desc || '') + '</p>' +
           '<div class="shop-product-foot">' +
             priceHtml +
@@ -195,6 +196,119 @@
         setTimeout(function () { btn.textContent = 'Kosárba'; btn.classList.remove('added'); }, 1100);
       });
     });
+  }
+
+  /* ---------- Vélemények / értékelés ---------- */
+  function starsHtml(rating) {
+    rating = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+    var s = '';
+    for (var i = 1; i <= 5; i++) s += '<span class="star' + (i <= rating ? ' on' : '') + '">★</span>';
+    return s;
+  }
+  function ratingRow(p) {
+    if (!p.reviewCount) return '';
+    var r = Number(p.rating) || 0;
+    return '<div class="rating-row" aria-label="' + r.toFixed(1) + ' / 5 csillag, ' + p.reviewCount + ' értékelés">' +
+      '<span class="stars" aria-hidden="true">' + starsHtml(r) + '</span>' +
+      '<span class="rating-meta">' + r.toFixed(1) + ' (' + p.reviewCount + ')</span></div>';
+  }
+  function reviewItemHtml(rv) {
+    return '<div class="review-item">' +
+      '<div class="review-head"><span class="stars small" aria-hidden="true">' + starsHtml(rv.rating) + '</span>' +
+      '<strong>' + esc(rv.author) + '</strong></div>' +
+      (rv.body ? '<p>' + esc(rv.body).replace(/\r?\n/g, '<br>') + '</p>' : '') +
+    '</div>';
+  }
+  function loadQuickViewReviews(p) {
+    var box = $('#qv-reviews');
+    if (!box) return;
+    var r = Number(p.rating) || 0;
+    var summary = p.reviewCount
+      ? '<div class="qv-rev-summary"><span class="stars" aria-hidden="true">' + starsHtml(r) + '</span> ' +
+        '<strong>' + r.toFixed(1) + '</strong> · ' + p.reviewCount + ' értékelés</div>'
+      : '<div class="qv-rev-summary muted">Még nincs értékelés — legyél te az első!</div>';
+    var loggedIn = !!currentUser;
+    var form =
+      '<form class="review-form" id="review-form" novalidate>' +
+        '<div class="review-stars-input" id="review-stars" role="radiogroup" aria-label="Értékelés csillagokban">' +
+          [1, 2, 3, 4, 5].map(function (n) {
+            return '<button type="button" class="star-btn" data-val="' + n + '" aria-label="' + n + ' csillag">★</button>';
+          }).join('') +
+        '</div>' +
+        (loggedIn ? '' : '<input type="text" id="review-name" placeholder="Neved" maxlength="120" aria-label="Neved" />') +
+        '<textarea id="review-body" rows="2" placeholder="Írd meg a véleményed (opcionális)" maxlength="2000" aria-label="Vélemény"></textarea>' +
+        '<button type="submit" class="btn btn-primary btn-sm">Értékelés küldése</button>' +
+        '<p class="review-note" id="review-note" role="status"></p>' +
+      '</form>';
+    box.innerHTML =
+      '<h4 class="qv-rev-title">Vélemények</h4>' + summary +
+      '<div class="review-list" id="review-list"><p class="muted">Betöltés…</p></div>' + form;
+
+    S.getReviews(p.id).then(function (list) {
+      var el = $('#review-list');
+      if (!el) return;
+      el.innerHTML = list.length ? list.map(reviewItemHtml).join('') : '<p class="muted">Még nincs jóváhagyott vélemény.</p>';
+    });
+
+    var chosen = 0;
+    var starBtns = $$('#review-stars .star-btn');
+    starBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        chosen = parseInt(b.getAttribute('data-val'), 10);
+        starBtns.forEach(function (x) { x.classList.toggle('on', parseInt(x.getAttribute('data-val'), 10) <= chosen); });
+      });
+    });
+    $('#review-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var note = $('#review-note');
+      if (chosen < 1) { note.textContent = 'Kérlek, válassz csillagos értékelést.'; return; }
+      var author = loggedIn ? (currentUser.name || '') : ($('#review-name') ? $('#review-name').value.trim() : '');
+      if (!loggedIn && !author) { note.textContent = 'Add meg a neved.'; return; }
+      var body = $('#review-body') ? $('#review-body').value.trim() : '';
+      var btn = e.target.querySelector('button[type=submit]');
+      btn.disabled = true;
+      S.submitReview({ productId: p.id, rating: chosen, author: author, body: body })
+        .then(function () {
+          $('#review-form').innerHTML = '<p class="review-note ok">Köszönjük az értékelést! Moderálás után jelenik meg.</p>';
+        })
+        .catch(function (err) { btn.disabled = false; note.textContent = (err && err.message) || 'A küldés sikertelen.'; });
+    });
+  }
+
+  /* ---------- Product JSON-LD (strukturált adat a kereskedőknek) ---------- */
+  function currencyCode(cur) {
+    cur = String(cur || 'Ft').toLowerCase();
+    if (cur.indexOf('eur') >= 0 || cur.indexOf('€') >= 0) return 'EUR';
+    if (cur.indexOf('usd') >= 0 || cur.indexOf('$') >= 0) return 'USD';
+    return 'HUF';
+  }
+  function buildJsonLd() {
+    try {
+      var origin = location.origin;
+      var graph = (cfg.products || []).map(function (p) {
+        var o = {
+          '@type': 'Product',
+          'name': p.name,
+          'description': p.desc || p.name,
+          'sku': p.id,
+          'offers': {
+            '@type': 'Offer',
+            'price': S.effectivePrice(p),
+            'priceCurrency': currencyCode(cfg.currency),
+            'availability': (p.stock === 0) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+            'url': origin + '/webshop.html'
+          }
+        };
+        if (p.image) o.image = (p.image.indexOf('http') === 0) ? p.image : origin + '/' + String(p.image).replace(/^\//, '');
+        if (p.reviewCount) {
+          o.aggregateRating = { '@type': 'AggregateRating', 'ratingValue': (Number(p.rating) || 0).toFixed(1), 'reviewCount': p.reviewCount };
+        }
+        return o;
+      });
+      var el = document.getElementById('ld-products');
+      if (!el) { el = document.createElement('script'); el.type = 'application/ld+json'; el.id = 'ld-products'; document.head.appendChild(el); }
+      el.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+    } catch (e) { /* nem blokkoló */ }
   }
 
   /* ---------- Quick view ---------- */
@@ -226,14 +340,17 @@
       '<div class="qv-media">' + media + (p.category ? '<span class="shop-product-cat">' + esc(p.category) + '</span>' : '') + '</div>' +
       '<div class="qv-info">' +
         '<h3 class="qv-title">' + esc(p.name) + '</h3>' +
+        ratingRow(p) +
         '<p class="qv-desc">' + esc(p.desc || '') + '</p>' +
         longHtml +
         stockNote +
         priceHtml +
         actions +
-      '</div>';
+      '</div>' +
+      '<div class="qv-reviews" id="qv-reviews"></div>';
     $('#quickview-modal').hidden = false;
     qvTrap.on($('#quickview-modal'), $('#qv-close'));
+    loadQuickViewReviews(p);
     if (soldOut) return;
     var qty = 1;
     var limit = (p.stock != null) ? p.stock : Infinity;
@@ -724,7 +841,7 @@
     S.getShop().then(function (data) {
       cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), data);
       if (!Array.isArray(cfg.products)) cfg.products = [];
-      applyBranding(); buildFilters(); renderProducts(); updateCartUI();
+      applyBranding(); buildFilters(); renderProducts(); updateCartUI(); buildJsonLd();
     });
   }
 

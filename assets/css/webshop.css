@@ -674,3 +674,30 @@
 @keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(8px) scale(.97); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.out { animation: none; opacity: 0; } }
+
+/* ---------- Vélemények / értékelés ---------- */
+.stars { display: inline-flex; gap: 1px; color: #475569; font-size: .95rem; line-height: 1; }
+.stars.small { font-size: .82rem; }
+.stars .star.on { color: #f5b301; }
+.rating-row { display: flex; align-items: center; gap: 8px; margin: -2px 0 8px; }
+.rating-row .rating-meta { color: var(--text-muted); font-size: .82rem; }
+
+.qv-reviews { grid-column: 1 / -1; padding: 22px 26px; border-top: 1px solid var(--border); }
+.qv-rev-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+.qv-rev-summary { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: .95rem; }
+.qv-rev-summary.muted, .muted { color: var(--text-muted); }
+.review-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; max-height: 260px; overflow-y: auto; }
+.review-item { padding: 12px 14px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; }
+.review-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.review-head strong { font-size: .9rem; }
+.review-item p { color: var(--text-muted); font-size: .9rem; line-height: 1.6; white-space: pre-wrap; }
+
+.review-form { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 16px; }
+.review-stars-input { display: inline-flex; gap: 4px; }
+.review-stars-input .star-btn { background: none; border: none; cursor: pointer; font-size: 1.6rem; line-height: 1; color: #475569; padding: 0; transition: color .12s, transform .12s; }
+.review-stars-input .star-btn:hover { transform: scale(1.12); }
+.review-stars-input .star-btn.on { color: #f5b301; }
+.review-form input, .review-form textarea { width: 100%; padding: 10px 12px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; font-size: .92rem; }
+.review-form textarea { resize: vertical; }
+.review-note { font-size: .85rem; color: var(--text-muted); min-height: 1em; margin: 0; }
+.review-note.ok { color: var(--accent-3, #00ffa3); }

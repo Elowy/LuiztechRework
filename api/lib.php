@@ -323,6 +323,18 @@ function create_schema(PDO $pdo) {
     ts INT NOT NULL,
     KEY rk_ts (rk, ts)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  $pdo->exec("CREATE TABLE IF NOT EXISTS reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id VARCHAR(40) NOT NULL,
+    user_id VARCHAR(40) DEFAULT NULL,
+    author VARCHAR(120) NOT NULL,
+    rating TINYINT NOT NULL DEFAULT 5,
+    body VARCHAR(2000) DEFAULT '',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL,
+    KEY prod_status (product_id, status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
 function seed_defaults(PDO $pdo) {
@@ -488,9 +500,24 @@ function map_product($r) {
     'salePrice' => (!isset($r['sale_price']) || is_null($r['sale_price'])) ? null : (int)$r['sale_price'],
   ];
 }
+function review_summary_map(PDO $pdo) {
+  $map = [];
+  try {
+    $q = $pdo->query("SELECT product_id, COUNT(*) cnt, AVG(rating) avg FROM reviews WHERE status='approved' GROUP BY product_id");
+    foreach ($q->fetchAll() as $r) $map[$r['product_id']] = ['cnt' => (int)$r['cnt'], 'avg' => (float)$r['avg']];
+  } catch (Throwable $e) { /* a reviews tábla még nincs migrálva */ }
+  return $map;
+}
 function get_products(PDO $pdo) {
   $rows = $pdo->query("SELECT * FROM products ORDER BY sort ASC, name ASC")->fetchAll();
-  return array_map('map_product', $rows);
+  $sum = review_summary_map($pdo);
+  return array_map(function ($r) use ($sum) {
+    $p = map_product($r);
+    $s = $sum[$r['id']] ?? null;
+    $p['rating'] = $s ? round($s['avg'], 1) : 0;
+    $p['reviewCount'] = $s ? (int)$s['cnt'] : 0;
+    return $p;
+  }, $rows);
 }
 function get_config_with_products(PDO $pdo) {
   $c = get_config($pdo);
@@ -1230,6 +1257,49 @@ function map_message($r) {
   return ['id'=>$r['id'],'name'=>$r['name'],'email'=>$r['email'],'topic'=>$r['topic'],'message'=>$r['message'],'status'=>$r['status'],'createdAt'=>str_replace(' ','T',$r['created_at'])];
 }
 function get_messages(PDO $pdo) { return array_map('map_message', $pdo->query("SELECT * FROM messages ORDER BY created_at DESC")->fetchAll()); }
+
+/* ---------- Termékvélemények ---------- */
+function map_review($r) {
+  return [
+    'id' => (int)$r['id'],
+    'productId' => $r['product_id'],
+    'author' => $r['author'],
+    'rating' => (int)$r['rating'],
+    'body' => $r['body'],
+    'status' => $r['status'],
+    'createdAt' => str_replace(' ', 'T', $r['created_at']),
+  ];
+}
+function get_approved_reviews(PDO $pdo, $productId) {
+  $stmt = $pdo->prepare("SELECT * FROM reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 100");
+  $stmt->execute([(string)$productId]);
+  return array_map('map_review', $stmt->fetchAll());
+}
+function create_review(PDO $pdo, array $b, $user) {
+  $pid = (string)($b['productId'] ?? '');
+  $chk = $pdo->prepare("SELECT id, name FROM products WHERE id = ?"); $chk->execute([$pid]);
+  $prod = $chk->fetch();
+  if (!$prod) return ['error' => 'Ismeretlen termék.'];
+  $rating = (int)round((float)($b['rating'] ?? 0));
+  if ($rating < 1 || $rating > 5) return ['error' => 'Az értékelés 1 és 5 csillag között lehet.'];
+  $author = mb_substr(trim((string)(($user['name'] ?? '') !== '' ? $user['name'] : ($b['author'] ?? ''))), 0, 120);
+  if ($author === '') return ['error' => 'A név megadása kötelező.'];
+  $body = mb_substr(trim((string)($b['body'] ?? '')), 0, 2000);
+  $uid = $user['id'] ?? null;
+  $pdo->prepare("INSERT INTO reviews (product_id,user_id,author,rating,body,status,created_at) VALUES (?,?,?,?,?,?,?)")
+      ->execute([$pid, $uid, $author, $rating, $body, 'pending', date('Y-m-d H:i:s')]);
+  notify_admin($pdo, 'Új termékvélemény moderálásra – ' . $prod['name'],
+    "Új vélemény érkezett (moderálásra vár).\n\nTermék: {$prod['name']}\nÉrtékelés: {$rating}/5\nSzerző: {$author}\n\n" . ($body !== '' ? $body : '(nincs szöveg)') . "\n");
+  return ['ok' => true];
+}
+function list_all_reviews(PDO $pdo) {
+  $rows = $pdo->query("SELECT r.*, p.name AS product_name FROM reviews r LEFT JOIN products p ON p.id = r.product_id ORDER BY r.created_at DESC")->fetchAll();
+  return array_map(function ($r) {
+    $m = map_review($r);
+    $m['productName'] = $r['product_name'] ?? '—';
+    return $m;
+  }, $rows);
+}
 
 /* ---------- Support ticketek ---------- */
 function map_ticket($r) {

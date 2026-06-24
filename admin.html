@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=59" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=59" />
+  <link rel="stylesheet" href="assets/css/style.css?v=60" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=60" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -84,6 +84,7 @@
         <button class="admin-tab" data-tab="customers">👥 Vásárlók</button>
         <button class="admin-tab" data-tab="coupons">🎟️ Kuponok</button>
         <button class="admin-tab" data-tab="messages">📨 Üzenetek</button>
+        <button class="admin-tab" data-tab="reviews">⭐ Vélemények</button>
         <button class="admin-tab" data-tab="support">🎫 Support</button>
         <button class="admin-tab admin-tab-danger" data-tab="danger">⚠︎ Visszaállítás</button>
       </nav>
@@ -399,6 +400,18 @@
           <div class="orders-list" id="messages-list"></div>
         </section>
 
+        <!-- REVIEWS -->
+        <section class="admin-panel" data-panel="reviews">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Termékvélemények</h2>
+              <p class="admin-desc">Csak a jóváhagyott vélemények jelennek meg a boltban és a Google strukturált adatban.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refresh-reviews">⟳ Frissítés</button>
+          </div>
+          <div class="orders-list" id="reviews-list"></div>
+        </section>
+
         <!-- SUPPORT -->
         <section class="admin-panel" data-panel="support">
           <div class="admin-panel-head">
@@ -609,8 +622,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=59"></script>
-  <script src="assets/js/admin.js?v=59" defer></script>
-  <script src="assets/js/main.js?v=59" defer></script>
+  <script src="assets/js/shop-config.js?v=60"></script>
+  <script src="assets/js/admin.js?v=60" defer></script>
+  <script src="assets/js/main.js?v=60" defer></script>
 </body>
 </html>

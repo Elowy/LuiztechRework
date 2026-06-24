@@ -19,6 +19,7 @@
   var faqLoaded = false;
   var faqItems = [];
   var messagesLoaded = false;
+  var reviewsLoaded = false;
   var ticketsLoaded = false;
   var customersLoaded = false;
   var customersData = [];
@@ -99,6 +100,7 @@
       if (name === 'references' && !refsLoaded) loadReferences();
       if (name === 'faq' && !faqLoaded) loadFaq();
       if (name === 'messages' && !messagesLoaded) loadMessages();
+      if (name === 'reviews' && !reviewsLoaded) loadReviews();
       if (name === 'support' && !ticketsLoaded) loadTickets();
     });
   });
@@ -630,6 +632,50 @@
     }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
   }
   $('#refresh-messages').addEventListener('click', loadMessages);
+
+  /* ============================================================
+     TERMÉKVÉLEMÉNYEK (moderálás)
+     ============================================================ */
+  var REVIEW_STATUS_HU = { pending: 'Moderálásra vár', approved: 'Jóváhagyva', rejected: 'Elutasítva' };
+  function loadReviews() {
+    var wrap = $('#reviews-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getAdminReviews().then(function (data) {
+      reviewsLoaded = true;
+      var list = (data && data.reviews) || [];
+      if (!list.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs vélemény.</p>'; return; }
+      wrap.innerHTML = '';
+      list.forEach(function (r) {
+        var when = ''; try { when = new Date(r.createdAt).toLocaleString('hu-HU'); } catch (e) { when = r.createdAt || ''; }
+        var stars = ''; for (var i = 1; i <= 5; i++) stars += (i <= r.rating ? '★' : '☆');
+        var card = document.createElement('div');
+        card.className = 'order-card';
+        card.innerHTML =
+          '<div class="order-head"><span class="status-badge ' + statusClass(r.status) + '" data-badge>' + escAttr(REVIEW_STATUS_HU[r.status] || r.status) + '</span>' +
+            '<span class="order-meta" style="margin-left:auto">' + when + '</span></div>' +
+          '<div class="order-contact"><span class="rev-stars">' + stars + '</span> · 👤 ' + escAttr(r.author) + ' · 📦 ' + escAttr(r.productName || r.productId) + '</div>' +
+          (r.body ? '<div class="order-items" style="white-space:pre-wrap">' + escAttr(r.body) + '</div>' : '') +
+          '<div class="order-status-row">' +
+            '<button class="btn btn-primary btn-sm" data-approve>Jóváhagyás</button>' +
+            '<button class="btn btn-ghost btn-sm" data-reject>Elutasítás</button>' +
+            '<button class="icon-btn icon-danger" data-del title="Törlés">🗑</button></div>';
+        var badge = card.querySelector('[data-badge]');
+        function setStatus(st) {
+          S.setReviewStatus(r.id, st).then(function () {
+            badge.textContent = REVIEW_STATUS_HU[st] || st; badge.className = 'status-badge ' + statusClass(st);
+          }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
+        }
+        card.querySelector('[data-approve]').addEventListener('click', function () { setStatus('approved'); });
+        card.querySelector('[data-reject]').addEventListener('click', function () { setStatus('rejected'); });
+        card.querySelector('[data-del]').addEventListener('click', function () {
+          if (!confirm('Törlöd ezt a véleményt?')) return;
+          S.deleteReview(r.id).then(function () { card.remove(); }).catch(function () {});
+        });
+        wrap.appendChild(card);
+      });
+    }).catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); return; } wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni.</p>'; });
+  }
+  $('#refresh-reviews').addEventListener('click', loadReviews);
 
   /* ============================================================
      SUPPORT TICKETS

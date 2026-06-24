@@ -544,6 +544,21 @@
     // ---- Akadálymentesség ----
     'Tartalomra ugrás': 'Skip to content',
 
+    // ---- Termékvélemények ----
+    'Vélemények': 'Reviews',
+    'Még nincs értékelés — legyél te az első!': 'No ratings yet — be the first!',
+    'Betöltés…': 'Loading…',
+    'Még nincs jóváhagyott vélemény.': 'No approved reviews yet.',
+    'Neved': 'Your name',
+    'Írd meg a véleményed (opcionális)': 'Write your review (optional)',
+    'Vélemény': 'Review',
+    'Értékelés küldése': 'Submit review',
+    'Értékelés csillagokban': 'Rating in stars',
+    'Kérlek, válassz csillagos értékelést.': 'Please choose a star rating.',
+    'Add meg a neved.': 'Please enter your name.',
+    'Köszönjük az értékelést! Moderálás után jelenik meg.': 'Thank you for your review! It will appear after moderation.',
+    'A küldés sikertelen.': 'Submission failed.',
+
     // ---- Süti sáv (ha megjelenik) ----
     'Sütiket használunk': 'We use cookies',
     'Elfogadom': 'Accept',
@@ -728,7 +743,10 @@
   var REGEX = [
     [/^Utolsó\s+(\d+)\s+db$/, 'Only $1 left'],
     [/^Készleten:\s*(\d+)\s+db$/, 'In stock: $1 pcs'],
-    [/^A kupon\s+(\d+)\s+Ft feletti rendeléshez érvényes\.$/, 'The coupon is valid for orders over $1 Ft.']
+    [/^A kupon\s+(\d+)\s+Ft feletti rendeléshez érvényes\.$/, 'The coupon is valid for orders over $1 Ft.'],
+    [/^(\d+)\s+csillag$/, '$1 stars'],
+    [/^·\s*(\d+)\s+értékelés$/, '· $1 reviews'],
+    [/^([\d.,]+)\s*\/\s*5 csillag,\s*(\d+)\s+értékelés$/, '$1 / 5 stars, $2 reviews']
   ];
 
   function translateString(s) {

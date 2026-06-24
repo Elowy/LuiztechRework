@@ -198,6 +198,13 @@
   function deleteCoupon(code) { return api('/api/admin/coupons/' + encodeURIComponent(code), { method: 'DELETE' }); }
   function validateCoupon(code, subtotal) { return api('/api/coupon/validate', { method: 'POST', body: { code: code, subtotal: subtotal } }); }
 
+  /* ---------- Termékvélemények ---------- */
+  function getReviews(productId) { return api('/api/reviews/' + encodeURIComponent(productId)).then(function (d) { return (d && d.reviews) || []; }).catch(function () { return []; }); }
+  function submitReview(data) { return api('/api/reviews', { method: 'POST', body: data }); }
+  function getAdminReviews() { return api('/api/admin/reviews').catch(function (e) { if (e.status === 401) throw e; return { reviews: [] }; }); }
+  function setReviewStatus(id, status) { return api('/api/admin/reviews/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } }); }
+  function deleteReview(id) { return api('/api/admin/reviews/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
   /* ---------- Messages / leads (admin) ---------- */
   function getMessages() { return api('/api/admin/messages').catch(function (e) { if (e.status === 401) throw e; return { statuses: [], messages: [] }; }); }
   function updateMessageStatus(id, status) { return api('/api/admin/messages/' + encodeURIComponent(id), { method: 'PATCH', body: { status: status } }); }
@@ -291,6 +298,11 @@
     getMessages: getMessages,
     updateMessageStatus: updateMessageStatus,
     deleteMessage: deleteMessage,
+    getReviews: getReviews,
+    submitReview: submitReview,
+    getAdminReviews: getAdminReviews,
+    setReviewStatus: setReviewStatus,
+    deleteReview: deleteReview,
     myTickets: myTickets,
     getMyTicket: getMyTicket,
     createTicket: createTicket,
