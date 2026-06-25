@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -156,6 +156,13 @@ function migrate(PDO $pdo) {
     try { $pdo->exec("ALTER TABLE products ADD COLUMN long_descr TEXT NULL AFTER descr"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
     backfill_long_descr($pdo);
+    // v11: angol fordítás oszlopok a termékekhez (kétnyelvű bolt — EN módban ezeket mutatja a bolt)
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN name_en VARCHAR(160) DEFAULT '' AFTER long_descr"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN descr_en VARCHAR(600) DEFAULT '' AFTER name_en"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN long_descr_en TEXT NULL AFTER descr_en"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
@@ -203,6 +210,9 @@ function create_schema(PDO $pdo) {
     name VARCHAR(160) NOT NULL,
     descr VARCHAR(600) DEFAULT '',
     long_descr TEXT NULL,
+    name_en VARCHAR(160) DEFAULT '',
+    descr_en VARCHAR(600) DEFAULT '',
+    long_descr_en TEXT NULL,
     price INT NOT NULL DEFAULT 0,
     category VARCHAR(60) DEFAULT '',
     emoji VARCHAR(16) DEFAULT '📦',
@@ -470,13 +480,16 @@ function insert_product(PDO $pdo, array $p, $sort = 0) {
   $id = (string)($p['id'] ?? '');
   if ($id === '') $id = 'p' . uniqid();
   $price = max(0, (int)($p['price'] ?? 0));
-  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,long_descr,price,category,emoji,image,stock,sale_price,sort)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,long_descr,name_en,descr_en,long_descr_en,price,category,emoji,image,stock,sale_price,sort)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($p['name'] ?? ''), 0, 160),
     mb_substr((string)($p['desc'] ?? ''), 0, 600),
     mb_substr((string)($p['longDesc'] ?? ''), 0, 4000),
+    mb_substr((string)($p['nameEn'] ?? ''), 0, 160),
+    mb_substr((string)($p['descEn'] ?? ''), 0, 600),
+    mb_substr((string)($p['longDescEn'] ?? ''), 0, 4000),
     $price,
     mb_substr((string)($p['category'] ?? ''), 0, 60),
     mb_substr((string)($p['emoji'] ?? '📦'), 0, 16),
@@ -492,6 +505,9 @@ function map_product($r) {
     'name' => $r['name'],
     'desc' => $r['descr'],
     'longDesc' => $r['long_descr'] ?? '',
+    'nameEn' => $r['name_en'] ?? '',
+    'descEn' => $r['descr_en'] ?? '',
+    'longDescEn' => $r['long_descr_en'] ?? '',
     'price' => (int)$r['price'],
     'category' => $r['category'],
     'emoji' => $r['emoji'],

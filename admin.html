@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=60" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=60" />
+  <link rel="stylesheet" href="assets/css/style.css?v=61" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=61" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -476,12 +476,24 @@
           </div>
         </div>
         <div class="field">
+          <label for="m-name-en">Megnevezés — angol 🇬🇧</label>
+          <input type="text" id="m-name-en" placeholder="Üresen hagyva a magyar nevet mutatja EN módban" />
+        </div>
+        <div class="field">
           <label for="m-desc">Rövid leírás</label>
           <textarea id="m-desc" rows="2"></textarea>
         </div>
         <div class="field">
+          <label for="m-desc-en">Rövid leírás — angol 🇬🇧</label>
+          <textarea id="m-desc-en" rows="2" placeholder="Üresen hagyva a magyar leírást mutatja EN módban"></textarea>
+        </div>
+        <div class="field">
           <label for="m-longdesc">Hosszú leírás (a termék részletes nézetében jelenik meg)</label>
           <textarea id="m-longdesc" rows="5" placeholder="Részletes bemutatás: mit tartalmaz, kinek ajánlott, milyen eredményt hoz…"></textarea>
+        </div>
+        <div class="field">
+          <label for="m-longdesc-en">Hosszú leírás — angol 🇬🇧</label>
+          <textarea id="m-longdesc-en" rows="5" placeholder="Üresen hagyva a magyar hosszú leírást mutatja EN módban"></textarea>
         </div>
         <div class="field-row">
           <div class="field">
@@ -622,8 +634,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=60"></script>
-  <script src="assets/js/admin.js?v=60" defer></script>
-  <script src="assets/js/main.js?v=60" defer></script>
+  <script src="assets/js/shop-config.js?v=61"></script>
+  <script src="assets/js/admin.js?v=61" defer></script>
+  <script src="assets/js/main.js?v=61" defer></script>
 </body>
 </html>

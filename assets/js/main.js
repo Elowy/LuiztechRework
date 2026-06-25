@@ -55,6 +55,9 @@
     const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const fmt = (v, cur) => Number(v).toLocaleString('hu-HU') + ' ' + cur;
     const T = (s) => (window.LT_translate ? window.LT_translate(s) : s);
+    const isEN = (() => { try { return localStorage.getItem('lt_lang') === 'en'; } catch (e) { return false; } })();
+    const pName = (p) => (isEN && p.nameEn && String(p.nameEn).trim()) ? p.nameEn : p.name;
+    const pDesc = (p) => (isEN && p.descEn && String(p.descEn).trim()) ? p.descEn : p.desc;
     fetch('/api/shop', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((cfg) => {
@@ -73,8 +76,8 @@
             : '<div class="feat-emoji">' + esc(p.emoji || '📦') + '</div>';
           return '<article class="price-card reveal in">' +
             media +
-            '<h3>' + esc(p.name) + '</h3>' +
-            (p.desc ? '<p class="price-sub">' + esc(p.desc) + '</p>' : '') +
+            '<h3>' + esc(pName(p)) + '</h3>' +
+            (pDesc(p) ? '<p class="price-sub">' + esc(pDesc(p)) + '</p>' : '') +
             '<div class="price">' + priceHtml + '</div>' +
             '<a href="webshop.html" class="btn btn-primary btn-block">' + T('Megnézem a boltban') + '</a>' +
           '</article>';

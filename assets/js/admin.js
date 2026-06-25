@@ -268,8 +268,11 @@
     $('#m-id').value = p ? p.id : '';
     $('#m-emoji').value = p ? (p.emoji || '') : '📦';
     $('#m-name').value = p ? p.name : '';
+    $('#m-name-en').value = p ? (p.nameEn || '') : '';
     $('#m-desc').value = p ? (p.desc || '') : '';
+    $('#m-desc-en').value = p ? (p.descEn || '') : '';
     $('#m-longdesc').value = p ? (p.longDesc || '') : '';
+    $('#m-longdesc-en').value = p ? (p.longDescEn || '') : '';
     $('#m-price').value = p ? p.price : '';
     $('#m-category').value = p ? (p.category || '') : '';
     $('#m-stock').value = (p && p.stock != null) ? p.stock : '';
@@ -336,7 +339,7 @@
     var saleRaw = $('#m-saleprice').value.trim();
     var salePrice = saleRaw === '' ? null : Math.max(0, parseInt(saleRaw, 10) || 0);
     if (salePrice != null && salePrice >= price) { $('#modal-err').textContent = 'Az akciós árnak kisebbnek kell lennie a normál árnál.'; return; }
-    var data = { name: name, desc: $('#m-desc').value.trim(), longDesc: $('#m-longdesc').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, salePrice: salePrice, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
+    var data = { name: name, desc: $('#m-desc').value.trim(), longDesc: $('#m-longdesc').value.trim(), nameEn: $('#m-name-en').value.trim(), descEn: $('#m-desc-en').value.trim(), longDescEn: $('#m-longdesc-en').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, salePrice: salePrice, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
     if (editingId) {
       cfg.products = cfg.products.map(function (p) { return p.id === editingId ? Object.assign(p, data) : p; });
     } else {

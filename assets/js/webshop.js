@@ -55,6 +55,22 @@
     });
   }
   function setText(sel, val) { var el = $(sel); if (el != null && val != null) el.textContent = val; }
+
+  /* ---------- Termékek nyelvi lokalizációja ----------
+     EN módban a termék angol mezőit (nameEn/descEn/longDescEn) használjuk
+     megjelenítésre; ha üres, marad a magyar. Így a kosár, gyorsnézet,
+     JSON-LD és kereső is egységesen az aktuális nyelven dolgozik. */
+  function curLang() {
+    try { return localStorage.getItem('lt_lang') === 'en' ? 'en' : 'hu'; } catch (e) { return 'hu'; }
+  }
+  function localizeProducts(list) {
+    if (curLang() !== 'en') return;
+    (list || []).forEach(function (p) {
+      if (p.nameEn && String(p.nameEn).trim()) p.name = p.nameEn;
+      if (p.descEn && String(p.descEn).trim()) p.desc = p.descEn;
+      if (p.longDescEn && String(p.longDescEn).trim()) p.longDesc = p.longDescEn;
+    });
+  }
   function statusClass(s) {
     return {
       'Új': 'st-new', 'Feldolgozás alatt': 'st-progress', 'Teljesítve': 'st-done', 'Törölve': 'st-cancelled',
@@ -841,6 +857,7 @@
     S.getShop().then(function (data) {
       cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), data);
       if (!Array.isArray(cfg.products)) cfg.products = [];
+      localizeProducts(cfg.products);
       applyBranding(); buildFilters(); renderProducts(); updateCartUI(); buildJsonLd();
     });
   }
