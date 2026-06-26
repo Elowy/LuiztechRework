@@ -817,15 +817,22 @@
         .then((r) => (r.ok ? r.json() : []))
         .then((items) => {
           if (!Array.isArray(items) || !items.length) return;
+          const isEN = (() => { try { return localStorage.getItem('lt_lang') === 'en'; } catch (e) { return false; } })();
+          const L = (it, hu, en) => (isEN && it[en] && String(it[en]).trim()) ? it[en] : it[hu];
           const cards = items.map((it) => {
-            const more = escH(it.details || it.description || '');
+            const tag = L(it, 'tag', 'tagEn');
+            const title = L(it, 'title', 'titleEn');
+            const description = L(it, 'description', 'descriptionEn');
+            const details = L(it, 'details', 'detailsEn');
+            const info = L(it, 'info', 'infoEn');
+            const more = escH(details || description || '');
             const urlAttr = it.url ? ' data-url="' + escH(it.url) + '"' : '';
             return '<article class="work-card clickable reveal in' + (it.gold ? ' work-gold' : '') + (it.new ? ' work-new' : '') + '" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
               (it.new ? '<span class="work-new-badge">Új</span>' : '') +
-              (it.tag ? '<div class="work-tag">' + escH(it.tag) + '</div>' : '') +
-              '<h3>' + escH(it.title) + '</h3>' +
-              '<p>' + escH(it.description || '') + '</p>' +
-              (it.info ? '<div class="work-meta"><span>' + escH(it.info) + '</span></div>' : '') +
+              (tag ? '<div class="work-tag">' + escH(tag) + '</div>' : '') +
+              '<h3>' + escH(title) + '</h3>' +
+              '<p>' + escH(description || '') + '</p>' +
+              (info ? '<div class="work-meta"><span>' + escH(info) + '</span></div>' : '') +
             '</article>';
           }).join('');
           const cta =

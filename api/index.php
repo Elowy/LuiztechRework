@@ -215,13 +215,18 @@ if ($method === 'PUT' && match_route('/admin/references/{id}', $route, $params))
   if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
   $chk = $pdo->prepare("SELECT id FROM refs WHERE id = ?"); $chk->execute([$params[0]]);
   if (!$chk->fetch()) json_error('A referencia nem található.', 404);
-  $stmt = $pdo->prepare("UPDATE refs SET tag=?, title=?, description=?, details=?, info=?, url=?, gold=?, is_new=? WHERE id=?");
+  $stmt = $pdo->prepare("UPDATE refs SET tag=?, tag_en=?, title=?, title_en=?, description=?, description_en=?, details=?, details_en=?, info=?, info_en=?, url=?, gold=?, is_new=? WHERE id=?");
   $stmt->execute([
     mb_substr((string)($b['tag'] ?? ''), 0, 60),
+    mb_substr((string)($b['tagEn'] ?? ''), 0, 60),
     mb_substr((string)($b['title'] ?? ''), 0, 160),
+    mb_substr((string)($b['titleEn'] ?? ''), 0, 160),
     mb_substr((string)($b['description'] ?? ''), 0, 600),
+    mb_substr((string)($b['descriptionEn'] ?? ''), 0, 600),
     mb_substr((string)($b['details'] ?? ''), 0, 2000),
+    mb_substr((string)($b['detailsEn'] ?? ''), 0, 2000),
     mb_substr((string)($b['info'] ?? ''), 0, 160),
+    mb_substr((string)($b['infoEn'] ?? ''), 0, 160),
     clean_url($b['url'] ?? ''),
     !empty($b['gold']) ? 1 : 0,
     !empty($b['new']) ? 1 : 0,

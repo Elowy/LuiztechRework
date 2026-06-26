@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=62" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=62" />
+  <link rel="stylesheet" href="assets/css/style.css?v=63" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=63" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -511,6 +511,11 @@
           </div>
         </div>
         <div class="field">
+          <label for="m-category-en">Kategória — angol 🇬🇧</label>
+          <input type="text" id="m-category-en" list="cat-list-en" placeholder="Üresen hagyva a magyar kategórianevet mutatja EN módban" />
+          <datalist id="cat-list-en"></datalist>
+        </div>
+        <div class="field">
           <label for="m-saleprice">Akciós ár (opcionális)</label>
           <input type="number" id="m-saleprice" min="0" step="1000" placeholder="nincs akció" />
         </div>
@@ -577,19 +582,43 @@
             <input type="text" id="r-tag" placeholder="Weboldal / Webshop…" />
           </div>
         </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="r-title-en">Cím — angol 🇬🇧</label>
+            <input type="text" id="r-title-en" placeholder="Üresen hagyva a magyart mutatja EN módban" />
+          </div>
+          <div class="field" style="flex:0 0 150px">
+            <label for="r-tag-en">Címke — angol 🇬🇧</label>
+            <input type="text" id="r-tag-en" placeholder="Website / Webshop…" />
+          </div>
+        </div>
         <div class="field">
           <label for="r-description">Rövid leírás (kártyán)</label>
           <textarea id="r-description" rows="2"></textarea>
         </div>
         <div class="field">
+          <label for="r-description-en">Rövid leírás — angol 🇬🇧</label>
+          <textarea id="r-description-en" rows="2" placeholder="Üresen hagyva a magyart mutatja EN módban"></textarea>
+        </div>
+        <div class="field">
           <label for="r-details">Részletek (felugró ablakban)</label>
           <textarea id="r-details" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="r-details-en">Részletek — angol 🇬🇧</label>
+          <textarea id="r-details-en" rows="3" placeholder="Üresen hagyva a magyart mutatja EN módban"></textarea>
         </div>
         <div class="field-row">
           <div class="field">
             <label for="r-info">Meta (pl. dátum, jelvény)</label>
             <input type="text" id="r-info" placeholder="2024 · ⚡ 24 óra alatt" />
           </div>
+          <div class="field">
+            <label for="r-info-en">Meta — angol 🇬🇧</label>
+            <input type="text" id="r-info-en" placeholder="2024 · ⚡ Done in 24 hours" />
+          </div>
+        </div>
+        <div class="field-row">
           <div class="field">
             <label for="r-url">Webcím (URL)</label>
             <input type="url" id="r-url" placeholder="https://pelda.hu" />
@@ -634,8 +663,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=62"></script>
-  <script src="assets/js/admin.js?v=62" defer></script>
-  <script src="assets/js/main.js?v=62" defer></script>
+  <script src="assets/js/shop-config.js?v=63"></script>
+  <script src="assets/js/admin.js?v=63" defer></script>
+  <script src="assets/js/main.js?v=63" defer></script>
 </body>
 </html>

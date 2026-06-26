@@ -275,6 +275,7 @@
     $('#m-longdesc-en').value = p ? (p.longDescEn || '') : '';
     $('#m-price').value = p ? p.price : '';
     $('#m-category').value = p ? (p.category || '') : '';
+    $('#m-category-en').value = p ? (p.categoryEn || '') : '';
     $('#m-stock').value = (p && p.stock != null) ? p.stock : '';
     $('#m-saleprice').value = (p && p.salePrice != null) ? p.salePrice : '';
     $('#m-image').value = p ? (p.image || '') : '';
@@ -339,7 +340,7 @@
     var saleRaw = $('#m-saleprice').value.trim();
     var salePrice = saleRaw === '' ? null : Math.max(0, parseInt(saleRaw, 10) || 0);
     if (salePrice != null && salePrice >= price) { $('#modal-err').textContent = 'Az akciós árnak kisebbnek kell lennie a normál árnál.'; return; }
-    var data = { name: name, desc: $('#m-desc').value.trim(), longDesc: $('#m-longdesc').value.trim(), nameEn: $('#m-name-en').value.trim(), descEn: $('#m-desc-en').value.trim(), longDescEn: $('#m-longdesc-en').value.trim(), price: price, category: $('#m-category').value.trim(), stock: stock, salePrice: salePrice, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
+    var data = { name: name, desc: $('#m-desc').value.trim(), longDesc: $('#m-longdesc').value.trim(), nameEn: $('#m-name-en').value.trim(), descEn: $('#m-desc-en').value.trim(), longDescEn: $('#m-longdesc-en').value.trim(), price: price, category: $('#m-category').value.trim(), categoryEn: $('#m-category-en').value.trim(), stock: stock, salePrice: salePrice, emoji: $('#m-emoji').value.trim() || '📦', image: $('#m-image').value || '' };
     if (editingId) {
       cfg.products = cfg.products.map(function (p) { return p.id === editingId ? Object.assign(p, data) : p; });
     } else {
@@ -502,10 +503,15 @@
     $('#reference-modal-title').textContent = r ? 'referencia szerkesztése' : 'új referencia';
     $('#r-id').value = r ? r.id : '';
     $('#r-title').value = r ? r.title : '';
+    $('#r-title-en').value = r ? (r.titleEn || '') : '';
     $('#r-tag').value = r ? (r.tag || '') : '';
+    $('#r-tag-en').value = r ? (r.tagEn || '') : '';
     $('#r-description').value = r ? (r.description || '') : '';
+    $('#r-description-en').value = r ? (r.descriptionEn || '') : '';
     $('#r-details').value = r ? (r.details || '') : '';
+    $('#r-details-en').value = r ? (r.detailsEn || '') : '';
     $('#r-info').value = r ? (r.info || '') : '';
+    $('#r-info-en').value = r ? (r.infoEn || '') : '';
     $('#r-url').value = r ? (r.url || '') : '';
     $('#r-gold').checked = r ? !!r.gold : false;
     $('#r-new').checked = r ? !!r.new : false;
@@ -523,6 +529,9 @@
     var payload = {
       title: title, tag: $('#r-tag').value.trim(), description: $('#r-description').value.trim(),
       details: $('#r-details').value.trim(), info: $('#r-info').value.trim(), url: $('#r-url').value.trim(),
+      titleEn: $('#r-title-en').value.trim(), tagEn: $('#r-tag-en').value.trim(),
+      descriptionEn: $('#r-description-en').value.trim(), detailsEn: $('#r-details-en').value.trim(),
+      infoEn: $('#r-info-en').value.trim(),
       gold: $('#r-gold').checked, new: $('#r-new').checked
     };
     var id = $('#r-id').value;

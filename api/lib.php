@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -163,6 +163,19 @@ function migrate(PDO $pdo) {
     catch (Throwable $e) { /* már létezik → tovább */ }
     try { $pdo->exec("ALTER TABLE products ADD COLUMN long_descr_en TEXT NULL AFTER descr_en"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
+    // v12: angol kategória a termékekhez + angol fordítás mezők a referenciákhoz
+    try { $pdo->exec("ALTER TABLE products ADD COLUMN category_en VARCHAR(60) DEFAULT '' AFTER category"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN tag_en VARCHAR(60) DEFAULT '' AFTER tag"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN title_en VARCHAR(160) DEFAULT '' AFTER title"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN description_en VARCHAR(600) DEFAULT '' AFTER description"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN details_en VARCHAR(2000) DEFAULT '' AFTER details"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
+    try { $pdo->exec("ALTER TABLE refs ADD COLUMN info_en VARCHAR(160) DEFAULT '' AFTER info"); }
+    catch (Throwable $e) { /* már létezik → tovább */ }
     // v6: számlaszám oszlop a rendelésekhez (Számlázz.hu)
     try { $pdo->exec("ALTER TABLE orders ADD COLUMN invoice_no VARCHAR(40) DEFAULT '' AFTER status"); }
     catch (Throwable $e) { /* már létezik → tovább */ }
@@ -215,6 +228,7 @@ function create_schema(PDO $pdo) {
     long_descr_en TEXT NULL,
     price INT NOT NULL DEFAULT 0,
     category VARCHAR(60) DEFAULT '',
+    category_en VARCHAR(60) DEFAULT '',
     emoji VARCHAR(16) DEFAULT '📦',
     image VARCHAR(300) DEFAULT '',
     stock INT NULL,
@@ -281,10 +295,15 @@ function create_schema(PDO $pdo) {
   $pdo->exec("CREATE TABLE IF NOT EXISTS refs (
     id VARCHAR(40) PRIMARY KEY,
     tag VARCHAR(60) DEFAULT '',
+    tag_en VARCHAR(60) DEFAULT '',
     title VARCHAR(160) NOT NULL,
+    title_en VARCHAR(160) DEFAULT '',
     description VARCHAR(600) DEFAULT '',
+    description_en VARCHAR(600) DEFAULT '',
     details VARCHAR(2000) DEFAULT '',
+    details_en VARCHAR(2000) DEFAULT '',
     info VARCHAR(160) DEFAULT '',
+    info_en VARCHAR(160) DEFAULT '',
     url VARCHAR(300) DEFAULT '',
     gold TINYINT NOT NULL DEFAULT 0,
     is_new TINYINT NOT NULL DEFAULT 0,
@@ -480,8 +499,8 @@ function insert_product(PDO $pdo, array $p, $sort = 0) {
   $id = (string)($p['id'] ?? '');
   if ($id === '') $id = 'p' . uniqid();
   $price = max(0, (int)($p['price'] ?? 0));
-  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,long_descr,name_en,descr_en,long_descr_en,price,category,emoji,image,stock,sale_price,sort)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO products (id,name,descr,long_descr,name_en,descr_en,long_descr_en,price,category,category_en,emoji,image,stock,sale_price,sort)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($p['name'] ?? ''), 0, 160),
@@ -492,6 +511,7 @@ function insert_product(PDO $pdo, array $p, $sort = 0) {
     mb_substr((string)($p['longDescEn'] ?? ''), 0, 4000),
     $price,
     mb_substr((string)($p['category'] ?? ''), 0, 60),
+    mb_substr((string)($p['categoryEn'] ?? ''), 0, 60),
     mb_substr((string)($p['emoji'] ?? '📦'), 0, 16),
     clean_image($p['image'] ?? ''),
     parse_stock($p['stock'] ?? null),
@@ -510,6 +530,7 @@ function map_product($r) {
     'longDescEn' => $r['long_descr_en'] ?? '',
     'price' => (int)$r['price'],
     'category' => $r['category'],
+    'categoryEn' => $r['category_en'] ?? '',
     'emoji' => $r['emoji'],
     'image' => $r['image'],
     'stock' => is_null($r['stock']) ? null : (int)$r['stock'],
@@ -1128,14 +1149,19 @@ function clean_url($u) {
 function insert_reference(PDO $pdo, array $r, $sort = 0) {
   $id = (string)($r['id'] ?? '');
   if ($id === '') $id = 'r' . uniqid();
-  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,title,description,details,info,url,gold,is_new,sort) VALUES (?,?,?,?,?,?,?,?,?,?)");
+  $stmt = $pdo->prepare("INSERT INTO refs (id,tag,tag_en,title,title_en,description,description_en,details,details_en,info,info_en,url,gold,is_new,sort) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
   $stmt->execute([
     $id,
     mb_substr((string)($r['tag'] ?? ''), 0, 60),
+    mb_substr((string)($r['tagEn'] ?? ''), 0, 60),
     mb_substr((string)($r['title'] ?? ''), 0, 160),
+    mb_substr((string)($r['titleEn'] ?? ''), 0, 160),
     mb_substr((string)($r['description'] ?? ''), 0, 600),
+    mb_substr((string)($r['descriptionEn'] ?? ''), 0, 600),
     mb_substr((string)($r['details'] ?? ''), 0, 2000),
+    mb_substr((string)($r['detailsEn'] ?? ''), 0, 2000),
     mb_substr((string)($r['info'] ?? ''), 0, 160),
+    mb_substr((string)($r['infoEn'] ?? ''), 0, 160),
     clean_url($r['url'] ?? ''),
     !empty($r['gold']) ? 1 : 0,
     !empty($r['new']) ? 1 : 0,
@@ -1148,6 +1174,9 @@ function map_reference($r) {
     'id' => $r['id'], 'tag' => $r['tag'], 'title' => $r['title'],
     'description' => $r['description'], 'details' => $r['details'],
     'info' => $r['info'], 'url' => $r['url'],
+    'tagEn' => $r['tag_en'] ?? '', 'titleEn' => $r['title_en'] ?? '',
+    'descriptionEn' => $r['description_en'] ?? '', 'detailsEn' => $r['details_en'] ?? '',
+    'infoEn' => $r['info_en'] ?? '',
     'gold' => !empty($r['gold']),
     'new' => !empty($r['is_new']),
   ];

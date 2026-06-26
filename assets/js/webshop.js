@@ -65,10 +65,19 @@
   }
   function localizeProducts(list) {
     if (curLang() !== 'en') return;
+    // Kanonikus HU→EN kategória-térkép: az első kitöltött angol érték nyer,
+    // így egy kategória minden terméke ugyanazt az EN címkét kapja (a szűrő nem hasad szét).
+    var catMap = {};
+    (list || []).forEach(function (p) {
+      if (p.category && p.categoryEn && String(p.categoryEn).trim() && !catMap[p.category]) {
+        catMap[p.category] = String(p.categoryEn).trim();
+      }
+    });
     (list || []).forEach(function (p) {
       if (p.nameEn && String(p.nameEn).trim()) p.name = p.nameEn;
       if (p.descEn && String(p.descEn).trim()) p.desc = p.descEn;
       if (p.longDescEn && String(p.longDescEn).trim()) p.longDesc = p.longDescEn;
+      if (p.category && catMap[p.category]) p.category = catMap[p.category];
     });
   }
   function statusClass(s) {
