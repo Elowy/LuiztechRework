@@ -974,6 +974,14 @@ code { font-family: var(--mono); }
 .price-card li { font-size: .92rem; color: var(--text-muted); padding-left: 24px; position: relative; }
 .price-card li::before { content: "✓"; position: absolute; left: 2px; color: var(--accent-3); font-weight: 700; }
 
+/* Népszerű a webshopból — azonos magasságú kártyák, alulra rögzített ár + CTA */
+#featured-products { align-items: stretch; }
+#featured-products .price-card .price { margin-top: auto; }
+#featured-products .price-card .price-sub {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
 @media (max-width: 880px) { .pricing-grid { grid-template-columns: 1fr; max-width: 460px; margin-inline: auto; } }
 
 /* ============================================================
