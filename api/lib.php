@@ -44,6 +44,7 @@ const DEFAULT_CONFIG = [
   'gaMeasurementId' => '',
   'szamlazzAgentKey' => '',
   'stripeSecretKey' => '',
+  'stripeWebhookSecret' => '',
 ];
 
 const DEFAULT_PRODUCTS = [
@@ -74,10 +75,10 @@ const DEFAULT_REFERENCES = [
   ['id'=>'bgyarmatpaint','tag'=>'Weboldal','title'=>'BGyarmat Paint','description'=>'Festékek és szakáru bemutatása letisztult, könnyen kezelhető weboldalon.','details'=>'Modern, reszponzív weboldal a BGyarmat Paint számára: áttekinthető termék- és szolgáltatásbemutatás, gyors betöltés és SEO-barát felépítés.','info'=>'2024 · 🎨 Festék & szakáru','url'=>'https://bgyarmatpaint.hu'],
 ];
 
-const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','metaTitle','metaDescription','gaMeasurementId','szamlazzAgentKey','stripeSecretKey'];
+const ALLOWED_CONFIG = ['name','tagline','accent','accent2','theme','currency','heroTitle','heroText','freeShippingOver','notifyEmail','contactPhone','contactViber','contactWhatsapp','contactMessenger','contactEmail','backToTop','metaTitle','metaDescription','gaMeasurementId','szamlazzAgentKey','stripeSecretKey','stripeWebhookSecret'];
 // Titkos kulcsok: soha nem kerülnek be a config kimenetébe (sem publikus, sem admin),
 // és üres értékkel nem írjuk felül a meglévőt.
-const SECRET_CONFIG = ['szamlazzAgentKey','stripeSecretKey'];
+const SECRET_CONFIG = ['szamlazzAgentKey','stripeSecretKey','stripeWebhookSecret'];
 
 /* ---------- Útvonalak ---------- */
 function config_path() { return __DIR__ . '/../config.php'; }
@@ -739,21 +740,18 @@ function create_order(PDO $pdo, array $payload, $user) {
       $total, 'Új', $couponCode, $discount, $now,
     ]);
     $ins = $pdo->prepare("INSERT INTO order_items (order_id,product_id,name,price,qty) VALUES (?,?,?,?,?)");
-    $dec = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ? AND stock IS NOT NULL");
     foreach ($items as $it) {
       $ins->execute([$oid, $it['id'], $it['name'], $it['price'], $it['qty']]);
-      $dec->execute([$it['qty'], $it['id']]);
     }
     $pdo->commit();
   } catch (Throwable $e) {
     $pdo->rollBack();
     return ['error' => 'A rendelés mentése sikertelen.'];
   }
-  // kupon felhasználás-számláló növelése (nem blokkoló)
-  if ($couponCode !== '') {
-    try { $pdo->prepare("UPDATE coupons SET used = used + 1 WHERE code = ?")->execute([$couponCode]); }
-    catch (Throwable $e) { /* nem blokkoló */ }
-  }
+  // A készletet és a kupon-felhasználást NEM itt vonjuk le: kártyás (Stripe) rendelésnél
+  // csak a sikeres fizetés megerősítésekor (stripe_confirm), hogy az elhagyott/be nem
+  // fejezett fizetés ne „égesse el" a készletet és a kupont. Az azonnali (nem kártyás)
+  // rendeléseknél lentebb, a Stripe-döntés után alkalmazzuk.
   // Stripe: ha be van állítva a titkos kulcs, online bankkártyás fizetési munkamenetet hozunk létre.
   $status = 'Új';
   $checkoutUrl = '';
@@ -775,6 +773,8 @@ function create_order(PDO $pdo, array $payload, $user) {
   // fizetés megerősítésekor állítjuk ki a számlát (lásd stripe_confirm()).
   $invoiceNo = '';
   if ($status !== 'Fizetésre vár') {
+    // Azonnali (nem kártyás) rendelés: készlet + kupon levonása most.
+    apply_order_inventory($pdo, $oid, $couponCode);
     $invoiceNo = maybe_issue_invoice($pdo, $cfgFull, $oid, $name, $email, (string)($c['address'] ?? ''), $items);
     notify_admin($pdo, 'Új rendelés – ' . $oid, order_notify_body($oid, $total, $name, $email, $c, $invoiceNo, $items), $email);
   } else {
@@ -785,6 +785,33 @@ function create_order(PDO $pdo, array $payload, $user) {
   catch (Throwable $e) { error_log('order confirmation mail: ' . $e->getMessage()); }
 
   return ['order' => ['id' => $oid, 'total' => $total, 'status' => $status, 'invoiceNo' => $invoiceNo, 'checkoutUrl' => $checkoutUrl]];
+}
+
+/* Készlet + kupon-felhasználás levonása egy rendeléshez (a rendelés tételeiből).
+   Akkor hívjuk, amikor a rendelés ténylegesen érvényessé válik: azonnali rendelésnél
+   a létrehozáskor, kártyás rendelésnél a sikeres fizetés megerősítésekor. A hívót egy
+   atomi státusz-váltás védi (lásd stripe_confirm), így nem fut le kétszer. */
+function apply_order_inventory(PDO $pdo, string $oid, string $couponCode) {
+  try {
+    $it = $pdo->prepare("SELECT product_id, qty FROM order_items WHERE order_id = ?");
+    $it->execute([$oid]);
+    $dec = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ? AND stock IS NOT NULL");
+    foreach ($it->fetchAll() as $r) $dec->execute([(int)$r['qty'], (string)$r['product_id']]);
+    if (trim($couponCode) !== '') {
+      $pdo->prepare("UPDATE coupons SET used = used + 1 WHERE code = ?")->execute([$couponCode]);
+    }
+  } catch (Throwable $e) { error_log('apply_order_inventory: ' . $e->getMessage()); }
+}
+
+/* Készlet visszaírása egy rendelés tételeiből (rendelés törlésekor, ha a készletet
+   korábban már levontuk). A null készletű (korlátlan) termékeket nem érinti. */
+function restore_order_inventory(PDO $pdo, string $oid) {
+  try {
+    $it = $pdo->prepare("SELECT product_id, qty FROM order_items WHERE order_id = ?");
+    $it->execute([$oid]);
+    $inc = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ? AND stock IS NOT NULL");
+    foreach ($it->fetchAll() as $r) $inc->execute([(int)$r['qty'], (string)$r['product_id']]);
+  } catch (Throwable $e) { error_log('restore_order_inventory: ' . $e->getMessage()); }
 }
 
 /* ---------- Számla + értesítés segédek ---------- */
@@ -929,11 +956,26 @@ function stripe_confirm(PDO $pdo, $oid, $sessionId) {
   if ($resp === false) return ['error' => 'Stripe kapcsolódási hiba.'];
   $s = json_decode($resp, true);
   if ($code < 200 || $code >= 300 || !is_array($s)) return ['error' => 'Stripe hiba.'];
-  // a session a rendeléshez tartozzon, és kifizetett legyen
+  // a session a rendeléshez tartozzon: client_reference_id ÉS a rendeléskor mentett session-id is egyezzen
   if ((string)($s['client_reference_id'] ?? '') !== $oid) return ['error' => 'A fizetés nem ehhez a rendeléshez tartozik.'];
+  $boundSession = trim((string)($order['stripe_session'] ?? ''));
+  if ($boundSession !== '' && $boundSession !== $sessionId) return ['error' => 'A fizetés nem ehhez a rendeléshez tartozik.'];
   if (($s['payment_status'] ?? '') !== 'paid') return ['ok' => false, 'status' => $order['status'], 'pending' => true];
-  // kifizetve → státusz + számla
-  try { $pdo->prepare("UPDATE orders SET status = 'Fizetve' WHERE id = ?")->execute([$oid]); } catch (Throwable $e) {}
+  // a ténylegesen fizetett összeg egyezzen a rendelés végösszegével (Stripe minor egység: ×100)
+  $expected = (int)round((float)$order['total']) * 100;
+  if (isset($s['amount_total']) && (int)$s['amount_total'] !== $expected) {
+    notify_admin($pdo, 'Fizetési összeg-eltérés – ' . $oid,
+      "A Stripe által jelentett összeg ({$s['amount_total']}) nem egyezik a rendelés végösszegével ({$expected}).\n" .
+      "Azonosító: {$oid}\nA rendelést NEM jelöltük kifizetettnek — kézi ellenőrzés szükséges.", (string)$order['cust_email']);
+    return ['error' => 'A fizetett összeg nem egyezik a rendeléssel.'];
+  }
+  // Atomi státusz-váltás: csak az a hívás megy tovább, amelyik ténylegesen átállítja a sort.
+  // (A böngésző-visszatérés és a webhook is hívhatja egyszerre — így nem fut le kétszer a készlet/számla.)
+  $flip = $pdo->prepare("UPDATE orders SET status = 'Fizetve' WHERE id = ? AND status NOT IN ('Fizetve','Teljesítve')");
+  $flip->execute([$oid]);
+  if ($flip->rowCount() === 0) return ['ok' => true, 'status' => 'Fizetve', 'id' => $oid];
+  // A győztes hívás: készlet + kupon-felhasználás levonása, majd számla kiállítása.
+  apply_order_inventory($pdo, $oid, (string)($order['coupon_code'] ?? ''));
   $items = [];
   $it = $pdo->prepare("SELECT name, price, qty FROM order_items WHERE order_id = ?");
   $it->execute([$oid]);
@@ -947,6 +989,45 @@ function stripe_confirm(PDO $pdo, $oid, $sessionId) {
   try { send_payment_receipt($cfg, $oid, (string)$order['cust_name'], (string)$order['cust_email'], (int)$order['total'], $invoiceNo); }
   catch (Throwable $e) { error_log('payment receipt mail: ' . $e->getMessage()); }
   return ['ok' => true, 'status' => 'Fizetve', 'id' => $oid, 'invoiceNo' => $invoiceNo];
+}
+
+/* Stripe webhook aláírás ellenőrzése (HMAC-SHA256 a "t.payload" felett a webhook-titokkal).
+   A Stripe-Signature fejléc formátuma: "t=<unix>,v1=<hex>[,v1=<hex>...]". */
+function stripe_verify_signature($payload, $sigHeader, $secret) {
+  $sigHeader = (string)$sigHeader; $secret = (string)$secret;
+  if ($sigHeader === '' || $secret === '') return false;
+  $t = ''; $sigs = [];
+  foreach (explode(',', $sigHeader) as $part) {
+    $kv = explode('=', $part, 2);
+    if (count($kv) !== 2) continue;
+    $k = trim($kv[0]); $v = trim($kv[1]);
+    if ($k === 't') $t = $v;
+    elseif ($k === 'v1') $sigs[] = $v;
+  }
+  if ($t === '' || !count($sigs)) return false;
+  $expected = hash_hmac('sha256', $t . '.' . $payload, $secret);
+  foreach ($sigs as $sig) { if (hash_equals($expected, $sig)) return true; }
+  return false;
+}
+
+/* Stripe webhook feldolgozása: aláírás-ellenőrzés után a sikeres fizetési eseményeknél
+   a rendelést a megbízható szerveroldali úton (stripe_confirm) erősítjük meg — így akkor is
+   teljesül a fizetés, ha a vásárló nem tér vissza a sikeres oldalra. Idempotens. */
+function stripe_handle_webhook(PDO $pdo, $payload, $sigHeader) {
+  $cfg = get_config($pdo, true);
+  $secret = trim((string)($cfg['stripeWebhookSecret'] ?? ''));
+  if ($secret === '') return ['error' => 'A webhook nincs beállítva.', 'code' => 400];
+  if (!stripe_verify_signature($payload, $sigHeader, $secret)) return ['error' => 'Érvénytelen aláírás.', 'code' => 400];
+  $event = json_decode((string)$payload, true);
+  if (!is_array($event)) return ['error' => 'Hibás esemény.', 'code' => 400];
+  $type = (string)($event['type'] ?? '');
+  if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true)) {
+    $session = $event['data']['object'] ?? [];
+    $oid = (string)($session['client_reference_id'] ?? '');
+    $sid = (string)($session['id'] ?? '');
+    if ($oid !== '' && $sid !== '') stripe_confirm($pdo, $oid, $sid);
+  }
+  return ['ok' => true];
 }
 
 /* ============================================================

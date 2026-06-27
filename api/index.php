@@ -13,6 +13,16 @@ $route = '/' . trim($route, '/');
 if ($route === '/') { /* gyökér */ }
 $method = $_SERVER['REQUEST_METHOD'];
 
+/* ---- Stripe webhook: a CSRF ELŐTT kezeljük (a Stripe nem küld CSRF-tokent);
+   a kérést a webhook-aláírás hitelesíti. A nyers törzset itt olvassuk be. ---- */
+if ($method === 'POST' && $route === '/stripe/webhook') {
+  $pdo = db();
+  $payload = file_get_contents('php://input');
+  $res = stripe_handle_webhook($pdo, $payload, $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '');
+  if (isset($res['error'])) json_error($res['error'], $res['code'] ?? 400);
+  json_out($res);
+}
+
 /* ---- CSRF: minden állapotváltó (nem GET) kérésnél kötelező az érvényes token ---- */
 if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
   require_csrf();
@@ -99,6 +109,13 @@ if ($method === 'PATCH' && match_route('/admin/orders/{id}', $route, $params)) {
   $prev = $old->fetch();
   if (!$prev) json_error('A rendelés nem található.', 404);
   $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?")->execute([$status, $params[0]]);
+  // Készlet visszaírása törléskor — csak ha a készletet korábban már levontuk
+  // (azaz a rendelés nem fizetésre váró és nem volt már törölve). A 'Fizetésre vár'
+  // rendeléseknél a készlet még nincs levonva, ezért ott nem írunk vissza.
+  $stockApplied = !in_array((string)$prev['status'], ['Fizetésre vár', 'Törölve'], true);
+  if ($status === 'Törölve' && (string)$prev['status'] !== 'Törölve' && $stockApplied) {
+    restore_order_inventory($pdo, $params[0]);
+  }
   // tényleges változásnál értesítjük a vásárlót (tranzakciós, nem blokkoló)
   if ((string)$prev['status'] !== $status) {
     try { send_status_update(get_config($pdo), $params[0], (string)$prev['cust_name'], (string)$prev['cust_email'], $status); }

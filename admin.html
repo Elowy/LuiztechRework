@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=63" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=63" />
+  <link rel="stylesheet" href="assets/css/style.css?v=64" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=64" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -201,6 +201,18 @@
               (Stripe Checkout — biztonságos, hosztolt fizetőoldal). A kulcsot a Stripe Dashboard →
               Fejlesztők → API-kulcsok alatt találod. Teszteléshez használj <code>sk_test_…</code> kulcsot.
               Biztonsági okból a mentett kulcsot nem jelenítjük meg újra — hagyd üresen, ha nem változtatod.
+            </p>
+          </div>
+          <div class="field">
+            <label for="f-stripe-webhook">Stripe webhook aláírókulcs (signing secret)</label>
+            <input type="password" id="f-stripe-webhook" autocomplete="off" placeholder="whsec_…" />
+            <p class="admin-inline-note" id="stripe-webhook-note" role="status"></p>
+            <p class="admin-desc" style="margin-top:6px">
+              Erősen ajánlott: ezzel a fizetés akkor is rögzül, ha a vásárló nem tér vissza a
+              fizetőoldalról. A Stripe Dashboard → Fejlesztők → Webhookok alatt hozz létre egy
+              végpontot a <code>…/api/stripe/webhook</code> címre (esemény:
+              <code>checkout.session.completed</code>), majd másold ide a <code>whsec_…</code> aláírókulcsot.
+              Üresen hagyva nem változtatjuk a meglévőt.
             </p>
           </div>
         </section>
@@ -663,8 +675,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=63"></script>
-  <script src="assets/js/admin.js?v=63" defer></script>
-  <script src="assets/js/main.js?v=63" defer></script>
+  <script src="assets/js/shop-config.js?v=64"></script>
+  <script src="assets/js/admin.js?v=64" defer></script>
+  <script src="assets/js/main.js?v=64" defer></script>
 </body>
 </html>

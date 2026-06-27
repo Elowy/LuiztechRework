@@ -137,8 +137,10 @@
     setTheme(cfg.theme);
     setVal('#f-szamlazz', '');          // titkos kulcsot soha nem töltünk vissza
     setVal('#f-stripe', '');
+    setVal('#f-stripe-webhook', '');
     updateSzamlazzNote();
     updateStripeNote();
+    updateWebhookNote();
     buildSwatches();
     renderProductList();
     updatePreview();
@@ -155,6 +157,12 @@
     var note = $('#stripe-note'); if (!note) return;
     var set = !!cfg.stripeSecretKeySet;
     note.textContent = set ? '✓ Be van állítva — kártyás fizetés aktív' : 'Nincs beállítva';
+    note.className = 'admin-inline-note ' + (set ? 'ok' : '');
+  }
+  function updateWebhookNote() {
+    var note = $('#stripe-webhook-note'); if (!note) return;
+    var set = !!cfg.stripeWebhookSecretSet;
+    note.textContent = set ? '✓ Be van állítva — megbízható fizetés-megerősítés aktív' : 'Nincs beállítva (ajánlott)';
     note.className = 'admin-inline-note ' + (set ? 'ok' : '');
   }
 
@@ -174,7 +182,7 @@
     el.addEventListener('input', function () { cfg[bindMap[sel]] = el.value; markDirty(); updatePreview(); });
   });
   // Mentendő-jelzés a kapcsolati / értesítési mezőkre is (mentéskor a DOM-ból olvassuk ki)
-  ['#f-notifyEmail', '#f-metaTitle', '#f-metaDescription', '#f-gaId', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe'].forEach(function (sel) {
+  ['#f-notifyEmail', '#f-metaTitle', '#f-metaDescription', '#f-gaId', '#f-contactPhone', '#f-contactViber', '#f-contactWhatsapp', '#f-contactMessenger', '#f-contactEmail', '#f-szamlazz', '#f-stripe', '#f-stripe-webhook'].forEach(function (sel) {
     var el = $(sel); if (el) el.addEventListener('input', markDirty);
   });
   var bttEl = $('#f-backToTop'); if (bttEl) bttEl.addEventListener('change', markDirty);
@@ -372,10 +380,13 @@
     if (szk) cfg.szamlazzAgentKey = szk; else delete cfg.szamlazzAgentKey;  // üres → ne írjuk felül
     var stk = $('#f-stripe').value.trim();
     if (stk) cfg.stripeSecretKey = stk; else delete cfg.stripeSecretKey;    // üres → ne írjuk felül
+    var whk = $('#f-stripe-webhook').value.trim();
+    if (whk) cfg.stripeWebhookSecret = whk; else delete cfg.stripeWebhookSecret;  // üres → ne írjuk felül
     var btn = $('#save-btn'); btn.disabled = true;
     S.saveConfig(cfg).then(function (saved) {
       if (saved) { cfg = Object.assign(S.clone(S.DEFAULT_CONFIG), saved); if (!Array.isArray(cfg.products)) cfg.products = []; }
-      setVal('#f-szamlazz', ''); setVal('#f-stripe', ''); updateSzamlazzNote(); updateStripeNote();
+      setVal('#f-szamlazz', ''); setVal('#f-stripe', ''); setVal('#f-stripe-webhook', '');
+      updateSzamlazzNote(); updateStripeNote(); updateWebhookNote();
       markClean();
     }).catch(function (e) {
       if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
