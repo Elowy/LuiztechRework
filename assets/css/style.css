@@ -1415,6 +1415,19 @@ code { font-family: var(--mono); }
 .robot-bubble .rb-close:hover { background: #1b2740; }
 .robot-bubble.gold .rb-close { background: #7a4d00; color: #fff; }
 
+/* Fantázia projektek — kis robot a szekció sarkában, „kattints ide" buborékkal.
+   A .robot-bubble stílust újrahasználja (a robot gyermekeként fölötte jelenik meg). */
+#demos { position: relative; }
+.demo-robot {
+  position: absolute; right: 28px; bottom: 24px;
+  width: 52px; height: 52px; cursor: pointer; z-index: 6;
+  opacity: 0; transition: opacity .5s ease;
+  animation: robotfly 9s ease-in-out infinite;
+}
+.demo-robot.in { opacity: 1; }
+@media (max-width: 1024px) { .demo-robot { width: 38px; height: 38px; right: 14px; bottom: 14px; } }
+@media (prefers-reduced-motion: reduce) { .demo-robot { animation: none; } }
+
 /* Telefon + tablet: feleakkora chat-robot és kisebb buborékszöveg */
 @media (max-width: 1024px) {
   .chat-robot { width: 28px; height: 28px; }
