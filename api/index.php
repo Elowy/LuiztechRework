@@ -52,6 +52,9 @@ if ($method === 'GET' && $route === '/news') {
 if ($method === 'GET' && $route === '/references') {
   json_out(get_references($pdo));
 }
+if ($method === 'GET' && $route === '/demos') {
+  json_out(get_demos($pdo));
+}
 if ($method === 'GET' && $route === '/faq') {
   json_out(get_faq($pdo));
 }
@@ -255,6 +258,47 @@ if ($method === 'PUT' && match_route('/admin/references/{id}', $route, $params))
 if ($method === 'DELETE' && match_route('/admin/references/{id}', $route, $params)) {
   require_admin($pdo);
   $stmt = $pdo->prepare("DELETE FROM refs WHERE id = ?"); $stmt->execute([$params[0]]);
+  json_out(['ok' => $stmt->rowCount() > 0]);
+}
+
+/* ---- fantázia/koncepció projektek ---- */
+if ($method === 'POST' && $route === '/admin/demos') {
+  require_admin($pdo);
+  $b = body();
+  if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
+  $id = insert_demo($pdo, $b, (int)$pdo->query("SELECT COUNT(*) c FROM demos")->fetch()['c']);
+  $row = $pdo->prepare("SELECT * FROM demos WHERE id = ?"); $row->execute([$id]);
+  json_out(map_demo($row->fetch()), 201);
+}
+if ($method === 'PUT' && match_route('/admin/demos/{id}', $route, $params)) {
+  require_admin($pdo);
+  $b = body();
+  if (trim((string)($b['title'] ?? '')) === '') json_error('A cím megadása kötelező.', 400);
+  $chk = $pdo->prepare("SELECT id FROM demos WHERE id = ?"); $chk->execute([$params[0]]);
+  if (!$chk->fetch()) json_error('A projekt nem található.', 404);
+  $stmt = $pdo->prepare("UPDATE demos SET tag=?, tag_en=?, title=?, title_en=?, description=?, description_en=?, details=?, details_en=?, info=?, info_en=?, url=?, gold=?, is_new=? WHERE id=?");
+  $stmt->execute([
+    mb_substr((string)($b['tag'] ?? ''), 0, 60),
+    mb_substr((string)($b['tagEn'] ?? ''), 0, 60),
+    mb_substr((string)($b['title'] ?? ''), 0, 160),
+    mb_substr((string)($b['titleEn'] ?? ''), 0, 160),
+    mb_substr((string)($b['description'] ?? ''), 0, 600),
+    mb_substr((string)($b['descriptionEn'] ?? ''), 0, 600),
+    mb_substr((string)($b['details'] ?? ''), 0, 2000),
+    mb_substr((string)($b['detailsEn'] ?? ''), 0, 2000),
+    mb_substr((string)($b['info'] ?? ''), 0, 160),
+    mb_substr((string)($b['infoEn'] ?? ''), 0, 160),
+    clean_url($b['url'] ?? ''),
+    !empty($b['gold']) ? 1 : 0,
+    !empty($b['new']) ? 1 : 0,
+    $params[0],
+  ]);
+  $row = $pdo->prepare("SELECT * FROM demos WHERE id = ?"); $row->execute([$params[0]]);
+  json_out(map_demo($row->fetch()));
+}
+if ($method === 'DELETE' && match_route('/admin/demos/{id}', $route, $params)) {
+  require_admin($pdo);
+  $stmt = $pdo->prepare("DELETE FROM demos WHERE id = ?"); $stmt->execute([$params[0]]);
   json_out(['ok' => $stmt->rowCount() > 0]);
 }
 

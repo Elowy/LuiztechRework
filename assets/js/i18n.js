@@ -47,6 +47,10 @@
     '// csomagok': '// packages',
     '// folyamat': '// process',
     '// referenciák': '// references',
+    '// fantázia projektek': '// concept projects',
+    'Fantázia projektek': 'Concept projects',
+    'Saját, koncepció jellegű bemutató projektjeink — kattints a részletekért.':
+      'Our own concept showcase projects — click for details.',
     '// élő betekintő': '// live preview',
     '// hírek': '// news',
     '// rólunk': '// about',

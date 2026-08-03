@@ -183,6 +183,12 @@
   function updateReference(id, r) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'PUT', body: r }); }
   function deleteReference(id) { return api('/api/admin/references/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
+  /* ---------- Fantázia/koncepció projektek ---------- */
+  function getDemos() { return api('/api/demos').catch(function () { return []; }); }
+  function addDemo(r) { return api('/api/admin/demos', { method: 'POST', body: r }); }
+  function updateDemo(id, r) { return api('/api/admin/demos/' + encodeURIComponent(id), { method: 'PUT', body: r }); }
+  function deleteDemo(id) { return api('/api/admin/demos/' + encodeURIComponent(id), { method: 'DELETE' }); }
+
   /* ---------- FAQ ---------- */
   function getFaq() { return api('/api/faq').catch(function () { return []; }); }
   function addFaq(f) { return api('/api/admin/faq', { method: 'POST', body: f }); }
@@ -286,6 +292,10 @@
     addReference: addReference,
     updateReference: updateReference,
     deleteReference: deleteReference,
+    getDemos: getDemos,
+    addDemo: addDemo,
+    updateDemo: updateDemo,
+    deleteDemo: deleteDemo,
     getFaq: getFaq,
     addFaq: addFaq,
     updateFaq: updateFaq,

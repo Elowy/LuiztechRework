@@ -16,6 +16,8 @@
   var newsItems = [];
   var refsLoaded = false;
   var refItems = [];
+  var demosLoaded = false;
+  var demoItems = [];
   var faqLoaded = false;
   var faqItems = [];
   var messagesLoaded = false;
@@ -98,6 +100,7 @@
       if (name === 'coupons' && !couponsLoaded) loadCoupons();
       if (name === 'news' && !newsLoaded) loadNews();
       if (name === 'references' && !refsLoaded) loadReferences();
+      if (name === 'demos' && !demosLoaded) loadDemos();
       if (name === 'faq' && !faqLoaded) loadFaq();
       if (name === 'messages' && !messagesLoaded) loadMessages();
       if (name === 'reviews' && !reviewsLoaded) loadReviews();
@@ -557,6 +560,92 @@
       btn.disabled = false;
       if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
       $('#reference-modal-err').textContent = e.message || 'Mentés sikertelen.';
+    });
+  });
+
+  /* ============================================================
+     DEMOS (fantázia projektek) — a referenciákkal azonos szerkezet
+     ============================================================ */
+  function loadDemos() {
+    var wrap = $('#demo-admin-list');
+    wrap.innerHTML = '<p class="admin-desc">Betöltés...</p>';
+    S.getDemos().then(function (items) {
+      demosLoaded = true;
+      demoItems = items || [];
+      renderDemoList();
+    }).catch(function () { wrap.innerHTML = '<p class="admin-inline-note err">Nem sikerült betölteni a projekteket.</p>'; });
+  }
+  function renderDemoList() {
+    var wrap = $('#demo-admin-list');
+    wrap.innerHTML = '';
+    if (!demoItems.length) { wrap.innerHTML = '<p class="admin-desc">Még nincs fantázia projekt. Adj hozzá egyet!</p>'; return; }
+    demoItems.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'news-admin-row';
+      row.innerHTML =
+        '<div class="news-admin-info">' +
+          '<span class="news-admin-title">' + (r.new ? '🆕 ' : '') + (r.gold ? '✨ ' : '') + escAttr(r.title) + (r.url ? ' 🔗' : '') + '</span>' +
+          '<span class="news-admin-date">' + escAttr(r.tag || '—') + (r.info ? ' · ' + escAttr(r.info) : '') + '</span>' +
+        '</div>' +
+        '<div class="pa-actions">' +
+          '<button class="icon-btn" data-act="edit" title="Szerkesztés">✎</button>' +
+          '<button class="icon-btn icon-danger" data-act="del" title="Törlés">🗑</button></div>';
+      row.querySelector('[data-act="edit"]').addEventListener('click', function () { openDemoModal(r); });
+      row.querySelector('[data-act="del"]').addEventListener('click', function () {
+        if (!confirm('Biztosan törlöd: "' + r.title + '"?')) return;
+        S.deleteDemo(r.id).then(function () { demoItems = demoItems.filter(function (x) { return x.id !== r.id; }); renderDemoList(); })
+          .catch(function (e) { if (e.status === 401) { S.logoutCustomer(); location.reload(); } });
+      });
+      wrap.appendChild(row);
+    });
+  }
+  function openDemoModal(r) {
+    $('#demo-modal-title').textContent = r ? 'fantázia projekt szerkesztése' : 'új fantázia projekt';
+    $('#d-id').value = r ? r.id : '';
+    $('#d-title').value = r ? r.title : '';
+    $('#d-title-en').value = r ? (r.titleEn || '') : '';
+    $('#d-tag').value = r ? (r.tag || '') : '';
+    $('#d-tag-en').value = r ? (r.tagEn || '') : '';
+    $('#d-description').value = r ? (r.description || '') : '';
+    $('#d-description-en').value = r ? (r.descriptionEn || '') : '';
+    $('#d-details').value = r ? (r.details || '') : '';
+    $('#d-details-en').value = r ? (r.detailsEn || '') : '';
+    $('#d-info').value = r ? (r.info || '') : '';
+    $('#d-info-en').value = r ? (r.infoEn || '') : '';
+    $('#d-url').value = r ? (r.url || '') : '';
+    $('#d-gold').checked = r ? !!r.gold : false;
+    $('#d-new').checked = r ? !!r.new : false;
+    $('#demo-modal-err').textContent = '';
+    $('#demo-modal').hidden = false;
+    setTimeout(function () { $('#d-title').focus(); }, 30);
+  }
+  function closeDemoModal() { $('#demo-modal').hidden = true; }
+  $('#add-demo').addEventListener('click', function () { openDemoModal(null); });
+  $('#demo-modal-cancel').addEventListener('click', closeDemoModal);
+  $('#demo-modal').addEventListener('click', function (e) { if (e.target === this) closeDemoModal(); });
+  $('#demo-modal-save').addEventListener('click', function () {
+    var title = $('#d-title').value.trim();
+    if (!title) { $('#demo-modal-err').textContent = 'A cím kötelező.'; return; }
+    var payload = {
+      title: title, tag: $('#d-tag').value.trim(), description: $('#d-description').value.trim(),
+      details: $('#d-details').value.trim(), info: $('#d-info').value.trim(), url: $('#d-url').value.trim(),
+      titleEn: $('#d-title-en').value.trim(), tagEn: $('#d-tag-en').value.trim(),
+      descriptionEn: $('#d-description-en').value.trim(), detailsEn: $('#d-details-en').value.trim(),
+      infoEn: $('#d-info-en').value.trim(),
+      gold: $('#d-gold').checked, new: $('#d-new').checked
+    };
+    var id = $('#d-id').value;
+    var btn = $('#demo-modal-save'); btn.disabled = true;
+    var p = id ? S.updateDemo(id, payload) : S.addDemo(payload);
+    p.then(function (item) {
+      btn.disabled = false;
+      if (id) demoItems = demoItems.map(function (x) { return x.id === id ? item : x; });
+      else demoItems.push(item);
+      renderDemoList(); closeDemoModal();
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (e.status === 401) { S.logoutCustomer(); location.reload(); return; }
+      $('#demo-modal-err').textContent = e.message || 'Mentés sikertelen.';
     });
   });
 

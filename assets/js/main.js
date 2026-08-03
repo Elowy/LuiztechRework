@@ -810,6 +810,26 @@
     $('#ref-modal-cta').addEventListener('click', closeRef);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !refModal.hidden) closeRef(); });
 
+    // Kártyaépítő (referencia és fantázia projekt is ezt használja) — EN módban az angol mezők
+    const isEN = (() => { try { return localStorage.getItem('lt_lang') === 'en'; } catch (e) { return false; } })();
+    const L = (it, hu, en) => (isEN && it[en] && String(it[en]).trim()) ? it[en] : it[hu];
+    const buildCard = (it) => {
+      const tag = L(it, 'tag', 'tagEn');
+      const title = L(it, 'title', 'titleEn');
+      const description = L(it, 'description', 'descriptionEn');
+      const details = L(it, 'details', 'detailsEn');
+      const info = L(it, 'info', 'infoEn');
+      const more = escH(details || description || '');
+      const urlAttr = it.url ? ' data-url="' + escH(it.url) + '"' : '';
+      return '<article class="work-card clickable reveal in' + (it.gold ? ' work-gold' : '') + (it.new ? ' work-new' : '') + '" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
+        (it.new ? '<span class="work-new-badge">Új</span>' : '') +
+        (tag ? '<div class="work-tag">' + escH(tag) + '</div>' : '') +
+        '<h3>' + escH(title) + '</h3>' +
+        '<p>' + escH(description || '') + '</p>' +
+        (info ? '<div class="work-meta"><span>' + escH(info) + '</span></div>' : '') +
+      '</article>';
+    };
+
     // Dinamikus referenciák a backendből (ha van) — különben marad a statikus tartalom
     const grid = $('.work-grid');
     if (grid && typeof fetch === 'function') {
@@ -817,34 +837,31 @@
         .then((r) => (r.ok ? r.json() : []))
         .then((items) => {
           if (!Array.isArray(items) || !items.length) return;
-          const isEN = (() => { try { return localStorage.getItem('lt_lang') === 'en'; } catch (e) { return false; } })();
-          const L = (it, hu, en) => (isEN && it[en] && String(it[en]).trim()) ? it[en] : it[hu];
-          const cards = items.map((it) => {
-            const tag = L(it, 'tag', 'tagEn');
-            const title = L(it, 'title', 'titleEn');
-            const description = L(it, 'description', 'descriptionEn');
-            const details = L(it, 'details', 'detailsEn');
-            const info = L(it, 'info', 'infoEn');
-            const more = escH(details || description || '');
-            const urlAttr = it.url ? ' data-url="' + escH(it.url) + '"' : '';
-            return '<article class="work-card clickable reveal in' + (it.gold ? ' work-gold' : '') + (it.new ? ' work-new' : '') + '" tabindex="0" role="button" data-more="' + more + '"' + urlAttr + '">' +
-              (it.new ? '<span class="work-new-badge">Új</span>' : '') +
-              (tag ? '<div class="work-tag">' + escH(tag) + '</div>' : '') +
-              '<h3>' + escH(title) + '</h3>' +
-              '<p>' + escH(description || '') + '</p>' +
-              (info ? '<div class="work-meta"><span>' + escH(info) + '</span></div>' : '') +
-            '</article>';
-          }).join('');
           const cta =
             '<article class="work-card work-cta reveal in">' +
               '<h3>A te projekted lehet a következő</h3>' +
               '<p>Beszéljük meg az ötletedet — pár órán belül kapsz tőlünk visszajelzést.</p>' +
               '<a href="#contact" class="btn btn-primary btn-sm">Beszéljünk róla</a>' +
             '</article>';
-          grid.innerHTML = cards + cta;
+          grid.innerHTML = items.map(buildCard).join('') + cta;
           wireCards();
         })
         .catch(() => { /* nincs backend → marad a statikus */ });
+    }
+
+    // Fantázia/koncepció projektek — külön szekció; ha nincs elem, rejtve marad
+    const demoGrid = document.getElementById('demo-grid');
+    if (demoGrid && typeof fetch === 'function') {
+      fetch('/api/demos', { credentials: 'same-origin' })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((items) => {
+          if (!Array.isArray(items) || !items.length) return;
+          demoGrid.innerHTML = items.map(buildCard).join('');
+          const sec = document.getElementById('demos');
+          if (sec) sec.hidden = false;
+          wireCards();
+        })
+        .catch(() => { /* nincs backend → a szekció rejtve marad */ });
     }
   }
 

@@ -9,7 +9,7 @@ date_default_timezone_set('Europe/Budapest');
 const ORDER_STATUSES = ['Új', 'Fizetésre vár', 'Fizetve', 'Feldolgozás alatt', 'Teljesítve', 'Törölve'];
 const MESSAGE_STATUSES = ['Új', 'Folyamatban', 'Lezárt'];
 const TICKET_STATUSES = ['Nyitott', 'Válaszra vár', 'Megoldva', 'Lezárt'];
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 
 // Az a fiók, amelyik ezzel az e-mail címmel lép be, admin jogot kap.
 // Mindenki más vásárló. (Egységes bejelentkezés.)
@@ -294,6 +294,25 @@ function create_schema(PDO $pdo) {
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
   $pdo->exec("CREATE TABLE IF NOT EXISTS refs (
+    id VARCHAR(40) PRIMARY KEY,
+    tag VARCHAR(60) DEFAULT '',
+    tag_en VARCHAR(60) DEFAULT '',
+    title VARCHAR(160) NOT NULL,
+    title_en VARCHAR(160) DEFAULT '',
+    description VARCHAR(600) DEFAULT '',
+    description_en VARCHAR(600) DEFAULT '',
+    details VARCHAR(2000) DEFAULT '',
+    details_en VARCHAR(2000) DEFAULT '',
+    info VARCHAR(160) DEFAULT '',
+    info_en VARCHAR(160) DEFAULT '',
+    url VARCHAR(300) DEFAULT '',
+    gold TINYINT NOT NULL DEFAULT 0,
+    is_new TINYINT NOT NULL DEFAULT 0,
+    sort INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  // Fantázia/koncepció projektek — a referenciákkal azonos szerkezet, külön szekció
+  $pdo->exec("CREATE TABLE IF NOT EXISTS demos (
     id VARCHAR(40) PRIMARY KEY,
     tag VARCHAR(60) DEFAULT '',
     tag_en VARCHAR(60) DEFAULT '',
@@ -1264,6 +1283,46 @@ function map_reference($r) {
 }
 function get_references(PDO $pdo) {
   return array_map('map_reference', $pdo->query("SELECT * FROM refs ORDER BY sort ASC, title ASC")->fetchAll());
+}
+
+/* ---------- Fantázia/koncepció projektek (a referenciákkal azonos szerkezet) ---------- */
+function insert_demo(PDO $pdo, array $r, $sort = 0) {
+  $id = (string)($r['id'] ?? '');
+  if ($id === '') $id = 'd' . uniqid();
+  $stmt = $pdo->prepare("INSERT INTO demos (id,tag,tag_en,title,title_en,description,description_en,details,details_en,info,info_en,url,gold,is_new,sort) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+  $stmt->execute([
+    $id,
+    mb_substr((string)($r['tag'] ?? ''), 0, 60),
+    mb_substr((string)($r['tagEn'] ?? ''), 0, 60),
+    mb_substr((string)($r['title'] ?? ''), 0, 160),
+    mb_substr((string)($r['titleEn'] ?? ''), 0, 160),
+    mb_substr((string)($r['description'] ?? ''), 0, 600),
+    mb_substr((string)($r['descriptionEn'] ?? ''), 0, 600),
+    mb_substr((string)($r['details'] ?? ''), 0, 2000),
+    mb_substr((string)($r['detailsEn'] ?? ''), 0, 2000),
+    mb_substr((string)($r['info'] ?? ''), 0, 160),
+    mb_substr((string)($r['infoEn'] ?? ''), 0, 160),
+    clean_url($r['url'] ?? ''),
+    !empty($r['gold']) ? 1 : 0,
+    !empty($r['new']) ? 1 : 0,
+    (int)$sort,
+  ]);
+  return $id;
+}
+function map_demo($r) {
+  return [
+    'id' => $r['id'], 'tag' => $r['tag'], 'title' => $r['title'],
+    'description' => $r['description'], 'details' => $r['details'],
+    'info' => $r['info'], 'url' => $r['url'],
+    'tagEn' => $r['tag_en'] ?? '', 'titleEn' => $r['title_en'] ?? '',
+    'descriptionEn' => $r['description_en'] ?? '', 'detailsEn' => $r['details_en'] ?? '',
+    'infoEn' => $r['info_en'] ?? '',
+    'gold' => !empty($r['gold']),
+    'new' => !empty($r['is_new']),
+  ];
+}
+function get_demos(PDO $pdo) {
+  return array_map('map_demo', $pdo->query("SELECT * FROM demos ORDER BY sort ASC, title ASC")->fetchAll());
 }
 
 /* ---------- FAQ ---------- */

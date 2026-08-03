@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=64" />
-  <link rel="stylesheet" href="assets/css/admin.css?v=64" />
+  <link rel="stylesheet" href="assets/css/style.css?v=65" />
+  <link rel="stylesheet" href="assets/css/admin.css?v=65" />
 </head>
 <body class="admin-body">
   <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -79,6 +79,7 @@
         <button class="admin-tab" data-tab="products">📦 Termékek</button>
         <button class="admin-tab" data-tab="news">📰 Hírek</button>
         <button class="admin-tab" data-tab="references">🏆 Referenciák</button>
+        <button class="admin-tab" data-tab="demos">💡 Fantázia projektek</button>
         <button class="admin-tab" data-tab="faq">❓ GYIK</button>
         <button class="admin-tab" data-tab="orders">📥 Rendelések</button>
         <button class="admin-tab" data-tab="customers">👥 Vásárlók</button>
@@ -299,6 +300,18 @@
             <button class="btn btn-primary btn-sm" id="add-reference">+ Új referencia</button>
           </div>
           <div class="news-admin-list" id="reference-admin-list"></div>
+        </section>
+
+        <!-- DEMOS (fantázia projektek) -->
+        <section class="admin-panel" data-panel="demos">
+          <div class="admin-panel-head">
+            <div>
+              <h2 class="admin-h">Fantázia projektek</h2>
+              <p class="admin-desc">A referenciák alatt megjelenő, koncepció jellegű bemutató projektek. Ha nincs elem, a szekció nem jelenik meg a főoldalon.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-demo">+ Új projekt</button>
+          </div>
+          <div class="news-admin-list" id="demo-admin-list"></div>
         </section>
 
         <!-- FAQ -->
@@ -647,6 +660,80 @@
     </div>
   </div>
 
+  <!-- ===================== DEMO (FANTÁZIA PROJEKT) EDIT MODAL ===================== -->
+  <div class="modal-overlay" id="demo-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="demo-modal-title">
+      <div class="terminal-bar">
+        <span class="dot dot-red"></span>
+        <span class="dot dot-yellow"></span>
+        <span class="dot dot-green"></span>
+        <span class="terminal-title" id="demo-modal-title">fantázia projekt szerkesztése</span>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="d-id" />
+        <div class="field-row">
+          <div class="field">
+            <label for="d-title">Cím</label>
+            <input type="text" id="d-title" />
+          </div>
+          <div class="field" style="flex:0 0 150px">
+            <label for="d-tag">Címke</label>
+            <input type="text" id="d-tag" placeholder="Koncepció / Demó…" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="d-title-en">Cím — angol 🇬🇧</label>
+            <input type="text" id="d-title-en" placeholder="Üresen hagyva a magyart mutatja EN módban" />
+          </div>
+          <div class="field" style="flex:0 0 150px">
+            <label for="d-tag-en">Címke — angol 🇬🇧</label>
+            <input type="text" id="d-tag-en" placeholder="Concept / Demo…" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="d-description">Rövid leírás (kártyán)</label>
+          <textarea id="d-description" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="d-description-en">Rövid leírás — angol 🇬🇧</label>
+          <textarea id="d-description-en" rows="2" placeholder="Üresen hagyva a magyart mutatja EN módban"></textarea>
+        </div>
+        <div class="field">
+          <label for="d-details">Részletek (felugró ablakban)</label>
+          <textarea id="d-details" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="d-details-en">Részletek — angol 🇬🇧</label>
+          <textarea id="d-details-en" rows="3" placeholder="Üresen hagyva a magyart mutatja EN módban"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="d-info">Meta (pl. dátum, jelvény)</label>
+            <input type="text" id="d-info" placeholder="2025 · 💡 Koncepció" />
+          </div>
+          <div class="field">
+            <label for="d-info-en">Meta — angol 🇬🇧</label>
+            <input type="text" id="d-info-en" placeholder="2025 · 💡 Concept" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="d-url">Webcím (URL, opcionális)</label>
+            <input type="url" id="d-url" placeholder="https://pelda.hu" />
+          </div>
+        </div>
+        <label class="check-row"><input type="checkbox" id="d-gold" /> <span>✨ Arany szegély (kiemelt projekt)</span></label>
+        <label class="check-row"><input type="checkbox" id="d-new" /> <span>🆕 Új (zöld keret + „Új" pecsét)</span></label>
+        <p class="modal-err" id="demo-modal-err"></p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost btn-sm" id="demo-modal-cancel">Mégse</button>
+        <button class="btn btn-primary btn-sm" id="demo-modal-save">Mentés</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== FAQ EDIT MODAL ===================== -->
   <div class="modal-overlay" id="faq-modal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
@@ -675,8 +762,8 @@
     </div>
   </div>
 
-  <script src="assets/js/shop-config.js?v=64"></script>
-  <script src="assets/js/admin.js?v=64" defer></script>
-  <script src="assets/js/main.js?v=64" defer></script>
+  <script src="assets/js/shop-config.js?v=65"></script>
+  <script src="assets/js/admin.js?v=65" defer></script>
+  <script src="assets/js/main.js?v=65" defer></script>
 </body>
 </html>
