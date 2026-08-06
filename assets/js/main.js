@@ -425,62 +425,6 @@
       '</svg>';
   }
 
-  /* ---------- Kis robot a Fantázia projekteknél: időnként „kattints ide" buborék ---------- */
-  var DEMO_MSGS = [
-    'Kattints ide! 👆', 'Nézd meg ezt a projektet! 👀', 'Kattints, és felfedezed! ✨',
-    'Kíváncsi vagy a részletekre? Kattints! 🔍', 'Ezt látnod kell — kattints rá! 😍',
-    'Egy kattintás, és megnyílik! 🚀', 'Fedezd fel a fantázia projekteket! 💡',
-    'Kattints egy kártyára! 🖱️', 'Nézz be ide is! 👇',
-    'Itt is lapul pár érdekesség — kattints! 🎁', 'Bátran kattints, nem harapunk! 🤖',
-    'Kukkants be a projektekbe! 👓'
-  ];
-  function buildDemoRobot(section) {
-    if (!section || section.querySelector('.demo-robot')) return;
-    var wrap = document.createElement('div');
-    wrap.className = 'demo-robot';
-    wrap.setAttribute('aria-hidden', 'true');
-    wrap.innerHTML = robotSVG();
-    var bubble = document.createElement('div');
-    bubble.className = 'robot-bubble';
-    bubble.setAttribute('role', 'status');
-    bubble.innerHTML = '<span class="rb-text"></span><button type="button" class="rb-close" aria-label="Bezárás">✕</button>';
-    wrap.appendChild(bubble);
-    section.appendChild(wrap);
-    var txt = bubble.querySelector('.rb-text');
-    var hideT = null, iv = null, closed = false;
-    try { closed = sessionStorage.getItem('lt_demobubble_off') === '1'; } catch (e) { /* ignore */ }
-    var show = function () {
-      if (closed) return;
-      var raw = DEMO_MSGS[Math.floor(Math.random() * DEMO_MSGS.length)];
-      txt.textContent = (window.LT_translate ? window.LT_translate(raw) : raw);
-      bubble.classList.add('show');
-      if (hideT) clearTimeout(hideT);
-      hideT = setTimeout(function () { bubble.classList.remove('show'); }, 9000);
-    };
-    bubble.querySelector('.rb-close').addEventListener('click', function (e) {
-      e.stopPropagation();
-      closed = true;
-      try { sessionStorage.setItem('lt_demobubble_off', '1'); } catch (er) { /* ignore */ }
-      bubble.classList.remove('show');
-      if (iv) { clearInterval(iv); iv = null; }
-    });
-    wrap.addEventListener('click', function () { bubble.classList.remove('show'); });
-    // Megjelenik, amikor a szekció látótérbe kerül; utána időnként újra felbukkan a buborék.
-    if ('IntersectionObserver' in window && !prefersReduced) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (en.isIntersecting) {
-            wrap.classList.add('in');
-            if (!closed && !iv) { setTimeout(show, 900); iv = setInterval(show, 45000); }
-          }
-        });
-      }, { threshold: 0.35 });
-      io.observe(section);
-    } else {
-      wrap.classList.add('in');
-    }
-  }
-
   /* ---------- Scroll reveal (with stagger) ---------- */
   const revealEls = $$('[data-reveal]');
   if ('IntersectionObserver' in window && !prefersReduced) {
@@ -916,7 +860,6 @@
           const sec = document.getElementById('demos');
           if (sec) sec.hidden = false;
           wireCards();
-          if (sec) buildDemoRobot(sec);
         })
         .catch(() => { /* nincs backend → a szekció rejtve marad */ });
     }
