@@ -425,6 +425,86 @@
       '</svg>';
   }
 
+  /* ---------- Élő betekintő carousel (vadmester.hu ↔ villanyrajz.hu) ---------- */
+  (function peekCarousel() {
+    const root = $('#peek-carousel');
+    if (!root) return;
+    const slides = $$('.peek-slide', root);
+    const n = slides.length;
+    const dotsEl = $('.peek-dots');
+    const cta = $('.peek-cta');
+    let active = 0, dir = -1; // dir: utolsó lapozás iránya (2 elemnél ez dönti el, melyik oldalon áll a másik)
+
+    const dots = slides.map((sl, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'peek-dot';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', sl.dataset.url.replace(/^https?:\/\//, ''));
+      b.addEventListener('click', () => go(i));
+      if (dotsEl) dotsEl.appendChild(b);
+      return b;
+    });
+
+    function render() {
+      slides.forEach((sl, i) => {
+        let d = i - active;
+        if (d > n / 2) d -= n;
+        if (d < -n / 2) d += n;
+        if (Math.abs(d) === n / 2) d = -dir * Math.abs(d);
+        const side = d !== 0;
+        sl.classList.toggle('is-side', side);
+        sl.setAttribute('aria-hidden', side ? 'true' : 'false');
+        sl.style.zIndex = String(10 - Math.abs(d));
+        sl.style.opacity = Math.abs(d) > 1 ? '0' : (side ? '.55' : '1');
+        sl.style.transform = side
+          ? 'translateX(' + (d * 46) + '%) translateZ(-260px) rotateY(' + (-d * 38) + 'deg)'
+          : 'none';
+        $$('a, iframe', sl).forEach((el) => el.setAttribute('tabindex', side ? '-1' : '0'));
+        dots[i].setAttribute('aria-selected', side ? 'false' : 'true');
+      });
+      if (cta) cta.href = slides[active].dataset.url;
+    }
+    function go(i, d) {
+      const next = ((i % n) + n) % n;
+      if (next === active) return;
+      dir = d || (next > active ? 1 : -1);
+      active = next;
+      render();
+    }
+
+    $('.peek-prev', root).addEventListener('click', () => go(active - 1, -1));
+    $('.peek-next', root).addEventListener('click', () => go(active + 1, 1));
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1, -1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1, 1); }
+    });
+
+    // oldalsó ablakra kattintva oda lapoz (nem nyitja meg az oldalt)
+    // + húzás/swipe érintőképernyőn és egérrel
+    let startX = null, swiped = false;
+    const stage = $('.peek-stage', root);
+    stage.addEventListener('pointerdown', (e) => { startX = e.clientX; swiped = false; });
+    stage.addEventListener('pointerup', (e) => {
+      if (startX == null) return;
+      const dx = e.clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 50) { swiped = true; go(active + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); }
+    });
+    stage.addEventListener('pointercancel', () => { startX = null; });
+    stage.addEventListener('click', (e) => {
+      const sl = e.target.closest('.peek-slide');
+      if (swiped || (sl && sl.classList.contains('is-side'))) {
+        e.preventDefault();
+        if (!swiped && sl) go(slides.indexOf(sl));
+      }
+      swiped = false;
+    }, true);
+    stage.addEventListener('dragstart', (e) => e.preventDefault());
+
+    render();
+  })();
+
   /* ---------- Scroll reveal (with stagger) ---------- */
   const revealEls = $$('[data-reveal]');
   if ('IntersectionObserver' in window && !prefersReduced) {

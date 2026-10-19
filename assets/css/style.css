@@ -1015,7 +1015,49 @@ code { font-family: var(--mono); }
 /* ============================================================
    LIVE PEEK (iframe window)
    ============================================================ */
-.peek-wrap { max-width: 860px; margin: 0 auto; text-align: center; }
+.peek-wrap { max-width: 1040px; margin: 0 auto; text-align: center; }
+/* carousel ("kerék"): az aktív ablak középen, a többi oldalra fordulva mögötte */
+.peek-carousel { position: relative; outline: none; }
+.peek-carousel:focus-visible .peek-stage { box-shadow: 0 0 0 2px var(--accent); border-radius: var(--radius); }
+.peek-stage {
+  overflow: hidden;
+  perspective: 1400px;
+  padding: 14px 0 22px;
+  touch-action: pan-y;
+}
+.peek-track { display: grid; transform-style: preserve-3d; }
+.peek-slide {
+  grid-area: 1 / 1;
+  width: 80%;
+  justify-self: center;
+  text-align: left;
+  transition: transform .6s cubic-bezier(.22,.8,.26,1), opacity .6s ease, filter .6s ease;
+  will-change: transform;
+}
+.peek-slide.is-side { cursor: pointer; filter: saturate(.6) brightness(.7); }
+.peek-slide.is-side .peek-open::after { display: none; }
+.peek-nav {
+  position: absolute; top: 50%; z-index: 5;
+  width: 46px; height: 46px; margin-top: -23px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border-strong); border-radius: 50%;
+  background: rgba(11,16,24,.85); color: var(--text);
+  font-size: 1.7rem; line-height: 1; cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+.peek-nav:hover { background: var(--grad); color: #04121a; transform: scale(1.06); }
+.peek-prev { left: 6px; }
+.peek-next { right: 6px; }
+.peek-dots { display: flex; justify-content: center; gap: 10px; margin-top: 6px; }
+.peek-dot {
+  width: 10px; height: 10px; padding: 0;
+  border: 0; border-radius: 999px;
+  background: var(--border-strong); cursor: pointer;
+  transition: width .3s ease, background .3s ease;
+}
+.peek-dot[aria-selected="true"] { width: 28px; background: var(--grad); }
+@media (prefers-reduced-motion: reduce) { .peek-slide { transition: none; } }
 .peek-window {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -1077,7 +1119,13 @@ code { font-family: var(--mono); }
   .peek-open::after { opacity: 1; transform: none; }
 }
 .peek-cta { margin-top: 18px; }
-@media (max-width: 600px) { .peek-viewport { height: 360px; } }
+@media (max-width: 600px) {
+  .peek-viewport { height: 360px; }
+  .peek-slide { width: 88%; }
+  .peek-nav { width: 38px; height: 38px; margin-top: -19px; font-size: 1.4rem; }
+  .peek-prev { left: 0; }
+  .peek-next { right: 0; }
+}
 
 /* ============================================================
    SUPPORT TICKETS (shared)
