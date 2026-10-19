@@ -207,10 +207,15 @@
     '— Elégedett ügyfél, weboldal projekt': '— Happy client, website project',
 
     // ---- Élő betekintő ----
-    'Pillants be egy élő projektbe': 'Take a peek at a live project',
-    'Egy kis ablak a': 'A little window into',
-    '-ra — kattints rá, és megnyílik teljes méretben.': ' — click it to open at full size.',
+    'Pillants be élő projektjeinkbe': 'Take a peek at our live projects',
+    'Kis ablakok ügyfeleink élő oldalaira — lapozz közöttük, és kattints rá a teljes mérethez.':
+      "Little windows into our clients' live sites — flip between them and click to open at full size.",
     'vadmester.hu — élő előnézet': 'vadmester.hu — live preview',
+    'villanyrajz.hu — élő előnézet': 'villanyrajz.hu — live preview',
+    'Élő projektek': 'Live projects',
+    'Előző projekt': 'Previous project',
+    'Következő projekt': 'Next project',
+    'Projekt választó': 'Project picker',
     'Megnyitás új lapon ↗': 'Open in new tab ↗',
 
     // ---- Hírek ----
@@ -578,6 +583,8 @@
     'Admin felület': 'Admin panel',
     'vadmester.hu élő előnézet': 'vadmester.hu live preview',
     'vadmester.hu megnyitása új lapon': 'Open vadmester.hu in a new tab',
+    'villanyrajz.hu élő előnézet': 'villanyrajz.hu live preview',
+    'villanyrajz.hu megnyitása új lapon': 'Open villanyrajz.hu in a new tab',
 
     // ---- Marquee címkék / egyéb ----
     'Hálózat': 'Network',

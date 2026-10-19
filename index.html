@@ -50,7 +50,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
-  <link rel="stylesheet" href="assets/css/style.css?v=68" />
+  <link rel="stylesheet" href="assets/css/style.css?v=69" />
 </head>
 <body>
   <a href="#main" class="skip-link">Tartalomra ugrás</a>
@@ -443,30 +443,58 @@
       </div>
     </section>
 
-    <!-- ===================== LIVE PEEK (vadmester.hu) ===================== -->
+    <!-- ===================== LIVE PEEK (élő projektek carousel) ===================== -->
     <section class="section" id="peek">
       <div class="container">
         <div class="section-head reveal" data-reveal>
           <span class="section-tag">// élő betekintő</span>
-          <h2 class="section-title">Pillants be egy élő projektbe</h2>
-          <p class="section-sub">Egy kis ablak a <strong>vadmester.hu</strong>-ra — kattints rá, és megnyílik teljes méretben.</p>
+          <h2 class="section-title">Pillants be élő projektjeinkbe</h2>
+          <p class="section-sub">Kis ablakok ügyfeleink élő oldalaira — lapozz közöttük, és kattints rá a teljes mérethez.</p>
         </div>
         <div class="peek-wrap reveal" data-reveal>
-          <div class="peek-window">
-            <div class="terminal-bar">
-              <span class="dot dot-red"></span>
-              <span class="dot dot-yellow"></span>
-              <span class="dot dot-green"></span>
-              <span class="peek-url">🔒 vadmester.hu</span>
+          <div class="peek-carousel" id="peek-carousel" role="region" aria-roledescription="carousel" aria-label="Élő projektek" tabindex="0">
+            <button type="button" class="peek-nav peek-prev" aria-label="Előző projekt">‹</button>
+            <div class="peek-stage">
+              <div class="peek-track">
+            <div class="peek-slide" role="group" aria-roledescription="slide" data-url="https://vadmester.hu">
+              <div class="peek-window">
+                <div class="terminal-bar">
+                  <span class="dot dot-red"></span>
+                  <span class="dot dot-yellow"></span>
+                  <span class="dot dot-green"></span>
+                  <span class="peek-url">🔒 vadmester.hu</span>
+                </div>
+                <div class="peek-viewport">
+                  <div class="peek-fallback">vadmester.hu — élő előnézet</div>
+                  <iframe src="https://vadmester.hu" title="vadmester.hu élő előnézet"
+                    loading="lazy" referrerpolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin"></iframe>
+                  <a class="peek-open" href="https://vadmester.hu" target="_blank" rel="noopener" aria-label="vadmester.hu megnyitása új lapon"></a>
+                </div>
+              </div>
             </div>
-            <div class="peek-viewport">
-              <div class="peek-fallback">vadmester.hu — élő előnézet</div>
-              <iframe src="https://vadmester.hu" title="vadmester.hu élő előnézet"
-                loading="lazy" referrerpolicy="no-referrer"
-                sandbox="allow-scripts allow-same-origin"></iframe>
-              <a class="peek-open" href="https://vadmester.hu" target="_blank" rel="noopener" aria-label="vadmester.hu megnyitása új lapon"></a>
+            <div class="peek-slide" role="group" aria-roledescription="slide" data-url="https://villanyrajz.hu" aria-hidden="true">
+              <div class="peek-window">
+                <div class="terminal-bar">
+                  <span class="dot dot-red"></span>
+                  <span class="dot dot-yellow"></span>
+                  <span class="dot dot-green"></span>
+                  <span class="peek-url">🔒 villanyrajz.hu</span>
+                </div>
+                <div class="peek-viewport">
+                  <div class="peek-fallback">villanyrajz.hu — élő előnézet</div>
+                  <iframe src="https://villanyrajz.hu" title="villanyrajz.hu élő előnézet"
+                    loading="lazy" referrerpolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin"></iframe>
+                  <a class="peek-open" href="https://villanyrajz.hu" target="_blank" rel="noopener" aria-label="villanyrajz.hu megnyitása új lapon"></a>
+                </div>
+              </div>
             </div>
+              </div>
+            </div>
+            <button type="button" class="peek-nav peek-next" aria-label="Következő projekt">›</button>
           </div>
+          <div class="peek-dots" role="tablist" aria-label="Projekt választó"></div>
           <a href="https://vadmester.hu" target="_blank" rel="noopener" class="btn btn-ghost btn-sm peek-cta">Megnyitás új lapon ↗</a>
         </div>
       </div>
@@ -513,7 +541,7 @@
 
         <div class="about-portrait reveal" data-reveal>
           <figure class="owner-card">
-            <img src="assets/img/owner.png?v=68" alt="Tóth Levente, a Luiz-Tech alapítója"
+            <img src="assets/img/owner.png?v=69" alt="Tóth Levente, a Luiz-Tech alapítója"
               class="owner-photo" width="700" height="798" loading="lazy" />
             <figcaption class="owner-caption">
               <strong>Tóth Levente</strong>
@@ -685,7 +713,7 @@
     </div>
   </footer>
 
-  <script src="assets/js/i18n.js?v=68" defer></script>
-  <script src="assets/js/main.js?v=68" defer></script>
+  <script src="assets/js/i18n.js?v=69" defer></script>
+  <script src="assets/js/main.js?v=69" defer></script>
 </body>
 </html>
